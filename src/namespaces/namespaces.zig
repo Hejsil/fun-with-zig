@@ -39,9 +39,13 @@ test "foolib" {
     useBar(foolibv1);
     // useBar(foolibv2); // error: expression value is ignored
 
-
-    // _ = useNewBar(foolibv1);
+    // And at some point, we made a new function that handles the new 
+    // signature, so now we use that instead.
     _ = useNewBar(foolibv2);
+
+    // NOTE: I don't think this is, in any way, a good idea. Using 15
+    //       different versions of a library in your code probably
+    //       causes more harm than good.
 }
 
 fn useFoo(comptime FooLib: Namespace) {
