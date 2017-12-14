@@ -68,7 +68,6 @@ pub fn default(comptime T: type) -> Comparer(T) {
 }
 
 test "Example: default" {
-    const debug = @import("std").debug;
     const sort  = @import("std").sort;
 
     var iarr = []i32 { 5, 3, 1, 2, 4 };
@@ -79,8 +78,8 @@ test "Example: default" {
     sort.sort_stable(i32, iarr[0..], comptime default(i32));
     sort.sort_stable(f32, farr[0..], comptime default(f32));
 
-    debug.assert(mem.eql(i32, iarr, []i32 { 1, 2, 3, 4, 5 }));
-    debug.assert(mem.eql(f32, farr, []f32 { 1, 2, 3, 4, 5 }));
+    assert(mem.eql(i32, iarr, []i32 { 1, 2, 3, 4, 5 }));
+    assert(mem.eql(f32, farr, []f32 { 1, 2, 3, 4, 5 }));
 }
 
 test "default(u64)" {
@@ -191,7 +190,6 @@ pub fn reverse(comptime T: type, comptime comparer: Comparer(T)) -> Comparer(T) 
 }
 
 test "Example: reverse" {
-    const debug = @import("std").debug;
     const sort  = @import("std").sort;
 
     var iarr = []i32 { 5, 3, 1, 2, 4 };
@@ -202,6 +200,6 @@ test "Example: reverse" {
     sort.sort_stable(i32, iarr[0..], comptime reverse(i32, default(i32)));
     sort.sort_stable(f32, farr[0..], comptime reverse(f32, default(f32)));
 
-    debug.assert(mem.eql(i32, iarr, []i32 { 5, 4, 3, 2, 1 }));
-    debug.assert(mem.eql(f32, farr, []f32 { 5, 4, 3, 2, 1 }));
+    assert(mem.eql(i32, iarr, []i32 { 5, 4, 3, 2, 1 }));
+    assert(mem.eql(f32, farr, []f32 { 5, 4, 3, 2, 1 }));
 }
