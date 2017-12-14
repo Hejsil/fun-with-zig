@@ -4,10 +4,7 @@ const TypeId = @import("builtin").TypeId;
 
 pub const Cmp = @import("std").math.Cmp;
 
-/// Get the default comparer function many standard types.
-/// 
-/// Example:
-///
+/// Get the default comparer function for many standard types.
 pub fn defaultComparerForType(comptime T: type) -> fn(&const T, &const T) -> Cmp {
     const Comparer = struct {
         fn compare(a: &const T, b: &const T) -> Cmp {
@@ -46,6 +43,7 @@ pub fn defaultComparerForType(comptime T: type) -> fn(&const T, &const T) -> Cmp
                     const cmp = defaultComparerForType(ValueType);
                     return cmp(ValueType(*a), ValueType(*b));
                 },
+                // TODO:
                 // When we have better reflection in Zig, then comparing structs is probably a
                 // good idea. For now, we have to compare the memory of the structs, which can
                 // give different results based on platform/optimization.
@@ -62,6 +60,22 @@ pub fn defaultComparerForType(comptime T: type) -> fn(&const T, &const T) -> Cmp
     };
 
     return Comparer.compare;
+}
+
+test "Example: defaultComparerForType" {
+    const debug = @import("std").debug;
+    const sort  = @import("std").sort;
+
+    var iarr = []i32 { 5, 3, 1, 2, 4 };
+    var farr = []f32 { 5, 3, 1, 2, 4 };
+
+    // Idk why "comptime" is needed
+    // ZIG STD LIBRARY BUG: sort.sort does not sort this example correctly
+    sort.sort_stable(i32, iarr[0..], comptime defaultComparerForType(i32));
+    sort.sort_stable(f32, farr[0..], comptime defaultComparerForType(f32));
+
+    debug.assert(mem.eql(i32, iarr, []i32 { 1, 2, 3, 4, 5 }));
+    debug.assert(mem.eql(f32, farr, []f32 { 1, 2, 3, 4, 5 }));
 }
 
 test "defaultComparerForType(u64)" {
@@ -151,7 +165,7 @@ test "defaultComparerForType([1]u8)" {
     assert(arrc("1", "0") == Cmp.Greater);
 }
 
-// How do we get if type is a slice?
+// How do we check if type is a slice?
 //test "defaultComparerForType([]const u8)" {
 //    const arrc = defaultComparerForType([]const u8);
 //    assert(arrc("1"[0..], "2"[0..]) == Cmp.Less);
@@ -159,18 +173,8 @@ test "defaultComparerForType([1]u8)" {
 //    // assert(arrc("1"[0..], "0"[0..]) == Cmp.Greater);
 //}
 
-// When we have better reflection in Zig, then comparing structs is probably a
-// good idea. For now, we have to compare the memory of the structs, which can
-// give different results based on platform/optimization.
-//test "defaultComparerForType(Struct)" {
-//    const Struct = packed struct { a: i32, b: u32 };
-//    const structc = defaultComparerForType(Struct);
-//    // assert(structc(Struct{ .a = 1, .b = 1 }, Struct{ .a =  0, .b = 0 }) == Cmp.Less);
-//    // assert(structc(Struct{ .a = 1, .b = 1 }, Struct{ .a =  1, .b = 1 }) == Cmp.Equal);
-//    // assert(structc(Struct{ .a = 1, .b = 1 }, Struct{ .a = -1, .b = 1 }) == Cmp.Greater);
-//    // Enum, Union, ErrorUnion
-//}
 
+/// Reverses the input compare function.
 pub fn reverseComparer(comptime T: type, comptime comparer: fn(&const T, &const T) -> Cmp) -> fn(&const T, &const T) -> Cmp {
     const Comparer = struct {
         fn compare(a: &const T, b: &const T) -> Cmp {
@@ -181,20 +185,18 @@ pub fn reverseComparer(comptime T: type, comptime comparer: fn(&const T, &const 
     return Comparer.compare;
 }
 
-
-pub fn main() -> %void {
-    const eql    = @import("std").mem.eql;
-    //const assert = @import("std").debug.assert;
-    const sort_stable = @import("std").sort.sort_stable;
+test "Example: reverseComparer" {
+    const debug = @import("std").debug;
+    const sort  = @import("std").sort;
 
     var iarr = []i32 { 5, 3, 1, 2, 4 };
     var farr = []f32 { 5, 3, 1, 2, 4 };
 
     // Idk why "comptime" is needed
-    sort_stable(i32, iarr[0..], comptime defaultComparerForType(i32));
-    sort_stable(f32, farr[0..], comptime defaultComparerForType(f32));
+    // ZIG STD LIBRARY BUG: sort.sort does not sort this example correctly
+    sort.sort_stable(i32, iarr[0..], comptime reverseComparer(i32, defaultComparerForType(i32)));
+    sort.sort_stable(f32, farr[0..], comptime reverseComparer(f32, defaultComparerForType(f32)));
 
-    for (iarr) |item| { @import("std").debug.warn("{}, ", item); }
-    assert(eql(i32, iarr, []i32 { 1, 2, 3, 4, 5 }));
-    assert(eql(f32, farr, []f32 { 1, 2, 3, 4, 5 }));
+    debug.assert(mem.eql(i32, iarr, []i32 { 5, 4, 3, 2, 1 }));
+    debug.assert(mem.eql(f32, farr, []f32 { 5, 4, 3, 2, 1 }));
 }
