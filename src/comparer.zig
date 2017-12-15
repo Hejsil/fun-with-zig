@@ -2,204 +2,131 @@ const mem    = @import("std").mem;
 const assert = @import("std").debug.assert;
 const TypeId = @import("builtin").TypeId;
 
-pub const Cmp = @import("std").math.Cmp;
-
-/// The type signature for a comparer function.
-pub fn Comparer(comptime T: type) -> type {
-    fn(&const T, &const T) -> Cmp
-}
-
-/// Get the default comparer function for many standard types.
-pub fn default(comptime T: type) -> Comparer(T) {
-    const ComparerStruct = struct {
-        fn compare(a: &const T, b: &const T) -> Cmp {
+/// Get the default less than function for many standard types.
+pub fn defaultLessThan(comptime T: type) -> fn(&const T, &const T) -> bool {
+    const LessThanStruct = struct {
+        fn lessThan(a: &const T, b: &const T) -> bool {
             switch (@typeId(T)) {
                 TypeId.Int, TypeId.Float, 
                 TypeId.FloatLiteral, TypeId.IntLiteral => {
-                    if (*a < *b) return Cmp.Less;
-                    if (*a > *b) return Cmp.Greater;
-                    return Cmp.Equal;
-                },
-                TypeId.Pointer => {
-                    const cmp = default(usize);
-                    return cmp(@ptrToInt(*a), @ptrToInt(*b));
+                    return *a < *b
                 },
                 TypeId.Bool => {
-                    const cmp = default(u8);
-                    return cmp(u8(*a), u8(*b));
+                    return u8(*a) < u8(*b);
                 },
                 TypeId.Nullable => {
-                    // Null is less that all none null values. Do we want this?
-                    if (*a == null and *b == null) return Cmp.Equal;
-                    var a_not_null = *a ?? return Cmp.Less;
-                    var b_not_null = *b ?? return Cmp.Greater;
+                    // Null is less than all none null values. Do we want this?
+                    if (*a == null and *b == null) return false;
+                    var a_not_null = *a ?? return true;
+                    var b_not_null = *b ?? return false;
 
-                    const cmp = default(T.Child);
-                    return cmp(a_not_null, b_not_null);
+                    const lt = defaultLessThan(T.Child);
+                    return lt(a_not_null, b_not_null);
                 },
-                TypeId.NullLiteral => {
-                    return Cmp.Equal;
-                },
-                TypeId.Array => {
-                    return mem.cmp(T.Child, *a, *b);
-                },
-                TypeId.Error => {
-                    const ValueType = @IntType(false, @sizeOf(T) * 8);
-                    const cmp = default(ValueType);
-                    return cmp(ValueType(*a), ValueType(*b));
-                },
-                // TODO:
-                // When we have better reflection in Zig, then comparing structs is probably a
-                // good idea. For now, we have to compare the memory of the structs, which can
-                // give different results based on platform/optimization.
-                //TypeId.Struct, TypeId.Enum, TypeId.Union, TypeId.ErrorUnion => {
-                //    @compileLog("T: ", T, @typeId(T));
-                //    return mem.cmp(u8, ([]const u8)(a[0..1]), ([]const u8)(b[0..1]));
-                //},
+                // ZIG STANDARD LIBRARY BUG: std.mem doesn't compile:
+                // std\mem.zig:6:21: error: no member named 'Cmp' in 'std\math\index.zig'
+                // pub const Cmp = math.Cmp;
+                // TypeId.Array => {
+                //     return mem.cmp(T.Child, *a, *b) == mem.Cmp.Less;
+                // },
+
+                // These types have no obviouse or useful default order, so we don't provide 
+                // a default less than for them.
+                // TypeId.Struct, TypeId.Enum, TypeId.Union, TypeId.ErrorUnion, TypeId.Error, 
+                // TypeId.NullLiteral, TypeId.Pointer
                 else => {
-                    @compileLog("Cannot get a default comparer for ", T);
-                    return Cmp.Equal;
+                    @compileLog("Cannot get a default less than for ", T);
+                    return false;
                 }
             }
         }
     };
 
-    return ComparerStruct.compare;
+    return LessThanStruct.lessThan;
 }
 
-test "Example: default" {
+test "Example: defaultLessThan" {
     const sort  = @import("std").sort;
 
     var iarr = []i32 { 5, 3, 1, 2, 4 };
     var farr = []f32 { 5, 3, 1, 2, 4 };
 
-    // Idk why "comptime" is needed
-    // ZIG STD LIBRARY BUG: sort.sort does not sort this example correctly
-    sort.sort_stable(i32, iarr[0..], comptime default(i32));
-    sort.sort_stable(f32, farr[0..], comptime default(f32));
+    sort.sort(i32, iarr[0..], comptime defaultLessThan(i32));
+    sort.sort(f32, farr[0..], comptime defaultLessThan(f32));
 
     assert(mem.eql(i32, iarr, []i32 { 1, 2, 3, 4, 5 }));
     assert(mem.eql(f32, farr, []f32 { 1, 2, 3, 4, 5 }));
 }
 
-test "default(u64)" {
-    const u64c = default(u64);
-    assert(u64c(1, 2) == Cmp.Less);
-    assert(u64c(1, 1) == Cmp.Equal);
-    assert(u64c(1, 0) == Cmp.Greater);
+test "defaultLessThan(u64)" {
+    const u64LessThan = defaultLessThan(u64);
+    assert( u64LessThan(1, 2));
+    assert(!u64LessThan(1, 1));
+    assert(!u64LessThan(1, 0));
 }
 
-test "default(i64)" {
-    const i64c = default(i64);
-    assert(i64c(0,  1) == Cmp.Less);
-    assert(i64c(0,  0) == Cmp.Equal);
-    assert(i64c(0, -1) == Cmp.Greater);
+test "defaultLessThan(i64)" {
+    const i64LessThan = defaultLessThan(i64);
+    assert( i64LessThan(0,  1));
+    assert(!i64LessThan(0,  0));
+    assert(!i64LessThan(0, -1));
 }
 
 // ZIG COMPILER BUG: zsh: segmentation fault (core dumped)  zig test main.zig
-//test "default(@typeOf(0))" {
-//    const ilitc = default(@typeOf(0));
-//    assert(ilitc(0,  1) == Cmp.Less);
-//    assert(ilitc(0,  0) == Cmp.Equal);
-//    assert(ilitc(0, -1) == Cmp.Greater);
+// https://github.com/zig-lang/zig/issues/623
+//test "defaultLessThan(@typeOf(0))" {
+//    const ilitLessThan = defaultLessThan(@typeOf(0));
+//    assert( ilitLessThan(0,  1));
+//    assert(!ilitLessThan(0,  0));
+//    assert(!ilitLessThan(0, -1));
 //}
 
-test "default(f64)" {
-    const if64c = default(f64);
-    assert(if64c(0,  1) == Cmp.Less);
-    assert(if64c(0,  0) == Cmp.Equal);
-    assert(if64c(0, -1) == Cmp.Greater);
+test "defaultLessThan(f64)" {
+    const f64LessThan = defaultLessThan(f64);
+    assert( f64LessThan(0,  1));
+    assert(!f64LessThan(0,  0));
+    assert(!f64LessThan(0, -1));
 }
 
 // ZIG COMPILER BUG: zsh: segmentation fault (core dumped)  zig test main.zig
+// https://github.com/zig-lang/zig/issues/623
 //test "default(@typeOf(0.0))" {
-//    const flitc = default(@typeOf(0.0));
-//    assert(flitc(0.0,  1.0) == Cmp.Less);
-//    assert(flitc(0.0,  0.0) == Cmp.Equal);
-//    assert(flitc(0.0, -1.0) == Cmp.Greater);
+//    const flitLessThan = defaultLessThan(@typeOf(0.0));
+//    assert( flitLessThan(0.0,  1.0));
+//    assert(!flitLessThan(0.0,  0.0));
+//    assert(!flitLessThan(0.0, -1.0));
 //}
 
-error TestError1;
-error TestError2;
-test "default(error)" {
-    const errc = default(error);
-    assert(errc(error.TestError1, error.TestError1) == Cmp.Equal);
-
-    // We don't really know what value they get assigned, so we can't assert for Greater or Less
-    _ = errc(error.TestError1, error.TestError2);
-}
-
-test "default(&i32)" {
-    var a : i32 = undefined;
-    var b : i32 = undefined;
-    const ptrc = default(&i32);
-    assert(ptrc(&a, &a) == Cmp.Equal);
-
-    // We don't really know what value they get assigned, so we can't assert for Greater or Less
-    _ = ptrc(&a, &b); 
-}
-
-test "default(bool)" {
-    const boolc = default(bool);
-    assert(boolc(false, true ) == Cmp.Less);
-    assert(boolc(true , true ) == Cmp.Equal);
-    assert(boolc(true , false) == Cmp.Greater);
+test "defaultLessThan(bool)" {
+    const boolLessThan = defaultLessThan(bool);
+    assert( boolLessThan(false, true ));
+    assert(!boolLessThan(true , true ));
+    assert(!boolLessThan(true , false));
 }
     
-test "default(?i64)" {
+test "defaultLessThan(?i64)" {
     const nul : ?i64 = null;
-    const nullablec = default(?i64);
-    assert(nullablec(0,  1) == Cmp.Less);
-    assert(nullablec(0,  0) == Cmp.Equal);
-    assert(nullablec(0, -1) == Cmp.Greater);
-    assert(nullablec(nul, 0  ) == Cmp.Less);
-    assert(nullablec(nul, nul) == Cmp.Equal);
-    assert(nullablec(0  , nul) == Cmp.Greater);
+    const nullableLessThan = defaultLessThan(?i64);
+    assert( nullableLessThan(0,  1));
+    assert(!nullableLessThan(0,  0));
+    assert(!nullableLessThan(0, -1));
+    assert( nullableLessThan(nul, 0  ));
+    assert(!nullableLessThan(nul, nul));
+    assert(!nullableLessThan(0  , nul));
 }
 
-test "default(@typeOf(null))" {
-    const nullc = default(@typeOf(null));
-    assert(nullc(&null, &null) == Cmp.Equal);
-}
-
-test "default([1]u8)" {
-    const arrc = default([1]u8);
-    assert(arrc("1", "2") == Cmp.Less);
-    assert(arrc("1", "1") == Cmp.Equal);
-    assert(arrc("1", "0") == Cmp.Greater);
-}
+// Se bug comment in defaultLessThan
+// test "defaultLessThan([1]u8)" {
+//     const arrLessThan = defaultLessThan([1]u8);
+//     assert( arrLessThan("1", "2"));
+//     assert(!arrLessThan("1", "1"));
+//     assert(!arrLessThan("1", "0"));
+// }
 
 // How do we check if type is a slice?
-//test "defaultComparerForType([]const u8)" {
-//    const arrc = defaultComparerForType([]const u8);
-//    assert(arrc("1"[0..], "2"[0..]) == Cmp.Less);
-//    // assert(arrc("1"[0..], "1"[0..]) == Cmp.Equal);
-//    // assert(arrc("1"[0..], "0"[0..]) == Cmp.Greater);
-//}
-
-
-/// Reverses the input compare function.
-pub fn reverse(comptime T: type, comptime comparer: Comparer(T)) -> Comparer(T) {
-    const ComparerStruct = struct {
-        fn compare(a: &const T, b: &const T) -> Cmp {
-            return comparer(b, a);
-        }
-    };
-
-    return ComparerStruct.compare;
-}
-
-test "Example: reverse" {
-    const sort  = @import("std").sort;
-
-    var iarr = []i32 { 5, 3, 1, 2, 4 };
-    var farr = []f32 { 5, 3, 1, 2, 4 };
-
-    // Idk why "comptime" is needed
-    // ZIG STD LIBRARY BUG: sort.sort does not sort this example correctly
-    sort.sort_stable(i32, iarr[0..], comptime reverse(i32, default(i32)));
-    sort.sort_stable(f32, farr[0..], comptime reverse(f32, default(f32)));
-
-    assert(mem.eql(i32, iarr, []i32 { 5, 4, 3, 2, 1 }));
-    assert(mem.eql(f32, farr, []f32 { 5, 4, 3, 2, 1 }));
-}
+// test "defaultLessThan([]const u8)" {
+//     const sliceLessThan = defaultLessThan([]const u8);
+//     assert( sliceLessThan("1", "2"));
+//     assert(!sliceLessThan("1", "1"));
+//     assert(!sliceLessThan("1", "0"));
+// }
