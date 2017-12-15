@@ -113,7 +113,7 @@ pub fn any() -> Parser(u8) {
     return Parser(u8).init(Func.parse);
 }
 
-test "any" {
+test "parser.any" {
     const input = "abc";
     const parser = comptime any();
     const res1 = parser.parse(input) %% unreachable;
@@ -139,7 +139,7 @@ pub fn char(comptime chr: u8) -> Parser(u8) {
     return Parser(u8).init(Func.parse);
 }
 
-test "char" {
+test "parser.char" {
     const input = "abc";
     const a_parser = comptime char('a');
     const b_parser = comptime char('b');
@@ -168,7 +168,7 @@ pub fn range(comptime from: u8, comptime to: u8) -> Parser(u8) {
     return Parser(u8).init(Func.parse);
 }
 
-test "range" {
+test "parser.range" {
     const input = "abc";
     const parser = comptime range('a', 'c');
     const res1 = parser.parse(input) %% unreachable;
@@ -182,7 +182,7 @@ test "range" {
 
 pub const digit = comptime range('0', '9');
 
-test "digit" {
+test "parser.digit" {
     const input = "123";
     const res1 = digit.parse(input) %% unreachable;
     const res2 = digit.parse(res1.rest) %% unreachable;
@@ -195,7 +195,7 @@ test "digit" {
 
 pub const lower = comptime range('a', 'z');
 
-test "lower" {
+test "parser.lower" {
     const input = "abc";
     const res1 = lower.parse(input) %% unreachable;
     const res2 = lower.parse(res1.rest) %% unreachable;
@@ -208,7 +208,7 @@ test "lower" {
 
 pub const upper = comptime range('A', 'Z');
 
-test "upper" {
+test "parser.upper" {
     const input = "ABC";
     const res1 = upper.parse(input) %% unreachable;
     const res2 = upper.parse(res1.rest) %% unreachable;
@@ -221,7 +221,7 @@ test "upper" {
 
 pub const alpha = comptime lower._or(upper);
 
-test "alpha" {
+test "parser.alpha" {
     const input = "abC";
     const res1 = alpha.parse(input) %% unreachable;
     const res2 = alpha.parse(res1.rest) %% unreachable;
@@ -236,7 +236,7 @@ pub const whitespace = comptime
     range('\t', '\r')    // \t,\n,\v,\f,\r
         ._or(char(' ')); // space
 
-test "whitespace" {
+test "parser.whitespace" {
     const input = " \t\n";
     const res1 = whitespace.parse(input) %% unreachable;
     const res2 = whitespace.parse(res1.rest) %% unreachable;
@@ -261,7 +261,7 @@ pub fn string(comptime str: []const u8) -> Parser([]const u8) {
     return Parser([]const u8).init(Func.parse);
 }
 
-test "string" {
+test "parser.string" {
     const input = "abcd";
     const ab_parser = comptime string("ab");
     const cd_parser = comptime string("cd");
@@ -272,7 +272,7 @@ test "string" {
     assert(res2.rest.len == 0);
 }
 
-test "Parser.as" {
+test "parser.Parser.as" {
     const input = "abc";
     const parser = comptime any().as(f32);
     const res1 = parser.parse(input) %% unreachable;
@@ -284,11 +284,11 @@ test "Parser.as" {
     assert(res3.rest.len == 0);
 }
 
-test "Parser.convert" {
+test "parser.Parser.convert" {
     // TODO: Write test
 }
 
-test "Parser._or" {
+test "parser.Parser._or" {
     const input = "abc";
     const parser = comptime char('a')
         ._or(char('b'))
@@ -303,7 +303,7 @@ test "Parser._or" {
     assert(res3.rest.len == 0);
 } 
 
-test "Parser._and" {
+test "parser.Parser._and" {
     const toFourString = struct {
         fn func(str: &const [2][2]u8) -> %[4]u8 {
             return *@ptrCast(&const [4]u8, str);
@@ -319,7 +319,7 @@ test "Parser._and" {
     assert(res.rest.len == 0);
 }
 
-test "Parser.repeat" {
+test "parser.Parser.repeat" {
     const input = "aaabbbccc";
     const a_parser = comptime char('a').repeat(3);
     const b_parser = comptime char('b').repeat(3);

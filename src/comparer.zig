@@ -46,7 +46,7 @@ pub fn defaultLessThan(comptime T: type) -> fn(&const T, &const T) -> bool {
     return LessThanStruct.lessThan;
 }
 
-test "Example: defaultLessThan" {
+test "Example: comparer.defaultLessThan" {
     const sort  = @import("std").sort;
 
     var iarr = []i32 { 5, 3, 1, 2, 4 };
@@ -59,14 +59,14 @@ test "Example: defaultLessThan" {
     assert(mem.eql(f32, farr, []f32 { 1, 2, 3, 4, 5 }));
 }
 
-test "defaultLessThan(u64)" {
+test "comparer.defaultLessThan(u64)" {
     const u64LessThan = defaultLessThan(u64);
     assert( u64LessThan(1, 2));
     assert(!u64LessThan(1, 1));
     assert(!u64LessThan(1, 0));
 }
 
-test "defaultLessThan(i64)" {
+test "comparer.defaultLessThan(i64)" {
     const i64LessThan = defaultLessThan(i64);
     assert( i64LessThan(0,  1));
     assert(!i64LessThan(0,  0));
@@ -82,7 +82,7 @@ test "defaultLessThan(i64)" {
 //    assert(!ilitLessThan(0, -1));
 //}
 
-test "defaultLessThan(f64)" {
+test "comparer.defaultLessThan(f64)" {
     const f64LessThan = defaultLessThan(f64);
     assert( f64LessThan(0,  1));
     assert(!f64LessThan(0,  0));
@@ -98,14 +98,14 @@ test "defaultLessThan(f64)" {
 //    assert(!flitLessThan(0.0, -1.0));
 //}
 
-test "defaultLessThan(bool)" {
+test "comparer.defaultLessThan(bool)" {
     const boolLessThan = defaultLessThan(bool);
     assert( boolLessThan(false, true ));
     assert(!boolLessThan(true , true ));
     assert(!boolLessThan(true , false));
 }
     
-test "defaultLessThan(?i64)" {
+test "comparer.defaultLessThan(?i64)" {
     const nul : ?i64 = null;
     const nullableLessThan = defaultLessThan(?i64);
     assert( nullableLessThan(0,  1));
@@ -137,7 +137,7 @@ fn toBytes(comptime T: type, value: &const T) -> []const u8 {
     return ([]const u8)(value[0..1]); 
 }
 
-test "toBytes" {
+test "comparer.toBytes" {
     const v : u32 = 0x12345678;
     // TODO: What about endianess
     assert(mem.eql(u8, toBytes(u32, v), []u8 { 0x78, 0x56, 0x34, 0x12 }));
@@ -205,7 +205,7 @@ pub fn defaultEqual(comptime T: type) -> fn(&const T, &const T) -> bool {
     return EqualStruct.equal;
 }
 
-test "defaultEqual(i32)" {
+test "comparer.defaultEqual(i32)" {
     const i32Equal = defaultEqual(i32);
     assert( i32Equal(1, 1));
     assert(!i32Equal(0, 1));
@@ -217,7 +217,7 @@ test "defaultEqual(i32)" {
 //    assert(!ilitEqual(0, 1));
 //}
 
-test "defaultEqual(f32)" {
+test "comparer.defaultEqual(f32)" {
     const f32Equal = defaultEqual(f32);
     assert( f32Equal(1, 1));
     assert(!f32Equal(0, 1));
@@ -229,7 +229,7 @@ test "defaultEqual(f32)" {
 //    assert(!flitEqual(0.0, 1.1));
 //}
 
-test "defaultEqual(bool)" {
+test "comparer.defaultEqual(bool)" {
     const boolEqual = defaultEqual(bool);
     assert( boolEqual(true, true));
     assert(!boolEqual(true, false));
@@ -237,13 +237,13 @@ test "defaultEqual(bool)" {
 
 error TestError1;
 error TestError2;
-test "defaultEqual(error)" {
+test "comparer.defaultEqual(error)" {
     const errorEqual = defaultEqual(error);
     assert( errorEqual(error.TestError1, error.TestError1));
     assert(!errorEqual(error.TestError2, error.TestError1));
 }
 
-test "defaultEqual(%i32)" {
+test "comparer.defaultEqual(%i32)" {
     const a : %i32 = 1; 
     const b : %i32 = error.TestError1;
     const errorEqual = defaultEqual(%i32);
@@ -255,7 +255,7 @@ test "defaultEqual(%i32)" {
     assert(!errorEqual(b, (%i32)(0)));
 }
 
-test "defaultEqual(&i32)" {
+test "comparer.defaultEqual(&i32)" {
     var a : i32 = undefined;
     var b : i32 = undefined;
     const errorEqual = defaultEqual(&i32);
@@ -263,7 +263,7 @@ test "defaultEqual(&i32)" {
     assert(!errorEqual(&&a, &&b));
 }
 
-test "defaultEqual([1]u8)" {
+test "comparer.defaultEqual([1]u8)" {
     // We ensure that we are testing arrays with different memory locations
     var a : [1]u8 = undefined; a[0] = '1';
     const arrayEqual = defaultEqual([1]u8);
@@ -281,7 +281,7 @@ test "defaultEqual([1]u8)" {
 //     assert(!sliceEqual(a, "0"));
 // }
 
-test "defaultEqual(struct)" {
+test "comparer.defaultEqual(struct)" {
     const Struct = struct { a: i64, b: f64 };
     const structEqual = defaultEqual(Struct);
     assert( structEqual(Struct{ .a = 1, .b = 1.1 }, Struct{ .a = 1, .b = 1.1 }));
