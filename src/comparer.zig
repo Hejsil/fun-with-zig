@@ -46,7 +46,7 @@ pub fn defaultLessThan(comptime T: type) -> fn(&const T, &const T) -> bool {
     return LessThanStruct.lessThan;
 }
 
-test "Example: comparer.defaultLessThan" {
+test "comparer.Example: comparer.defaultLessThan" {
     const sort  = @import("std").sort;
 
     var iarr = []i32 { 5, 3, 1, 2, 4 };

@@ -9,7 +9,7 @@ fn namespaceHelloWorld(comptime N: Namespace) -> %void {
 }
 
 // And we can now use this function as we would any other.
-test "namespaces.namespaceHelloWorld" {
+test "namespaces.Example: Namespace Hello World" {
     _ = namespaceHelloWorld(@import("std").io);
 
     // Ofc, if we pase a namespace that doesn't have the right public
@@ -24,7 +24,7 @@ test "namespaces.namespaceHelloWorld" {
 // I don't quite know how this is useful, yet, but we can do a few fun things.
 // We could write functions that takes a library as input, and then we can use
 // diffrent versions in different places :)
-test "namespaces.foolib" {
+test "namespaces.Example: foolib" {
     const foolibv1 = @import("foolibv1.zig");
     const foolibv2 = @import("foolibv2.zig");
 

@@ -16,7 +16,7 @@ fn secondHalf(s: []const u8) -> []const u8 {
     return s[s.len / 2..];
 }
 
-test "Example: functional.compose" {
+test "functional.Example: functional.compose" {
     const mem = @import("std").mem;
     const str = "12345678";
     const firstOneForth  = compose([]const u8, []const u8, []const u8, firstHalf, firstHalf);
@@ -40,7 +40,7 @@ pub fn reverseSimple(comptime T: type, comptime f: fn(T, T) -> T) -> fn(T, T) ->
     return reverse(T, T, f);
 }
 
-test "Example: functional.reverse" {
+test "functional.Example: functional.reverse" {
     const sort = @import("std").sort;
     const mem = @import("std").mem;
     const defaultLessThan = @import("comparer.zig").defaultLessThan;

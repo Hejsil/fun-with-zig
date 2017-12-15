@@ -335,6 +335,6 @@ test "parser.Parser.repeat" {
 }
 
 
-test "Example: Expression Parser" {
+test "parser.Example: Expression Parser" {
 
 }
