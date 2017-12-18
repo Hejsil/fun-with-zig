@@ -1,5 +1,6 @@
 const debug = @import("std").debug;
 const mem = @import("std").mem;
+const Allocator = mem.Allocator;
 const assert = debug.assert;
 
 const Position = struct {
@@ -72,16 +73,16 @@ pub fn Parser(comptime T: type) -> type {
     return struct {
         const Self = this;
 
-        parse: fn (&Input) -> %T,
+        parse: fn (&Allocator, &Input) -> %T,
 
-        pub fn init(parse: fn (&Input) -> %T) -> Self {
+        pub fn init(parse: fn (&Allocator, &Input) -> %T) -> Self {
             return Self { .parse = parse };
         }
 
         pub fn as(comptime self: &const Self, comptime K: type) -> Parser(K) {
             const Func = struct {
-                fn parse(in: &Input) -> %K {
-                    const res = %return self.parse(in);
+                fn parse(allocator: &Allocator, in: &Input) -> %K {
+                    const res = %return self.parse(allocator, in);
                     return K(res);
                 }
             };
@@ -91,8 +92,8 @@ pub fn Parser(comptime T: type) -> type {
 
         pub fn convert(comptime self: &const Self, comptime K: type, comptime converter: fn(&const T) -> %K) -> Parser(K) {
             const Func = struct {
-                fn parse(in: &Input) -> %K {
-                    const res = %return self.parse(in);
+                fn parse(allocator: &Allocator, in: &Input) -> %K {
+                    const res = %return self.parse(allocator, in);
                     return converter(res);
                 }
             };
@@ -102,12 +103,12 @@ pub fn Parser(comptime T: type) -> type {
 
         pub fn _or(comptime self: &const Self, comptime parser: Parser(T)) -> Parser(T) {
             const Func = struct {
-                fn parse(in: &Input) -> %T {
+                fn parse(allocator: &Allocator, in: &Input) -> %T {
                     const prev = in.pos;
 
-                    return self.parse(in) %% {
+                    return self.parse(allocator, in) %% {
                         in.pos = prev;
-                        parser.parse(in)
+                        parser.parse(allocator, in)
                     };
                 }
             };
@@ -121,9 +122,9 @@ pub fn Parser(comptime T: type) -> type {
         ///       you get arrays of arrays. See test "Parser._and".
         pub fn _and(comptime self: &const Self, comptime parser: Parser(T)) -> Parser([2]T) {
             const Func = struct {
-                fn parse(in: &Input) -> %[2]T {
-                    const res1 = %return self.parse(in);
-                    const res2 = %return parser.parse(in);
+                fn parse(allocator: &Allocator, in: &Input) -> %[2]T {
+                    const res1 = %return self.parse(allocator, in);
+                    const res2 = %return parser.parse(allocator, in);
                     return [2]T{ res1, res2 };
                 }
             };
@@ -134,11 +135,11 @@ pub fn Parser(comptime T: type) -> type {
         /// TODO: Same as _and
         pub fn repeat(comptime self: &const Self, comptime count: u64) -> Parser([count]T) {
             const Func = struct {
-                fn parse(in: &Input) -> %[count]T {
+                fn parse(allocator: &Allocator, in: &Input) -> %[count]T {
                     var results : [count]T = undefined;
 
                     for (results) |_, i| {
-                        results[i] = %return self.parse(in);
+                        results[i] = %return self.parse(allocator, in);
                     }
 
                     return results;
@@ -152,7 +153,7 @@ pub fn Parser(comptime T: type) -> type {
 
 pub fn any() -> Parser(u8) {
     const Func = struct {
-        fn parse(in: &Input) -> %u8 {
+        fn parse(allocator: &Allocator, in: &Input) -> %u8 {
             return in.eat() ?? error.ParserError;
         }
     };
@@ -163,9 +164,9 @@ pub fn any() -> Parser(u8) {
 test "parser.any" {
     const parser = comptime any();
     var input = Input.init("abc");
-    const res1 = parser.parse(&input) %% unreachable;
-    const res2 = parser.parse(&input) %% unreachable;
-    const res3 = parser.parse(&input) %% unreachable;
+    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = parser.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -174,7 +175,7 @@ test "parser.any" {
 
 pub fn char(comptime chr: u8) -> Parser(u8) {
     const Func = struct {
-        fn parse(in: &Input) -> %u8 {
+        fn parse(allocator: &Allocator, in: &Input) -> %u8 {
             const result = in.eat() ?? return error.ParserError;
 
             if (result != chr) return error.ParserError;
@@ -190,9 +191,9 @@ test "parser.char" {
     const b_parser = comptime char('b');
     const c_parser = comptime char('c');
     var input = Input.init("abc");
-    const res1 = a_parser.parse(&input) %% unreachable;
-    const res2 = b_parser.parse(&input) %% unreachable;
-    const res3 = c_parser.parse(&input) %% unreachable;
+    const res1 = a_parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = b_parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = c_parser.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -202,7 +203,7 @@ test "parser.char" {
 pub fn range(comptime from: u8, comptime to: u8) -> Parser(u8) {
     comptime assert(from <= to);
     const Func = struct {
-        fn parse(in: &Input) -> %u8 {
+        fn parse(allocator: &Allocator, in: &Input) -> %u8 {
             const result = in.eat() ?? return error.ParserError;
                            
             if (result < from or to < result) return error.ParserError;
@@ -216,9 +217,9 @@ pub fn range(comptime from: u8, comptime to: u8) -> Parser(u8) {
 test "parser.range" {
     const parser = comptime range('a', 'c');
     var input = Input.init("abc");
-    const res1 = parser.parse(&input) %% unreachable;
-    const res2 = parser.parse(&input) %% unreachable;
-    const res3 = parser.parse(&input) %% unreachable;
+    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = parser.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -229,9 +230,9 @@ pub const digit = comptime range('0', '9');
 
 test "parser.digit" {
     var input = Input.init("123");
-    const res1 = digit.parse(&input) %% unreachable;
-    const res2 = digit.parse(&input) %% unreachable;
-    const res3 = digit.parse(&input) %% unreachable;
+    const res1 = digit.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = digit.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = digit.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == '1');
     assert(res2 == '2');
     assert(res3 == '3');
@@ -242,9 +243,9 @@ pub const lower = comptime range('a', 'z');
 
 test "parser.lower" {
     var input = Input.init("abc");
-    const res1 = lower.parse(&input) %% unreachable;
-    const res2 = lower.parse(&input) %% unreachable;
-    const res3 = lower.parse(&input) %% unreachable;
+    const res1 = lower.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = lower.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = lower.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -255,9 +256,9 @@ pub const upper = comptime range('A', 'Z');
 
 test "parser.upper" {
     var input = Input.init("ABC");
-    const res1 = upper.parse(&input) %% unreachable;
-    const res2 = upper.parse(&input) %% unreachable;
-    const res3 = upper.parse(&input) %% unreachable;
+    const res1 = upper.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = upper.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = upper.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == 'A');
     assert(res2 == 'B');
     assert(res3 == 'C');
@@ -268,9 +269,9 @@ pub const alpha = comptime lower._or(upper);
 
 test "parser.alpha" {
     var input = Input.init("abC");
-    const res1 = alpha.parse(&input) %% unreachable;
-    const res2 = alpha.parse(&input) %% unreachable;
-    const res3 = alpha.parse(&input) %% unreachable;
+    const res1 = alpha.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = alpha.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = alpha.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'C');
@@ -283,9 +284,9 @@ pub const whitespace = comptime
 
 test "parser.whitespace" {
     var input = Input.init(" \t\n");
-    const res1 = whitespace.parse(&input) %% unreachable;
-    const res2 = whitespace.parse(&input) %% unreachable;
-    const res3 = whitespace.parse(&input) %% unreachable;
+    const res1 = whitespace.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = whitespace.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = whitespace.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == ' ');
     assert(res2 == '\t');
     assert(res3 == '\n');
@@ -294,7 +295,7 @@ test "parser.whitespace" {
 
 pub fn string(comptime str: []const u8) -> Parser([]const u8) {
     const Func = struct {
-        fn parse(in: &Input) -> %[]const u8 {
+        fn parse(allocator: &Allocator, in: &Input) -> %[]const u8 {
             const result = in.eatMany(str.len);
             if (!mem.eql(u8, result, str)) return error.ParserError;
             return result;
@@ -308,8 +309,8 @@ test "parser.string" {
     var input = Input.init("abcd");
     const ab_parser = comptime string("ab");
     const cd_parser = comptime string("cd");
-    const res1 = ab_parser.parse(&input) %% unreachable;
-    const res2 = cd_parser.parse(&input) %% unreachable;
+    const res1 = ab_parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = cd_parser.parse(debug.global_allocator, &input) %% unreachable;
     assert(mem.eql(u8, res1, "ab"));
     assert(mem.eql(u8, res2, "cd"));
     assert(input.pos.index == 4);
@@ -318,9 +319,9 @@ test "parser.string" {
 test "parser.Parser.as" {
     var input = Input.init("abc");
     const parser = comptime any().as(f32);
-    const res1 = parser.parse(&input) %% unreachable;
-    const res2 = parser.parse(&input) %% unreachable;
-    const res3 = parser.parse(&input) %% unreachable;
+    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = parser.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == f32('a'));
     assert(res2 == f32('b'));
     assert(res3 == f32('c'));
@@ -337,9 +338,9 @@ test "parser.Parser._or" {
         ._or(char('c'));
 
     var input = Input.init("abc");
-    const res1 = parser.parse(&input) %% unreachable;
-    const res2 = parser.parse(&input) %% unreachable;
-    const res3 = parser.parse(&input) %% unreachable;
+    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = parser.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -356,7 +357,7 @@ test "parser.Parser._and" {
     const parser = comptime ab_parser._and(cd_parser).convert([4]u8, toFoarString);
 
     var input = Input.init("abcd");
-    const res = parser.parse(&input) %% unreachable;
+    const res = parser.parse(debug.global_allocator, &input) %% unreachable;
     assert(mem.eql(u8, res, "abcd"));
     assert(input.pos.index == 4);
 }
@@ -367,9 +368,9 @@ test "parser.Parser.repeat" {
     const c_parser = comptime char('c').repeat(3);
 
     var input = Input.init("aaabbbccc");
-    const res1 = a_parser.parse(&input) %% unreachable;
-    const res2 = b_parser.parse(&input) %% unreachable;
-    const res3 = c_parser.parse(&input) %% unreachable;
+    const res1 = a_parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = b_parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = c_parser.parse(debug.global_allocator, &input) %% unreachable;
     assert(mem.eql(u8, res1, "aaa"));
     assert(mem.eql(u8, res2, "bbb"));
     assert(mem.eql(u8, res3, "ccc"));
