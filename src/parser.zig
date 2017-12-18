@@ -124,6 +124,7 @@ pub fn Parser(comptime T: type) -> type {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[2]T {
                     const res1 = %return self.parse(allocator, in);
+                    // TODO: Figure out, how we deallocate res1, in case parser.parse failes. 
                     const res2 = %return parser.parse(allocator, in);
                     return [2]T{ res1, res2 };
                 }
@@ -139,6 +140,7 @@ pub fn Parser(comptime T: type) -> type {
                     var results : [count]T = undefined;
 
                     for (results) |_, i| {
+                        // TODO: Figure out, how we deallocate results, in case self.parse failes.
                         results[i] = %return self.parse(allocator, in);
                     }
 
