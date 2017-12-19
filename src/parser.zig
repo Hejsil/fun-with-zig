@@ -3,7 +3,7 @@ const mem = @import("std").mem;
 const Allocator = mem.Allocator;
 const assert = debug.assert;
 
-const Position = struct {
+pub const Position = struct {
     const Self = this;
 
     index: u64,
@@ -19,7 +19,7 @@ const Position = struct {
     }
 };
 
-const Input = struct {
+pub const Input = struct {
     const Self = this;
 
     pos: Position,
