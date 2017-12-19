@@ -118,9 +118,9 @@ pub fn Parser(comptime T: type) -> type {
 
         /// TODO: Figure out if there are performance benifits to returning a slice of the input string
         ///       if the result is u8 or []const u8. The compiler might be able to optimize it away.
-        ///       It is however, sometimes a little anoying that if you combine mutible _ands, then
-        ///       you get arrays of arrays. See test "Parser._and".
-        pub fn _and(comptime self: &const Self, comptime parser: Parser(T)) -> Parser([]T) {
+        ///       It is however, sometimes a little anoying that if you combine mutible thens, then
+        ///       you get arrays of arrays. See test "Parser.then".
+        pub fn then(comptime self: &const Self, comptime parser: Parser(T)) -> Parser([]T) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
                     // TODO: Figure out, how we deallocate res1, in case parser.parse or allocator.alloc failes. 
@@ -138,7 +138,7 @@ pub fn Parser(comptime T: type) -> type {
             return Parser([]T).init(Func.parse);
         }
 
-        /// TODO: Same as _and
+        /// TODO: Same as then
         pub fn repeat(comptime self: &const Self, comptime count: u64) -> Parser([count]T) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[count]T {
@@ -373,10 +373,10 @@ fn flatten(allocator: &Allocator, slices: &const [][]u8) -> %[]u8 {
     return result;
 }
 
-test "parser.Parser._and" {
-    const ab_parser = comptime char('a')._and(char('b'));
-    const cd_parser = comptime char('c')._and(char('d'));
-    const parser = comptime ab_parser._and(cd_parser).convert([]u8, flatten);
+test "parser.Parser.then" {
+    const ab_parser = comptime char('a').then(char('b'));
+    const cd_parser = comptime char('c').then(char('d'));
+    const parser = comptime ab_parser.then(cd_parser).convert([]u8, flatten);
 
     var input = Input.init("abcd");
     const res = parser.parse(debug.global_allocator, &input) %% unreachable;
