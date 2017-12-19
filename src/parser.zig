@@ -90,11 +90,11 @@ pub fn Parser(comptime T: type) -> type {
             return Parser(K).init(Func.parse);
         }
 
-        pub fn convert(comptime self: &const Self, comptime K: type, comptime converter: fn(&const T) -> %K) -> Parser(K) {
+        pub fn convert(comptime self: &const Self, comptime K: type, comptime converter: fn(&Allocator, &const T) -> %K) -> Parser(K) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %K {
                     const res = %return self.parse(allocator, in);
-                    return converter(res);
+                    return converter(allocator, res);
                 }
             };
 
@@ -120,17 +120,22 @@ pub fn Parser(comptime T: type) -> type {
         ///       if the result is u8 or []const u8. The compiler might be able to optimize it away.
         ///       It is however, sometimes a little anoying that if you combine mutible _ands, then
         ///       you get arrays of arrays. See test "Parser._and".
-        pub fn _and(comptime self: &const Self, comptime parser: Parser(T)) -> Parser([2]T) {
+        pub fn _and(comptime self: &const Self, comptime parser: Parser(T)) -> Parser([]T) {
             const Func = struct {
-                fn parse(allocator: &Allocator, in: &Input) -> %[2]T {
+                fn parse(allocator: &Allocator, in: &Input) -> %[]T {
+                    // TODO: Figure out, how we deallocate res1, in case parser.parse or allocator.alloc failes. 
                     const res1 = %return self.parse(allocator, in);
-                    // TODO: Figure out, how we deallocate res1, in case parser.parse failes. 
                     const res2 = %return parser.parse(allocator, in);
-                    return [2]T{ res1, res2 };
+                    var result = %return allocator.alloc(T, 2);
+
+                    result[0] = res1;
+                    result[1] = res2;
+
+                    return result;
                 }
             };
 
-            return Parser([2]T).init(Func.parse);
+            return Parser([]T).init(Func.parse);
         }
 
         /// TODO: Same as _and
@@ -349,14 +354,29 @@ test "parser.Parser._or" {
     assert(input.pos.index == 3);
 } 
 
-fn toFoarString(str: &const [2][2]u8) -> %[4]u8 {
-    return *@ptrCast(&const [4]u8, str);
+fn flatten(allocator: &Allocator, slices: &const [][]u8) -> %[]u8 {
+    var len : usize = 0;
+    for (*slices) |slice| {
+        len += slice.len;
+    }
+
+    var result = %return allocator.alloc(u8, len);
+
+    var i : usize = 0;
+    for (*slices) |slice| {
+        for (slice) |item| {
+            result[i] = item;
+            i += 1;
+        }
+    }
+
+    return result;
 }
 
 test "parser.Parser._and" {
     const ab_parser = comptime char('a')._and(char('b'));
     const cd_parser = comptime char('c')._and(char('d'));
-    const parser = comptime ab_parser._and(cd_parser).convert([4]u8, toFoarString);
+    const parser = comptime ab_parser._and(cd_parser).convert([]u8, flatten);
 
     var input = Input.init("abcd");
     const res = parser.parse(debug.global_allocator, &input) %% unreachable;
