@@ -113,7 +113,7 @@ test "comparer.lessThan(?i64)" {
     assert(!nullableLessThan(0  , nul));
 }
 
-test "lessThan([1]u8)" {
+test "comparer.lessThan([1]u8)" {
     const arrLessThan = lessThan([1]u8);
     assert( arrLessThan("1", "2"));
     assert(!arrLessThan("1", "1"));
@@ -121,7 +121,7 @@ test "lessThan([1]u8)" {
 }
 
 // How do we check if type is a slice?
-// test "lessThan([]const u8)" {
+// test "comparer.lessThan([]const u8)" {
 //     const sliceLessThan = lessThan([]const u8);
 //     assert( sliceLessThan("1", "2"));
 //     assert(!sliceLessThan("1", "1"));
