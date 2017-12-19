@@ -1,7 +1,9 @@
-const debug = @import("std").debug;
-const mem = @import("std").mem;
-const Allocator = mem.Allocator;
+const std = @import("std");
+const debug = std.debug;
+const mem = std.mem;
 const assert = debug.assert;
+const Allocator = mem.Allocator;
+const ArrayList = std.ArrayList;
 
 pub const Position = struct {
     const Self = this;
@@ -139,21 +141,45 @@ pub fn Parser(comptime T: type) -> type {
         }
 
         /// TODO: Same as then
-        pub fn repeat(comptime self: &const Self, comptime count: u64) -> Parser([count]T) {
+        pub fn repeat(comptime self: &const Self, comptime count: u64) -> Parser([]T) {
             const Func = struct {
-                fn parse(allocator: &Allocator, in: &Input) -> %[count]T {
-                    var results : [count]T = undefined;
+                fn parse(allocator: &Allocator, in: &Input) -> %[]T {
+                    var results = %return allocator.alloc(T, count);
 
                     for (results) |_, i| {
-                        // TODO: Figure out, how we deallocate results, in case self.parse failes.
-                        results[i] = %return self.parse(allocator, in);
+                        // TODO: Figure out, how we deallocate already parsed results, if self.parse failes
+                        results[i] = self.parse(allocator, in) %% |err| {
+                            allocator.destroy(results);
+                            return err;
+                        };
                     }
 
                     return results;
                 }
             };
 
-            return Parser([count]T).init(Func.parse);
+            return Parser([]T).init(Func.parse);
+        }
+
+        pub fn many(comptime self: &const Self) -> Parser([]T) {
+            const Func = struct {
+                fn parse(allocator: &Allocator, in: &Input) -> %[]T {
+                    var results = ArrayList(T).init(allocator);
+
+                    var i : usize = 0;
+                    while (self.parse(allocator, in)) |value| : (i += 1) {
+                        // TODO: Figure out, how we deallocate already parsed results, results.append failes
+                        results.append(value) %% |err| {
+                            allocator.destroy(results);
+                            return err;
+                        };
+                    } else |err| { }
+
+                    return results.toOwnedSlice();
+                }
+            };
+
+            return Parser([]T).init(Func.parse);
         }
     };
 }
@@ -397,6 +423,15 @@ test "parser.Parser.repeat" {
     assert(mem.eql(u8, res2, "bbb"));
     assert(mem.eql(u8, res3, "ccc"));
     assert(input.pos.index == 9);
+}
+
+test "parser.Parser.many" {
+    const asParser = comptime char('a').many();
+
+    var input = Input.init("aaaaa");
+    const res = asParser.parse(debug.global_allocator, &input) %% unreachable;
+    assert(mem.eql(u8, res, "aaaaa"));
+    assert(input.pos.index == 5);
 }
 
 
