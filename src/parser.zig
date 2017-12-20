@@ -141,14 +141,14 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             }.parse;
         }
 
-        /// Converts ::T -> ::K using the provided converter.
+        /// Converts ::T -> ::K using the provided ::converter.
         /// ::converter is responsible for calling cleanup on ::T on failure or
         /// if ::K doesn't take ownership of ::T.
         pub fn convert(comptime self: &const Self, comptime K: type, comptime converter: Converter(T, K)) -> Parser(K) {
             return Parser(K).init(self.convertFunc(K, converter));
         }
 
-        /// Converts ::T -> ::K using the provided converter. ::convertWithCleanUp
+        /// Converts ::T -> ::K using the provided ::converter. ::convertWithCleanUp
         /// allowes the user to specify a ::newCleanUp function for ::K, so that
         /// furture parsers know how to clean up ::K on failure.
         /// ::converter is responsible for calling cleanup on ::T on failure or
@@ -298,7 +298,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
     };
 }
 
-/// A parser that maches any character.
+/// A parser that matches any character.
 pub fn any() -> Parser(u8) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %u8 {
@@ -321,7 +321,7 @@ test "parser.any" {
     assert(input.pos.index == 3);
 }
 
-/// A parser that maches a specific character.
+/// A parser that matches a specific character.
 pub fn char(comptime chr: u8) -> Parser(u8) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %u8 {
@@ -352,7 +352,7 @@ test "parser.char" {
     assert(input.pos.index == 3);
 }
 
-/// A parser that maches a characters where ::from <= c and c <= ::to.
+/// A parser that matches a characters where ::from <= c and c <= ::to.
 pub fn range(comptime from: u8, comptime to: u8) -> Parser(u8) {
     comptime assert(from <= to);
     const Func = struct {
@@ -382,7 +382,7 @@ test "parser.range" {
     assert(input.pos.index == 3);
 }
 
-/// A parser that maches a digit.
+/// A parser that matches a digit.
 pub const digit = comptime range('0', '9');
 
 test "parser.digit" {
@@ -396,7 +396,7 @@ test "parser.digit" {
     assert(input.pos.index == 3);
 }
 
-/// A parser that maches a lower case character.
+/// A parser that matches a lower case character.
 pub const lower = comptime range('a', 'z');
 
 test "parser.lower" {
@@ -410,7 +410,7 @@ test "parser.lower" {
     assert(input.pos.index == 3);
 }
 
-/// A parser that maches a upper case character.
+/// A parser that matches a upper case character.
 pub const upper = comptime range('A', 'Z');
 
 test "parser.upper" {
@@ -424,7 +424,7 @@ test "parser.upper" {
     assert(input.pos.index == 3);
 }
 
-/// A parser that maches an alphabetical character.
+/// A parser that matches an alphabetical character.
 pub const alpha = comptime lower._or(upper);
 
 test "parser.alpha" {
@@ -438,7 +438,7 @@ test "parser.alpha" {
     assert(input.pos.index == 3);
 }
 
-/// A parser that maches a whitespace.
+/// A parser that matches a whitespace.
 pub const whitespace = comptime 
     range('\t', '\r')    // \t,\n,\v,\f,\r
         ._or(char(' ')); // space
@@ -454,7 +454,7 @@ test "parser.whitespace" {
     assert(input.pos.index == 3);
 }
 
-/// A parser that maches a string.
+/// A parser that matches a string.
 pub fn string(comptime str: []const u8) -> Parser([]const u8) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %[]const u8 {
