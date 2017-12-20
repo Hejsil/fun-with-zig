@@ -549,7 +549,11 @@ test "parser.Parser.many" {
     assert(input.pos.index == 5);
 }
 
+test "parser.Parser.trim" {
+    const aParser = comptime char('a').trim();
 
-test "parser.Example: Expression Parser" {
-
+    var input = Input.init("   a       ");
+    const res = aParser.parse(debug.global_allocator, &input) %% unreachable;
+    assert(res == 'a');
+    assert(input.pos.index == 11);
 }
