@@ -69,20 +69,30 @@ pub const Input = struct {
     }
 };
 
-error ParserError;
+pub fn CleanUp(comptime T: type) -> type {
+    return fn(&const T, &Allocator);
+}
 
-/// A parser that, given an input string, will return ::T on success.
-pub fn Parser(comptime T: type) -> type {
-    const DefaultCleanUp = struct {
-        fn cleanUp(allocator: &Allocator, value: &const T) { }
-    };
+pub fn Converter(comptime T: type, comptime K: type) -> type {
+    return fn(&const T, &Allocator, CleanUp(T)) -> %K;
+}
 
-    return ParserWithCleanup(T, DefaultCleanUp.cleanUp);
+pub fn DefaultCleanUp(comptime T: type) -> CleanUp(T) {
+    return struct {
+        fn cleanUp(value: &const T, allocator: &Allocator) { }
+    }.cleanUp;
 }
 
 /// A parser that, given an input string, will return ::T on success.
+pub fn Parser(comptime T: type) -> type {
+    return ParserWithCleanup(T, comptime DefaultCleanUp(T));
+}
+
+error ParserError;
+
+/// A parser that, given an input string, will return ::T on success.
 /// This version can have a custom clean up function.
-pub fn ParserWithCleanup(comptime T: type, comptime clean: fn(&Allocator, &const T)) -> type {
+pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
     return struct {
         const Self = this;
         const cleanUp = clean;
@@ -105,13 +115,13 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: fn(&Allocator, &const
             return Parser(K).init(Func.parse);
         }
 
-        fn convertFunc(comptime self: &const Self, comptime K: type, comptime converter: fn(&Allocator, &const T) -> %K)
+        fn convertFunc(comptime self: &const Self, comptime K: type, comptime converter: Converter(T, K))
             -> fn(&Allocator, &Input) -> %K {
             return struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %K {
                     const res = %return self.parse(allocator, in);
-                    return converter(allocator, res) %% |err| {
-                        cleanUp(allocator, res);
+                    return converter(res, allocator, cleanUp) %% |err| {
+                        cleanUp(res, allocator);
                         return err;
                     };
                 }
@@ -119,28 +129,19 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: fn(&Allocator, &const
         }
 
         /// Converts ::T -> ::K using the provided converter.
-        /// If ::converter succeeds, then the parser assumes that the user handled
-        /// any cleanup of ::T.
-        /// If ::converter failes, then the parser assumes that ::T needs to be
-        /// cleaned up.
-        /// TODO: Is this to complicated? Should ::converter just always take ownership
-        ///       of ::T?
-        pub fn convert(comptime self: &const Self, comptime K: type, comptime converter: fn(&Allocator, &const T) -> %K) -> Parser(K) {
+        /// ::converter is responsible for calling cleanup on ::T on failure or
+        /// if ::K doesn't take ownership of ::T.
+        pub fn convert(comptime self: &const Self, comptime K: type, comptime converter: Converter(T, K)) -> Parser(K) {
             return Parser(K).init(self.convertFunc(K, converter));
         }
 
         /// Converts ::T -> ::K using the provided converter. ::convertWithCleanUp
         /// allowes the user to specify a ::newCleanUp function for ::K, so that
         /// furture parsers know how to clean up ::K on failure.
-        /// If ::converter succeeds, then the parser assumes that the user handled
-        /// any cleanup of ::T.
-        /// If ::converter failes, then the parser assumes that ::T needs to be
-        /// cleaned up.
-        /// TODO: Is this to complicated? Should ::converter just always take ownership
-        ///       of ::T?
-        pub fn convertWithCleanUp(comptime self: &const Self, comptime K: type, 
-            comptime converter: fn(&Allocator, &const T) -> %K, 
-            comptime newCleanUp: fn(&Allocator, &const K)) -> ParserWithCleanup(K, newCleanUp) {
+        /// ::converter is responsible for calling cleanup on ::T on failure or
+        /// if ::K doesn't take ownership of ::T.
+        pub fn convertWithCleanUp(comptime self: &const Self, comptime K: type, comptime converter: Converter(T, K), 
+            comptime newCleanUp: CleanUp(K)) -> ParserWithCleanup(K, newCleanUp) {
             return ParserWithCleanup(K, newCleanUp).init(self.convertFunc(K, converter));
         }
 
@@ -162,9 +163,9 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: fn(&Allocator, &const
         }
 
         
-        fn sliceCleanUp(allocator: &Allocator, values: &const []T) {
+        fn sliceCleanUp(values: &const []T, allocator: &Allocator) {
             for (*values) |value| {
-                cleanUp(allocator, value);
+                cleanUp(value, allocator);
             }
 
             allocator.destroy(*values);
@@ -175,12 +176,12 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: fn(&Allocator, &const
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
                     const res1 = %return self.parse(allocator, in);
-                    %defer cleanUp(allocator, res1);
+                    %defer cleanUp(res1, allocator);
 
                     const res2 = %return parser.parse(allocator, in);
-                    %defer cleanUp(allocator, res2);
+                    %defer cleanUp(res2, allocator);
 
-                    var result = %return allocator.alloc(T, 2);
+                    const result = %return allocator.alloc(T, 2);
 
                     result[0] = res1;
                     result[1] = res2;
@@ -201,7 +202,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: fn(&Allocator, &const
                     for (results) |_, i| {
                         results[i] = self.parse(allocator, in) %% |err| {
                             for (results[0..i]) |res| {
-                                cleanUp(allocator, res);
+                                cleanUp(res, allocator);
                             }
 
                             allocator.destroy(results);
@@ -225,7 +226,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: fn(&Allocator, &const
                     while (self.parse(allocator, in)) |value| {
                         results.append(value) %% |err| {
                             for (results.toSliceConst()) |res| {
-                                cleanUp(allocator, res);
+                                cleanUp(res, allocator);
                             }
 
                             results.deinit();
@@ -447,7 +448,9 @@ test "parser.Parser._or" {
     assert(input.pos.index == 3);
 } 
 
-fn flatten(allocator: &Allocator, slices: &const [][]u8) -> %[]u8 {
+fn flatten(slices: &const [][]u8, allocator: &Allocator, cleanUp: CleanUp([][]u8)) -> %[]u8 {
+    defer cleanUp(slices, allocator);
+
     var len : usize = 0;
     for (*slices) |slice| {
         len += slice.len;
