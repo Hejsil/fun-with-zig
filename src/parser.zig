@@ -270,6 +270,9 @@ test "parser.any" {
 pub fn char(comptime chr: u8) -> Parser(u8) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %u8 {
+            const prev = in.pos;
+            %defer in.pos = prev;
+
             const result = in.eat() ?? return error.ParserError;
 
             if (result != chr) return error.ParserError;
@@ -299,6 +302,9 @@ pub fn range(comptime from: u8, comptime to: u8) -> Parser(u8) {
     comptime assert(from <= to);
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %u8 {
+            const prev = in.pos;
+            %defer in.pos = prev;
+
             const result = in.eat() ?? return error.ParserError;
                            
             if (result < from or to < result) return error.ParserError;
@@ -397,6 +403,9 @@ test "parser.whitespace" {
 pub fn string(comptime str: []const u8) -> Parser([]const u8) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %[]const u8 {
+            const prev = in.pos;
+            %defer in.pos = prev;
+
             const result = in.eatMany(str.len);
             if (!mem.eql(u8, result, str)) return error.ParserError;
             return result;
