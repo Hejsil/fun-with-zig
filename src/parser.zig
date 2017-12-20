@@ -104,16 +104,6 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             return Self { .parse = parse };
         }
 
-        pub fn discard(comptime self: &const Self) -> Parser(void) {
-            const Func = struct {
-                fn parse(allocator: &Allocator, in: &Input) -> %void {
-                    cleanUp(%return self.parse(allocator, in), allocator);
-                }
-            };
-
-            return Parser(void).init(Func.parse);
-        }
-
         /// Type casts ::T -> ::K.
         pub fn as(comptime self: &const Self, comptime K: type) -> Parser(K) {
             const Func = struct {
@@ -275,26 +265,51 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             return ParserWithCleanup([]T, sliceCleanUp).init(Func.parse);
         }
 
-        pub fn trim(comptime self: &const Self) -> Self {
+        pub fn discard(comptime self: &const Self) -> Parser(void) {
+            const Func = struct {
+                fn parse(allocator: &Allocator, in: &Input) -> %void {
+                    cleanUp(%return self.parse(allocator, in), allocator);
+                }
+            };
+
+            return Parser(void).init(Func.parse);
+        }
+
+        pub fn voidBefore(comptime self: &const Self, comptime before: Parser(void)) -> Self {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %T {
                     const prev = in.pos;
                     %defer in.pos = prev;
 
-                    const trimmer = comptime whitespace.discard().many();
+                    _ = %return before.parse(allocator, in);
+                    const result = %return self.parse(allocator, in);
+                    return result;
+                }
+            };
 
-                     _ = %return trimmer.parse(allocator, in);
+            return Self.init(Func.parse);
+        }
 
-                    const res = %return self.parse(allocator, in);
-                    %defer cleanUp(res, allocator);
+        pub fn voidAfter(comptime self: &const Self, comptime before: Parser(void)) -> Self {
+            const Func = struct {
+                fn parse(allocator: &Allocator, in: &Input) -> %T {
+                    const prev = in.pos;
+                    %defer in.pos = prev;
 
-                    _ = %return trimmer.parse(allocator, in);
-                    return res;
+                    const result = %return self.parse(allocator, in);
+                    %defer cleanUp(result, allocator);
+
+                    _ = %return before.parse(allocator, in);
+                    return result;
                 }
     };
 
             return Self.init(Func.parse);
         }
+
+        pub fn trim(comptime self: &const Self) -> Self {
+            const trimmer = comptime whitespace.discard().many().discard();
+            return self.voidBefore(trimmer).voidAfter(trimmer);
 }
     };
 }
