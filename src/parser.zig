@@ -307,9 +307,13 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             return Self.init(Func.parse);
         }
 
+        pub fn voidSurround(comptime self: &const Self, comptime left: Parser(void), comptime right: Parser(void)) -> Self {
+            return self.voidBefore(left).voidAfter(right);
+        }
+
         pub fn trim(comptime self: &const Self) -> Self {
             const trimmer = comptime whitespace.discard().many().discard();
-            return self.voidBefore(trimmer).voidAfter(trimmer);
+            return self.voidSurround(trimmer, trimmer);
 }
     };
 }
