@@ -501,7 +501,7 @@ test "parser.string" {
     assert(input.pos.index == 4);
 }
 
-pub fn ref(comptime T: type, comptime cleanUp: CleanUp(T), refFunc: fn () -> &const ParserWithCleanup(T, cleanUp)) 
+pub fn ref(comptime T: type, comptime cleanUp: CleanUp(T), comptime refFunc: fn () -> &const ParserWithCleanup(T, cleanUp)) 
     -> ParserWithCleanup(T, cleanUp) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %T {
