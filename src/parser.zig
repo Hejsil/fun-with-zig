@@ -71,9 +71,21 @@ pub const Input = struct {
 
 error ParserError;
 
+/// A parser that, given an input string, will return ::T on success.
 pub fn Parser(comptime T: type) -> type {
+    const DefaultCleanUp = struct {
+        fn cleanUp(allocator: &Allocator, value: &const T) { }
+    };
+
+    return ParserWithCleanup(T, DefaultCleanUp.cleanUp);
+}
+
+/// A parser that, given an input string, will return ::T on success.
+/// This version can have a custom clean up function.
+pub fn ParserWithCleanup(comptime T: type, comptime clean: fn(&Allocator, &const T)) -> type {
     return struct {
         const Self = this;
+        const cleanUp = clean;
 
         parse: fn (&Allocator, &Input) -> %T,
 
@@ -81,6 +93,7 @@ pub fn Parser(comptime T: type) -> type {
             return Self { .parse = parse };
         }
 
+        /// Type casts ::T -> ::K.
         pub fn as(comptime self: &const Self, comptime K: type) -> Parser(K) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %K {
@@ -92,42 +105,81 @@ pub fn Parser(comptime T: type) -> type {
             return Parser(K).init(Func.parse);
         }
 
-        pub fn convert(comptime self: &const Self, comptime K: type, comptime converter: fn(&Allocator, &const T) -> %K) -> Parser(K) {
-            const Func = struct {
+        fn convertFunc(comptime self: &const Self, comptime K: type, comptime converter: fn(&Allocator, &const T) -> %K)
+            -> fn(&Allocator, &Input) -> %K {
+            return struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %K {
                     const res = %return self.parse(allocator, in);
-                    return converter(allocator, res);
+                    return converter(allocator, res) %% |err| {
+                        cleanUp(allocator, res);
+                        return err;
+                    };
                 }
-            };
-
-            return Parser(K).init(Func.parse);
+            }.parse;
         }
 
-        pub fn _or(comptime self: &const Self, comptime parser: Parser(T)) -> Parser(T) {
+        /// Converts ::T -> ::K using the provided converter.
+        /// If ::converter succeeds, then the parser assumes that the user handled
+        /// any cleanup of ::T.
+        /// If ::converter failes, then the parser assumes that ::T needs to be
+        /// cleaned up.
+        /// TODO: Is this to complicated? Should ::converter just always take ownership
+        ///       of ::T?
+        pub fn convert(comptime self: &const Self, comptime K: type, comptime converter: fn(&Allocator, &const T) -> %K) -> Parser(K) {
+            return Parser(K).init(self.convertFunc(K, converter));
+        }
+
+        /// Converts ::T -> ::K using the provided converter. ::convertWithCleanUp
+        /// allowes the user to specify a ::newCleanUp function for ::K, so that
+        /// furture parsers know how to clean up ::K on failure.
+        /// If ::converter succeeds, then the parser assumes that the user handled
+        /// any cleanup of ::T.
+        /// If ::converter failes, then the parser assumes that ::T needs to be
+        /// cleaned up.
+        /// TODO: Is this to complicated? Should ::converter just always take ownership
+        ///       of ::T?
+        pub fn convertWithCleanUp(comptime self: &const Self, comptime K: type, 
+            comptime converter: fn(&Allocator, &const T) -> %K, 
+            comptime newCleanUp: fn(&Allocator, &const K)) -> ParserWithCleanup(K, newCleanUp) {
+            return ParserWithCleanup(K, newCleanUp).init(self.convertFunc(K, converter));
+        }
+
+        /// Parse with ::self. If that succeeds, return, otherwise parse using
+        /// ::parser.
+        pub fn _or(comptime self: &const Self, comptime parser: ParserWithCleanup(T, cleanUp)) -> ParserWithCleanup(T, cleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %T {
                     const prev = in.pos;
 
                     return self.parse(allocator, in) %% {
                         in.pos = prev;
-                        parser.parse(allocator, in)
+                        return parser.parse(allocator, in);
                     };
                 }
             };
 
-            return Parser(T).init(Func.parse);
+            return ParserWithCleanup(T, cleanUp).init(Func.parse);
         }
 
-        /// TODO: Figure out if there are performance benifits to returning a slice of the input string
-        ///       if the result is u8 or []const u8. The compiler might be able to optimize it away.
-        ///       It is however, sometimes a little anoying that if you combine mutible thens, then
-        ///       you get arrays of arrays. See test "Parser.then".
-        pub fn then(comptime self: &const Self, comptime parser: Parser(T)) -> Parser([]T) {
+        
+        fn sliceCleanUp(allocator: &Allocator, values: &const []T) {
+            for (*values) |value| {
+                cleanUp(allocator, value);
+            }
+
+            allocator.destroy(*values);
+        }
+
+        /// Parse ::self, then ::parser and return the result of both.
+        pub fn then(comptime self: &const Self, comptime parser: ParserWithCleanup(T, cleanUp)) -> ParserWithCleanup([]T, sliceCleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
-                    // TODO: Figure out, how we deallocate res1, in case parser.parse or allocator.alloc failes. 
                     const res1 = %return self.parse(allocator, in);
+                    %defer cleanUp(allocator, res1);
+
                     const res2 = %return parser.parse(allocator, in);
+                    %defer cleanUp(allocator, res2);
+
                     var result = %return allocator.alloc(T, 2);
 
                     result[0] = res1;
@@ -137,18 +189,21 @@ pub fn Parser(comptime T: type) -> type {
                 }
             };
 
-            return Parser([]T).init(Func.parse);
+            return ParserWithCleanup([]T, sliceCleanUp).init(Func.parse);
         }
 
-        /// TODO: Same as then
-        pub fn repeat(comptime self: &const Self, comptime count: u64) -> Parser([]T) {
+        /// Parse ::self ::count times.
+        pub fn repeat(comptime self: &const Self, comptime count: u64) -> ParserWithCleanup([]T, sliceCleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
                     var results = %return allocator.alloc(T, count);
 
                     for (results) |_, i| {
-                        // TODO: Figure out, how we deallocate already parsed results, if self.parse failes
                         results[i] = self.parse(allocator, in) %% |err| {
+                            for (results[0..i]) |res| {
+                                cleanUp(allocator, res);
+                            }
+
                             allocator.destroy(results);
                             return err;
                         };
@@ -158,19 +213,22 @@ pub fn Parser(comptime T: type) -> type {
                 }
             };
 
-            return Parser([]T).init(Func.parse);
+            return ParserWithCleanup([]T, sliceCleanUp).init(Func.parse);
         }
 
-        pub fn many(comptime self: &const Self) -> Parser([]T) {
+        /// Parse ::self until it failed.
+        pub fn many(comptime self: &const Self) -> ParserWithCleanup([]T, sliceCleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
                     var results = ArrayList(T).init(allocator);
 
-                    var i : usize = 0;
-                    while (self.parse(allocator, in)) |value| : (i += 1) {
-                        // TODO: Figure out, how we deallocate already parsed results, results.append failes
+                    while (self.parse(allocator, in)) |value| {
                         results.append(value) %% |err| {
-                            allocator.destroy(results);
+                            for (results.toSliceConst()) |res| {
+                                cleanUp(allocator, res);
+                            }
+
+                            results.deinit();
                             return err;
                         };
                     } else |err| { }
@@ -179,11 +237,12 @@ pub fn Parser(comptime T: type) -> type {
                 }
             };
 
-            return Parser([]T).init(Func.parse);
+            return ParserWithCleanup([]T, sliceCleanUp).init(Func.parse);
         }
     };
 }
 
+/// A parser that maches any character.
 pub fn any() -> Parser(u8) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %u8 {
@@ -206,6 +265,7 @@ test "parser.any" {
     assert(input.pos.index == 3);
 }
 
+/// A parser that maches a specific character.
 pub fn char(comptime chr: u8) -> Parser(u8) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %u8 {
@@ -233,6 +293,7 @@ test "parser.char" {
     assert(input.pos.index == 3);
 }
 
+/// A parser that maches a characters where ::from <= c and c <= ::to.
 pub fn range(comptime from: u8, comptime to: u8) -> Parser(u8) {
     comptime assert(from <= to);
     const Func = struct {
@@ -259,6 +320,7 @@ test "parser.range" {
     assert(input.pos.index == 3);
 }
 
+/// A parser that maches a digit.
 pub const digit = comptime range('0', '9');
 
 test "parser.digit" {
@@ -272,6 +334,7 @@ test "parser.digit" {
     assert(input.pos.index == 3);
 }
 
+/// A parser that maches a lower case character.
 pub const lower = comptime range('a', 'z');
 
 test "parser.lower" {
@@ -285,6 +348,7 @@ test "parser.lower" {
     assert(input.pos.index == 3);
 }
 
+/// A parser that maches a upper case character.
 pub const upper = comptime range('A', 'Z');
 
 test "parser.upper" {
@@ -298,6 +362,7 @@ test "parser.upper" {
     assert(input.pos.index == 3);
 }
 
+/// A parser that maches an alphabetical character.
 pub const alpha = comptime lower._or(upper);
 
 test "parser.alpha" {
@@ -311,6 +376,7 @@ test "parser.alpha" {
     assert(input.pos.index == 3);
 }
 
+/// A parser that maches a whitespace.
 pub const whitespace = comptime 
     range('\t', '\r')    // \t,\n,\v,\f,\r
         ._or(char(' ')); // space
@@ -326,6 +392,7 @@ test "parser.whitespace" {
     assert(input.pos.index == 3);
 }
 
+/// A parser that maches a string.
 pub fn string(comptime str: []const u8) -> Parser([]const u8) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %[]const u8 {
