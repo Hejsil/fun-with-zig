@@ -271,6 +271,24 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
 
             return ParserWithCleanup([]T, sliceCleanUp).init(Func.parse);
         }
+
+        pub fn trim(comptime self: &const Self) -> ParserWithCleanup(T, cleanUp) {
+            const Func = struct {
+                fn parse(allocator: &Allocator, in: &Input) -> %T {
+                    const trimmer = comptime whitespace.discard().many();
+
+                     _ = %return trimmer.parse(allocator, in);
+
+                    const res = %return self.parse(allocator, in);
+                    %defer cleanUp(res, allocator);
+
+                    _ = %return trimmer.parse(allocator, in);
+                    return res;
+                }
+    };
+
+            return ParserWithCleanup(T, cleanUp).init(Func.parse);
+}
     };
 }
 
