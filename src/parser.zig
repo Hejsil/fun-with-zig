@@ -103,6 +103,16 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             return Self { .parse = parse };
         }
 
+        pub fn discard(comptime self: &const Self) -> Parser(void) {
+            const Func = struct {
+                fn parse(allocator: &Allocator, in: &Input) -> %void {
+                    cleanUp(%return self.parse(allocator, in), allocator);
+                }
+            };
+
+            return Parser(void).init(Func.parse);
+        }
+
         /// Type casts ::T -> ::K.
         pub fn as(comptime self: &const Self, comptime K: type) -> Parser(K) {
             const Func = struct {
@@ -164,11 +174,13 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
 
         
         fn sliceCleanUp(values: &const []T, allocator: &Allocator) {
+            if (@sizeOf(T) > 0) {
             for (*values) |value| {
                 cleanUp(value, allocator);
             }
 
             allocator.destroy(*values);
+        }
         }
 
         /// Parse ::self, then ::parser and return the result of both.
@@ -181,12 +193,15 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                     const res2 = %return parser.parse(allocator, in);
                     %defer cleanUp(res2, allocator);
 
+                    if (@sizeOf(T) > 0) {
                     const result = %return allocator.alloc(T, 2);
-
                     result[0] = res1;
                     result[1] = res2;
+                        return result;
+                    } else {
+                        return []T{};
+                    }
 
-                    return result;
                 }
             };
 
@@ -197,6 +212,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         pub fn repeat(comptime self: &const Self, comptime count: u64) -> ParserWithCleanup([]T, sliceCleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
+                    if (@sizeOf(T) > 0) {
                     var results = %return allocator.alloc(T, count);
 
                     for (results) |_, i| {
@@ -211,6 +227,14 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                     }
 
                     return results;
+                    } else {
+                        var i : usize = 0;
+                        while (i < count) : (i += 1) {
+                            _ = %return self.parse(allocator, in)
+                }
+
+                        return []T{};
+                    }
                 }
             };
 
@@ -221,6 +245,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         pub fn many(comptime self: &const Self) -> ParserWithCleanup([]T, sliceCleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
+                    if (@sizeOf(T) > 0) {
                     var results = ArrayList(T).init(allocator);
 
                     while (self.parse(allocator, in)) |value| {
@@ -235,6 +260,12 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                     } else |err| { }
 
                     return results.toOwnedSlice();
+                    } else {
+                        while (self.parse(allocator, in)) |value| {
+                        } else |err| { }
+
+                        return []T{};
+                    }
                 }
             };
 
