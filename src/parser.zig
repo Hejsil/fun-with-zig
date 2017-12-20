@@ -501,6 +501,16 @@ test "parser.string" {
     assert(input.pos.index == 4);
 }
 
+pub fn ref(comptime T: type, comptime cleanUp: CleanUp(T), refFunc: fn () -> &const ParserWithCleanup(T, cleanUp)) 
+    -> ParserWithCleanup(T, cleanUp) {
+    const Func = struct {
+        fn parse(allocator: &Allocator, in: &Input) -> %T {
+            return refFunc().parse(allocator, input);
+        }
+    };
+
+    return ParserWithCleanup(T, cleanUp).init(Func.parse);
+}
 test "parser.Parser.as" {
     var input = Input.init("abc");
     const parser = comptime any().as(f32);
