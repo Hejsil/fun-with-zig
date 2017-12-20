@@ -512,35 +512,15 @@ test "parser.Parser._or" {
     assert(input.pos.index == 3);
 } 
 
-fn flatten(slices: &const [][]u8, allocator: &Allocator, cleanUp: CleanUp([][]u8)) -> %[]u8 {
-    defer cleanUp(slices, allocator);
-
-    var len : usize = 0;
-    for (*slices) |slice| {
-        len += slice.len;
-    }
-
-    var result = %return allocator.alloc(u8, len);
-
-    var i : usize = 0;
-    for (*slices) |slice| {
-        for (slice) |item| {
-            result[i] = item;
-            i += 1;
-        }
-    }
-
-    return result;
-}
-
 test "parser.Parser.then" {
     const ab_parser = comptime char('a').then(char('b'));
     const cd_parser = comptime char('c').then(char('d'));
-    const parser = comptime ab_parser.then(cd_parser).convert([]u8, flatten);
+    const parser = comptime ab_parser.then(cd_parser);
 
     var input = Input.init("abcd");
     const res = parser.parse(debug.global_allocator, &input) %% unreachable;
-    assert(mem.eql(u8, res, "abcd"));
+    assert(mem.eql(u8, res[0], "ab"));
+    assert(mem.eql(u8, res[1], "cd"));
     assert(input.pos.index == 4);
 }
 
