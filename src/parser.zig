@@ -160,7 +160,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
 
         /// Parse with ::self. If that succeeds, return, otherwise parse using
         /// ::parser.
-        pub fn _or(comptime self: &const Self, comptime parser: ParserWithCleanup(T, cleanUp)) -> ParserWithCleanup(T, cleanUp) {
+        pub fn _or(comptime self: &const Self, comptime parser: Self) -> Self {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %T {
                     const prev = in.pos;
@@ -172,7 +172,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                 }
             };
 
-            return ParserWithCleanup(T, cleanUp).init(Func.parse);
+            return Self.init(Func.parse);
         }
 
         
@@ -187,7 +187,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         }
 
         /// Parse ::self, then ::parser and return the result of both.
-        pub fn then(comptime self: &const Self, comptime parser: ParserWithCleanup(T, cleanUp)) -> ParserWithCleanup([]T, sliceCleanUp) {
+        pub fn then(comptime self: &const Self, comptime parser: Self) -> ParserWithCleanup([]T, sliceCleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
                     const prev = in.pos;
@@ -275,7 +275,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             return ParserWithCleanup([]T, sliceCleanUp).init(Func.parse);
         }
 
-        pub fn trim(comptime self: &const Self) -> ParserWithCleanup(T, cleanUp) {
+        pub fn trim(comptime self: &const Self) -> Self {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %T {
                     const prev = in.pos;
@@ -293,7 +293,8 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                 }
     };
 
-            return ParserWithCleanup(T, cleanUp).init(Func.parse);
+            return Self.init(Func.parse);
+        }
 }
     };
 }
