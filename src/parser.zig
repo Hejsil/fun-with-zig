@@ -95,6 +95,7 @@ error ParserError;
 pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
     return struct {
         const Self = this;
+        const Returns = T;
         const cleanUp = clean;
 
         parse: fn (&Allocator, &Input) -> %T,
@@ -129,8 +130,10 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             -> fn(&Allocator, &Input) -> %K {
             return struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %K {
+                    const prev = in.pos;
                     const res = %return self.parse(allocator, in);
                     return converter(res, allocator, cleanUp) %% |err| {
+                        in.pos = prev;
                         cleanUp(res, allocator);
                         return err;
                     };
@@ -187,6 +190,9 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         pub fn then(comptime self: &const Self, comptime parser: ParserWithCleanup(T, cleanUp)) -> ParserWithCleanup([]T, sliceCleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
+                    const prev = in.pos;
+                    %defer in.pos = prev;
+
                     const res1 = %return self.parse(allocator, in);
                     %defer cleanUp(res1, allocator);
 
@@ -212,22 +218,21 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         pub fn repeat(comptime self: &const Self, comptime count: u64) -> ParserWithCleanup([]T, sliceCleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
+                    const prev = in.pos;
                     if (@sizeOf(T) > 0) {
                     var results = %return allocator.alloc(T, count);
 
                     for (results) |_, i| {
                         results[i] = self.parse(allocator, in) %% |err| {
-                            for (results[0..i]) |res| {
-                                cleanUp(res, allocator);
-                            }
-
-                            allocator.destroy(results);
+                                in.pos = prev;
+                                sliceCleanUp(results[0..i], allocator);
                             return err;
                         };
                     }
 
                     return results;
                     } else {
+                        %defer in.pos = prev;
                         var i : usize = 0;
                         while (i < count) : (i += 1) {
                             _ = %return self.parse(allocator, in)
@@ -246,15 +251,13 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
                     if (@sizeOf(T) > 0) {
+                        const prev = in.pos;
                     var results = ArrayList(T).init(allocator);
 
                     while (self.parse(allocator, in)) |value| {
                         results.append(value) %% |err| {
-                            for (results.toSliceConst()) |res| {
-                                cleanUp(res, allocator);
-                            }
-
-                            results.deinit();
+                                in.pos = prev;
+                                sliceCleanUp(results.toOwnedSlice(), allocator);
                             return err;
                         };
                     } else |err| { }
@@ -275,6 +278,9 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         pub fn trim(comptime self: &const Self) -> ParserWithCleanup(T, cleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %T {
+                    const prev = in.pos;
+                    %defer in.pos = prev;
+
                     const trimmer = comptime whitespace.discard().many();
 
                      _ = %return trimmer.parse(allocator, in);
