@@ -53,3 +53,23 @@ pub fn firstC(comptime TData: type, comptime TContext: type,
 
     return null;
 }
+
+pub fn count(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) -> bool) -> usize {
+    var res : usize = 0;
+    while (iter.next()) |item| {
+        if (predicate(item)) i += 1;
+    }
+
+    return res;
+}
+
+pub fn countC(comptime TData: type, comptime TContext: type, 
+    iter: &Iterator(&const TData), context: &const TContext,
+    predicate: fn(&const TData, &const TContext) -> bool) -> usize {
+    var res : usize = 0;
+    while (iter.next()) |item| {
+        if (predicate(item, context)) i += 1;
+    }
+
+    return res;
+}
