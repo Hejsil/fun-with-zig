@@ -1,5 +1,7 @@
-pub fn all(comptime T: type, data: []const T, predicate: fn(&const T) -> bool) -> bool {    
-    for (data) |*item| {
+const Iterator = @import("../iterator.zig").Iterator;
+
+pub fn all(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) -> bool) -> bool {  
+    while (iter.next()) |item| {
         if (!predicate(item)) return false;
     }
 
@@ -7,17 +9,17 @@ pub fn all(comptime T: type, data: []const T, predicate: fn(&const T) -> bool) -
 }
 
 pub fn allWithContext(comptime TData: type, comptime TContext: type, 
-    data: []const TData, context: &const TContext,
+    iter: &Iterator(&const TData), context: &const TContext,
     predicate: fn(&const TData, &const TContext) -> bool) -> bool {
-    for (data) |*item| {
+    while (iter.next()) |item| {
         if (!predicate(item, context)) return false;
     }
 
     return true;
 }
 
-pub fn any(comptime T: type, data: []const T, predicate: fn(&const T) -> bool) -> bool {    
-    for (data) |*item| {
+pub fn any(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) -> bool) -> bool {    
+    while (iter.next()) |item| {
         if (predicate(item)) return true;
     }
 
@@ -25,9 +27,9 @@ pub fn any(comptime T: type, data: []const T, predicate: fn(&const T) -> bool) -
 }
 
 pub fn anyWithContext(comptime TData: type, comptime TContext: type, 
-    data: []const TData, context: &const TContext,
+    iter: &Iterator(&const TData), context: &const TContext,
     predicate: fn(&const TData, &const TContext) -> bool) -> bool {
-    for (data) |*item| {
+    while (iter.next()) |item| {
         if (predicate(item, context)) return true;
     }
 

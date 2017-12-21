@@ -1,4 +1,5 @@
 use @import("search.zig");
+const SliceIter = @import("../iterator.zig").SliceIter;
 const debug = @import("std").debug;
 const assert = debug.assert;
 
@@ -72,9 +73,9 @@ test "algorithm.search.all" {
     for (allTests) |tst, i| {
         assertAllResult(tst.allAre,
             AllAnyResult {
-                .less    = all(i64, tst.values, isLessThan0),
-                .equal   = all(i64, tst.values, isEqual0),
-                .greater = all(i64, tst.values, isGreaterThan0)
+                .less    = all(i64, &SliceIter(i64).init(tst.values).iter, isLessThan0),
+                .equal   = all(i64, &SliceIter(i64).init(tst.values).iter, isEqual0),
+                .greater = all(i64, &SliceIter(i64).init(tst.values).iter, isGreaterThan0)
             });
     }
 }
@@ -87,9 +88,9 @@ test "algorithm.search.allWithContext" {
     for (allTests) |tst, i| {
         assertAllResult(tst.allAre,
             AllAnyResult {
-                .less    = allWithContext(i64, i64, tst.values, 0, lessThan),
-                .equal   = allWithContext(i64, i64, tst.values, 0, equal),
-                .greater = allWithContext(i64, i64, tst.values, 0, greaterThan)
+                .less    = allWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, lessThan),
+                .equal   = allWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, equal),
+                .greater = allWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, greaterThan)
             });
     }
 }
@@ -123,9 +124,9 @@ const anyTests = []AnyTest {
 
 test "algorithm.search.any" {
     for (anyTests) |tst, i| {
-        assert(tst.result.less    == any(i64, tst.values, isLessThan0));
-        assert(tst.result.equal   == any(i64, tst.values, isEqual0));
-        assert(tst.result.greater == any(i64, tst.values, isGreaterThan0));
+        assert(tst.result.less    == any(i64, &SliceIter(i64).init(tst.values).iter, isLessThan0));
+        assert(tst.result.equal   == any(i64, &SliceIter(i64).init(tst.values).iter, isEqual0));
+        assert(tst.result.greater == any(i64, &SliceIter(i64).init(tst.values).iter, isGreaterThan0));
     }
 
 }
@@ -136,8 +137,8 @@ test "algorithm.search.anyWithContext" {
     const greaterThan  = comptime @import("../functional.zig").reverse(&const i64, bool, lessThan);
 
     for (anyTests) |tst, i| {
-        assert(tst.result.less    == anyWithContext(i64, i64, tst.values, 0, lessThan));
-        assert(tst.result.equal   == anyWithContext(i64, i64, tst.values, 0, equal));
-        assert(tst.result.greater == anyWithContext(i64, i64, tst.values, 0, greaterThan));
+        assert(tst.result.less    == anyWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, lessThan));
+        assert(tst.result.equal   == anyWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, equal));
+        assert(tst.result.greater == anyWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, greaterThan));
     }
 }
