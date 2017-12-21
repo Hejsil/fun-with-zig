@@ -88,9 +88,9 @@ test "algorithm.search.allWithContext" {
     for (allTests) |tst, i| {
         assertAllResult(tst.allAre,
             AllAnyResult {
-                .less    = allWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, lessThan),
-                .equal   = allWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, equal),
-                .greater = allWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, greaterThan)
+                .less    = allC(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, lessThan),
+                .equal   = allC(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, equal),
+                .greater = allC(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, greaterThan)
             });
     }
 }
@@ -137,8 +137,8 @@ test "algorithm.search.anyWithContext" {
     const greaterThan  = comptime @import("../functional.zig").reverse(&const i64, bool, lessThan);
 
     for (anyTests) |tst, i| {
-        assert(tst.result.less    == anyWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, lessThan));
-        assert(tst.result.equal   == anyWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, equal));
-        assert(tst.result.greater == anyWithContext(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, greaterThan));
+        assert(tst.result.less    == anyC(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, lessThan));
+        assert(tst.result.equal   == anyC(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, equal));
+        assert(tst.result.greater == anyC(i64, i64, &SliceIter(i64).init(tst.values).iter, 0, greaterThan));
     }
 }

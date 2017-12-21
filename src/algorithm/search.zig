@@ -8,7 +8,7 @@ pub fn all(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) 
     return true;
 }
 
-pub fn allWithContext(comptime TData: type, comptime TContext: type, 
+pub fn allC(comptime TData: type, comptime TContext: type, 
     iter: &Iterator(&const TData), context: &const TContext,
     predicate: fn(&const TData, &const TContext) -> bool) -> bool {
     while (iter.next()) |item| {
@@ -26,7 +26,7 @@ pub fn any(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) 
     return false;
 }
 
-pub fn anyWithContext(comptime TData: type, comptime TContext: type, 
+pub fn anyC(comptime TData: type, comptime TContext: type, 
     iter: &Iterator(&const TData), context: &const TContext,
     predicate: fn(&const TData, &const TContext) -> bool) -> bool {
     while (iter.next()) |item| {
