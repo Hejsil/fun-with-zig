@@ -1,5 +1,5 @@
-const search = @import("search.zig");
+pub const search = @import("search.zig");
 
 test "algorithm" {
-    _ = @import("search.zig");
+    _ = @import("search.test.zig");
 }

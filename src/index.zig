@@ -8,6 +8,7 @@ test "fun-with-zig" {
     _ = @import("parser.examples.zig");
     _ = @import("functional.zig");
     _ = @import("comparer.zig");
+    _ = @import("iterator.zig");
     _ = @import("namespaces/namespaces.zig");
     _ = @import("algorithm/index.zig");
 }
