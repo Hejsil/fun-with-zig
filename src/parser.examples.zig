@@ -184,7 +184,7 @@ const Left = struct {
         return expr;
     }
 
-    const program     = expr.voidAfter(end());
+    const program     = expr.voidAfter(end);
     const expr        = comptime chainOperatorLeft(&Tree, u8, treeCleanUp, defaultCleanUp(u8), term, addSubChars, apply);
     const term        = comptime chainOperatorLeft(&Tree, u8, treeCleanUp, defaultCleanUp(u8), factor, mulDivChars, apply);
     const factor      = comptime number._or(
@@ -223,7 +223,7 @@ const Right = struct {
         return expr;
     }
 
-    const program     = expr.voidAfter(end());
+    const program     = expr.voidAfter(end);
     const expr        = comptime chainOperatorRight(&Tree, u8, treeCleanUp, defaultCleanUp(u8), term, addSubChars, apply);
     const term        = comptime chainOperatorRight(&Tree, u8, treeCleanUp, defaultCleanUp(u8), factor, mulDivChars, apply);
     const factor      = comptime number._or(

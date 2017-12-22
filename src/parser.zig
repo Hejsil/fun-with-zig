@@ -371,20 +371,16 @@ test "parser.any" {
     assert(input.pos.index == 3);
 }
 
-/// A parser that matches end of string.
-pub fn end() -> Parser(void) {
-    const Func = struct {
-        fn parse(allocator: &Allocator, in: &Input) -> %void {
-            const prev = in.pos;
-            _ = in.eat() ?? return;
+fn parseEnd(allocator: &Allocator, in: &Input) -> %void {
+    const prev = in.pos;
+    _ = in.eat() ?? return;
 
-            in.pos = prev;
-            return error.ParserError;
-        }
-    };
-
-    return Parser(void).init(Func.parse);
+    in.pos = prev;
+    return error.ParserError;
 }
+
+/// A parser that matches end of string.
+pub const end = Parser(void).init(parseEnd);
 
 /// A parser that matches a specific character.
 pub fn char(comptime chr: u8) -> Parser(u8) {
