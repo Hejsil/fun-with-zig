@@ -119,8 +119,8 @@ const FirstResult = struct {
     equal:   ?i64,
     greater: ?i64,
 
-    fn init(less: ?i64, equal: ?i64, greater: ?i64) -> Result {
-        return Result {
+    fn init(less: ?i64, eql: ?i64, greater: ?i64) -> FirstResult {
+        return FirstResult {
             .less = less,
             .equal = eql,
             .greater = greater,
@@ -130,15 +130,14 @@ const FirstResult = struct {
 
 const FirstCase = testing.TestCase([]const i64, FirstResult);
 const firstTests = []FirstCase {
-    // ZIG COMPILER BUG: zsh: abort (core dumped)  zig test src/index.zig
-    //FirstCase.init([]i64{  }  ,             FirstResult.init(null, null, null)),
-    //FirstCase.init([]i64{  1 },             FirstResult.init(null, null, 1   )),
-    //FirstCase.init([]i64{ -1 },             FirstResult.init(-1  , null, null)),
-    //FirstCase.init([]i64{  0 },             FirstResult.init(null, 0   , null)),
-    //FirstCase.init([]i64{  1,  2,  3,  4 }, FirstResult.init(null, null, 1   )),
-    //FirstCase.init([]i64{ -1, -2, -3, -4 }, FirstResult.init(-1  , null, null)),
-    //FirstCase.init([]i64{  0,  0,  0,  0 }, FirstResult.init(null, 0   , null)),
-    //FirstCase.init([]i64{ -1,  0,  1,  4 }, FirstResult.init(-1  , 0   , 1   ))
+    FirstCase.init([]i64{  }  ,             FirstResult.init(null, null, null)),
+    FirstCase.init([]i64{  1 },             FirstResult.init(null, null, 1   )),
+    FirstCase.init([]i64{ -1 },             FirstResult.init(-1  , null, null)),
+    FirstCase.init([]i64{  0 },             FirstResult.init(null, 0   , null)),
+    FirstCase.init([]i64{  1,  2,  3,  4 }, FirstResult.init(null, null, 1   )),
+    FirstCase.init([]i64{ -1, -2, -3, -4 }, FirstResult.init(-1  , null, null)),
+    FirstCase.init([]i64{  0,  0,  0,  0 }, FirstResult.init(null, 0   , null)),
+    FirstCase.init([]i64{ -1,  0,  1,  4 }, FirstResult.init(-1  , 0   , 1   ))
 };
 
 fn runFirstTest(in: &const []const i64) -> FirstResult {
