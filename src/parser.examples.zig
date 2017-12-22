@@ -122,9 +122,8 @@ fn printNode(self: &Visitor, node: &TreeNode) -> %void {
 }
 
 fn precedenceLeaf(self: &Visitor, leaf: i64) -> %void { }
-fn precedencePar(self: &Visitor, par: &Tree) -> %void { 
-    return self.visit(par);
-}
+fn precedencePar(self: &Visitor, par: &Tree) -> %void { return self.visit(par); }
+
 fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) -> %void {
     %return self.visit(node.left);
     switch (*node.left) {
@@ -146,6 +145,7 @@ fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) -> %void {
         else => {}
     }
 }
+
 fn precedenceNodeRight(self: &Visitor, node: &TreeNode) -> %void {
     %return self.visit(node.left);
     switch (*node.left) {
