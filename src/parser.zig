@@ -300,6 +300,20 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             return ParserWithCleanup([]T, sliceCleanUp).init(Func.parse);
         }
 
+        fn optionalCleanUp(value: &const ?T, allocator: &Allocator) {
+            if (*value) |v| { cleanUp(v, allocator); }
+        }
+
+        pub fn optional(comptime self: &const Self) -> ParserWithCleanup(?T, optionalCleanUp) {
+            const Func = struct {
+                fn parse(allocator: &Allocator, in: &Input) -> %?T {
+                    return self.parse(allocator, in) %% null;
+                }
+            };
+
+            return ParserWithCleanup(?T, optionalCleanUp).init(Func.parse);
+        }
+
         pub fn discard(comptime self: &const Self) -> Parser(void) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %void {
@@ -700,6 +714,17 @@ test "parser.Parser.atLeastOnce" {
             assert(false);
         } else |err| { }
     }
+}
+
+test "parser.Parser.optional" {
+    const parser = comptime char('a').optional();
+
+    var input = Input.init("ab");
+    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    assert(??res1 == 'a');
+    assert(res2 == null);
+    assert(input.pos.index == 1);
 }
 
 test "parser.Parser.trim" {
