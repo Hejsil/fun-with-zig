@@ -151,7 +151,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
 
         /// Parse with ::self. If that succeeds, return, otherwise parse using
         /// ::parser.
-        pub fn _or(comptime self: &const Self, comptime parser: Self) -> Self {
+        pub fn orElse(comptime self: &const Self, comptime parser: Self) -> Self {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %T {
                     const prev = in.pos;
@@ -486,7 +486,7 @@ test "parser.upper" {
 }
 
 /// A parser that matches an alphabetical character.
-pub const alpha = comptime lower._or(upper);
+pub const alpha = comptime lower.orElse(upper);
 
 test "parser.alpha" {
     var input = Input.init("abC");
@@ -502,7 +502,7 @@ test "parser.alpha" {
 /// A parser that matches a whitespace.
 pub const whitespace = comptime 
     range('\t', '\r')    // \t,\n,\v,\f,\r
-        ._or(char(' ')); // space
+        .orElse(char(' ')); // space
 
 test "parser.whitespace" {
     var input = Input.init(" \t\n");
@@ -633,10 +633,10 @@ test "parser.Parser.convert" {
     // TODO: Write test
 }
 
-test "parser.Parser._or" {
+test "parser.Parser.orElse" {
     const parser = comptime char('a')
-        ._or(char('b'))
-        ._or(char('c'));
+        .orElse(char('b'))
+        .orElse(char('c'));
 
     var input = Input.init("abc");
     const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;

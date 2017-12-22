@@ -176,8 +176,8 @@ const operators =
 ;
 
 const number      = comptime digit.atLeastOnce().trim().convertWithCleanUp(&Tree, toLeaf, treeCleanUp);
-const addSubChars = comptime char('+')._or(char('-')).trim();
-const mulDivChars = comptime char('*')._or(char('/')).trim();
+const addSubChars = comptime char('+').orElse(char('-')).trim();
+const mulDivChars = comptime char('*').orElse(char('/')).trim();
 
 const Left = struct {
     fn exprRef() -> &const ParserWithCleanup(&Tree, treeCleanUp) {
@@ -187,7 +187,7 @@ const Left = struct {
     const program     = expr.voidAfter(end);
     const expr        = comptime chainOperatorLeft(&Tree, u8, treeCleanUp, defaultCleanUp(u8), term, addSubChars, apply);
     const term        = comptime chainOperatorLeft(&Tree, u8, treeCleanUp, defaultCleanUp(u8), factor, mulDivChars, apply);
-    const factor      = comptime number._or(
+    const factor      = comptime number.orElse(
         ref(&Tree, treeCleanUp, exprRef)
             .voidSurround(
                 char('(').discard(),
@@ -226,7 +226,7 @@ const Right = struct {
     const program     = expr.voidAfter(end);
     const expr        = comptime chainOperatorRight(&Tree, u8, treeCleanUp, defaultCleanUp(u8), term, addSubChars, apply);
     const term        = comptime chainOperatorRight(&Tree, u8, treeCleanUp, defaultCleanUp(u8), factor, mulDivChars, apply);
-    const factor      = comptime number._or(
+    const factor      = comptime number.orElse(
         ref(&Tree, treeCleanUp, exprRef)
             .voidSurround(
                 char('(').discard(),
