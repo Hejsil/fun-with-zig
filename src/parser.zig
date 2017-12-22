@@ -169,11 +169,13 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         
         fn sliceCleanUp(values: &const []T, allocator: &Allocator) {
             if (@sizeOf(T) > 0) {
+                if (values.len > 0) {
             for (*values) |value| {
                 cleanUp(value, allocator);
             }
 
             allocator.destroy(*values);
+        }
         }
         }
 
