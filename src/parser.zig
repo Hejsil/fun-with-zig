@@ -225,7 +225,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                         %defer in.pos = prev;
                         var i : usize = 0;
                         while (i < count) : (i += 1) {
-                            _ = %return self.parse(allocator, in)
+                            _ = %return self.parse(allocator, in);
                 }
 
                         return []T{};
@@ -505,7 +505,7 @@ pub fn ref(comptime T: type, comptime cleanUp: CleanUp(T), comptime refFunc: fn 
     -> ParserWithCleanup(T, cleanUp) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %T {
-            return refFunc().parse(allocator, input);
+            return refFunc().parse(allocator, in);
         }
     };
 
