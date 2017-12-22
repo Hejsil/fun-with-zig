@@ -417,4 +417,216 @@ const ZigSyntax = struct {
     // Statement = LocalVarDecl ";" | Defer(Block) | Defer(Expression) ";" | BlockExpression(Block) | Expression ";" | ";"
     pub const statement =
         localVarDecl.then(char(';'));
+            .orElse(deferP(block))
+            .orElse(deferP(expression).then(char(';')))
+            .orElse(blockExpression(block))
+            .orElse(expression.then(char(';')))
+            .orElse(char(';'));
+
+    // TypeExpr = PrefixOpExpression | "var"
+    pub const typeExpr = 
+        prefixOpExpression.orElse(string("var"));
+
+    // BlockOrExpression = Block | Expression
+    pub const blockOrExpression =
+        block.orElse(expression);
+
+    // Expression = ReturnExpression | BreakExpression | AssignmentExpression
+    pub const expression = 
+        ReturnExpression
+            .orElse(breakExpression)
+            .orElse(assignmentExpression);
+            
+    // AsmExpression = "asm" option("volatile") "(" String option(AsmOutput) ")"
+    pub const asmExpression =
+        string("asm")
+            .then(string("volatile").optional())
+            .then(char('('))
+            .then(stringLit)
+            .then(asmOutput.optional())
+            .then(char(')'));
+
+    // AsmOutput = ":" list(AsmOutputItem, ",") option(AsmInput)
+    pub const asmOutput =
+        char(':')
+            .then(
+                asmOutputItem
+                    .then(char(','))
+                    .many()
+            )
+            .then(asmInput);
+
+    // AsmInput = ":" list(AsmInputItem, ",") option(AsmClobbers)
+    pub const asmInput =
+        char(':')
+            .then(
+                asmInputItem
+                    .then(char(','))
+                    .many()
+            )
+            .then(asmClobbers);
+
+    // AsmOutputItem = "[" Symbol "]" String "(" (Symbol | "-&gt;" TypeExpr) ")"
+    pub const asmOutputItem =
+        char('[')
+            .then(symbol)
+            .then(char(']'))
+            .then(stringLit)
+            .then(char('('))
+            .then(symbol.orElse(string("->").then(typeExpr)))
+            .then(char(')'));
+
+    // AsmInputItem = "[" Symbol "]" String "(" Expression ")"
+    pub const asmInputItem =
+        char('[')
+            .then(symbol)
+            .then(char(']'))
+            .then(stringLit)
+            .then(char('('))
+            .then(expression)
+            .then(char(')'));
+
+    // AsmClobbers= ":" list(String, ",")
+    pub const asmCloppers =
+        char(':').then(
+                stringLit
+                    .then(char(','))
+                    .many()
+            );
+
+    // UnwrapExpression = BoolOrExpression (UnwrapNullable | UnwrapError) | BoolOrExpression
+    pub const unwrapExpression =
+        BoolOrExpression
+            .then(
+                unwrapNullable
+                    .orElse(unwrapError)
+                    .optional()
+            );
+
+    // UnwrapNullable = "??" Expression
+    pub const unwrapNullable =
+        string("??").then(expression);
+        
+    // UnwrapError = "%%" option("|" Symbol "|") Expression
+    pub const unwrapError =
+        string("%%")
+            .then(
+                char('|')
+                    .then(symbol)
+                    .then(char('|'))
+                    .optional()
+            )
+            .then(expression);
+            
+    // AssignmentExpression = UnwrapExpression AssignmentOperator UnwrapExpression | UnwrapExpression
+    pub const assignmentExpression =
+        unwrapExpression
+            .then(assignmentOperator)
+            .then(unwrapExpression)
+            .orElse(UnwrapExpression);
+
+    // AssignmentOperator = "=" | "*=" | "/=" | "%=" | "+=" | "-=" | "&lt;&lt;=" | "&gt;&gt;=" | "&amp;=" | "^=" | "|=" | "*%=" | "+%=" | "-%="
+    pub const assigmentOperator =
+        char('=')
+            .orElse(string("*="))
+            .orElse(string("/="))
+            .orElse(string("%="))
+            .orElse(string("+="))
+            .orElse(string("-="))
+            .orElse(string("<<="))
+            .orElse(string(">>="))
+            .orElse(string("&="))
+            .orElse(string("^="))
+            .orElse(string("|="))
+            .orElse(string("*%="))
+            .orElse(string("+%="))
+            .orElse(string("-%="));
+
+    //  BlockExpression(body) = Block | IfExpression(body) | TryExpression(body) | TestExpression(body) | WhileExpression(body) | ForExpression(body) | SwitchExpression | CompTimeExpression(body)
+    pub fn blockExpression(comptime body: var) -> Parser(void) {
+        
+    }
+
+//CompTimeExpression(body) = "comptime" body
+//
+//SwitchExpression = "switch" "(" Expression ")" "{" many(SwitchProng) "}"
+//
+//SwitchProng = (list(SwitchItem, ",") | "else") "=&gt;" option("|" option("*") Symbol "|") Expression ","
+//
+//SwitchItem = Expression | (Expression "..." Expression)
+//
+//ForExpression(body) = option(Symbol ":") option("inline") "for" "(" Expression ")" option("|" option("*") Symbol option("," Symbol) "|") body option("else" BlockExpression(body))
+//
+//BoolOrExpression = BoolAndExpression "or" BoolOrExpression | BoolAndExpression
+//
+//ReturnExpression = option("%") "return" option(Expression)
+//
+//BreakExpression = "break" option(":" Symbol) option(Expression)
+//
+//Defer(body) = option("%") "defer" body
+//
+//IfExpression(body) = "if" "(" Expression ")" body option("else" BlockExpression(body))
+//
+//TryExpression(body) = "if" "(" Expression ")" option("|" option("*") Symbol "|") body "else" "|" Symbol "|" BlockExpression(body)
+//
+//TestExpression(body) = "if" "(" Expression ")" option("|" option("*") Symbol "|") body option("else" BlockExpression(body))
+//
+//WhileExpression(body) = option(Symbol ":") option("inline") "while" "(" Expression ")" option("|" option("*") Symbol "|") option(":" "(" Expression ")") body option("else" option("|" Symbol "|") BlockExpression(body))
+//
+//BoolAndExpression = ComparisonExpression "and" BoolAndExpression | ComparisonExpression
+//
+//ComparisonExpression = BinaryOrExpression ComparisonOperator BinaryOrExpression | BinaryOrExpression
+//
+//ComparisonOperator = "==" | "!=" | "&lt;" | "&gt;" | "&lt;=" | "&gt;="
+//
+//BinaryOrExpression = BinaryXorExpression "|" BinaryOrExpression | BinaryXorExpression
+//
+//BinaryXorExpression = BinaryAndExpression "^" BinaryXorExpression | BinaryAndExpression
+//
+//BinaryAndExpression = BitShiftExpression "&amp;" BinaryAndExpression | BitShiftExpression
+//
+//BitShiftExpression = AdditionExpression BitShiftOperator BitShiftExpression | AdditionExpression
+//
+//BitShiftOperator = "&lt;&lt;" | "&gt;&gt;" | "&lt;&lt;"
+//
+//AdditionExpression = MultiplyExpression AdditionOperator AdditionExpression | MultiplyExpression
+//
+//AdditionOperator = "+" | "-" | "++" | "+%" | "-%"
+//
+//MultiplyExpression = CurlySuffixExpression MultiplyOperator MultiplyExpression | CurlySuffixExpression
+//
+//CurlySuffixExpression = TypeExpr option(ContainerInitExpression)
+//
+//MultiplyOperator = "*" | "/" | "%" | "**" | "*%"
+//
+//PrefixOpExpression = PrefixOp PrefixOpExpression | SuffixOpExpression
+//
+//SuffixOpExpression = PrimaryExpression option(FnCallExpression | ArrayAccessExpression | FieldAccessExpression | SliceExpression)
+//
+//FieldAccessExpression = "." Symbol
+//
+//FnCallExpression = "(" list(Expression, ",") ")"
+//
+//ArrayAccessExpression = "[" Expression "]"
+//
+//SliceExpression = "[" Expression ".." option(Expression) "]"
+//
+//ContainerInitExpression = "{" ContainerInitBody "}"
+//
+//ContainerInitBody = list(StructLiteralField, ",") | list(Expression, ",")
+//
+//StructLiteralField = "." Symbol "=" Expression
+//
+//PrefixOp = "!" | "-" | "~" | "*" | ("&amp;" option("align" "(" Expression option(":" Integer ":" Integer) ")" ) option("const") option("volatile")) | "?" | "%" | "%%" | "??" | "-%"
+//
+//PrimaryExpression = Integer | Float | String | CharLiteral | KeywordLiteral | GroupedExpression | BlockExpression(BlockOrExpression) | Symbol | ("@" Symbol FnCallExpression) | ArrayType | FnProto | AsmExpression | ("error" "." Symbol) | ContainerDecl | ("continue" option(":" Symbol))
+//
+//ArrayType : "[" option(Expression) "]" option("align" "(" Expression option(":" Integer ":" Integer) ")")) option("const") option("volatile") TypeExpr
+//
+//GroupedExpression = "(" Expression ")"
+//
+//KeywordLiteral = "true" | "false" | "null" | "undefined" | "error" | "this" | "unreachable"
+//
+//ContainerDecl = option("extern" | "packed")
+//  ("struct" option(GroupedExpression) | "union" option("enum" option(GroupedExpression) | GroupedExpression) | ("enum" option(GroupedExpression)))
 };
