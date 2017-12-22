@@ -77,7 +77,7 @@ pub fn Converter(comptime T: type, comptime K: type) -> type {
     return fn(&const T, &Allocator, CleanUp(T)) -> %K;
 }
 
-pub fn DefaultCleanUp(comptime T: type) -> CleanUp(T) {
+pub fn defaultCleanUp(comptime T: type) -> CleanUp(T) {
     return struct {
         fn cleanUp(value: &const T, allocator: &Allocator) { }
     }.cleanUp;
@@ -85,7 +85,7 @@ pub fn DefaultCleanUp(comptime T: type) -> CleanUp(T) {
 
 /// A parser that, given an input string, will return ::T on success.
 pub fn Parser(comptime T: type) -> type {
-    return ParserWithCleanup(T, comptime DefaultCleanUp(T));
+    return ParserWithCleanup(T, comptime defaultCleanUp(T));
 }
 
 error ParserError;
