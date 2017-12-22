@@ -89,6 +89,7 @@ pub fn Parser(comptime T: type) -> type {
 }
 
 error ParserError;
+error EOS;
 
 /// A parser that, given an input string, will return ::T on success.
 /// This version can have a custom clean up function.
@@ -322,7 +323,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
 pub fn any() -> Parser(u8) {
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %u8 {
-            return in.eat() ?? error.ParserError;
+            return in.eat() ?? error.EOS;
         }
     };
 
@@ -341,6 +342,21 @@ test "parser.any" {
     assert(input.pos.index == 3);
 }
 
+/// A parser that matches end of string.
+pub fn end() -> Parser(void) {
+    const Func = struct {
+        fn parse(allocator: &Allocator, in: &Input) -> %void {
+            const prev = in.pos;
+            _ = in.eat() ?? return;
+
+            in.pos = prev;
+            return error.ParserError;
+        }
+    };
+
+    return Parser(void).init(Func.parse);
+}
+
 /// A parser that matches a specific character.
 pub fn char(comptime chr: u8) -> Parser(u8) {
     const Func = struct {
@@ -348,7 +364,7 @@ pub fn char(comptime chr: u8) -> Parser(u8) {
             const prev = in.pos;
             %defer in.pos = prev;
 
-            const result = in.eat() ?? return error.ParserError;
+            const result = in.eat() ?? return error.EOS;
 
             if (result != chr) return error.ParserError;
             return result;
@@ -380,7 +396,7 @@ pub fn range(comptime from: u8, comptime to: u8) -> Parser(u8) {
             const prev = in.pos;
             %defer in.pos = prev;
 
-            const result = in.eat() ?? return error.ParserError;
+            const result = in.eat() ?? return error.EOS;
                            
             if (result < from or to < result) return error.ParserError;
             return result;
