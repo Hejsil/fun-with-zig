@@ -264,7 +264,7 @@ const ZigSyntax = struct {
     // TopLevelItem = ErrorValueDecl | CompTimeExpression(Block) | TopLevelDecl | TestDecl
     pub const topLevelItem = 
         errorValueDecl
-            .orElse(CompTimeExpression)
+            .orElse(compTimeExpression(block))
             .orElse(TopLevelDecl)
             .orElse(TestDecl);
     
@@ -417,4 +417,9 @@ const ZigSyntax = struct {
     // Statement = LocalVarDecl ";" | Defer(Block) | Defer(Expression) ";" | BlockExpression(Block) | Expression ";" | ";"
     pub const statement =
         localVarDecl.then(char(';'));
+            .orElse(deferP(block))
+            .orElse(deferP(expression).then(char(';')))
+            .orElse(blockExpression(block))
+            .orElse(expression.then(char(';'))
+            .orElse(char(';'));
 };
