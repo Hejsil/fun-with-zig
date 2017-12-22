@@ -170,13 +170,13 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         fn sliceCleanUp(values: &const []T, allocator: &Allocator) {
             if (@sizeOf(T) > 0) {
                 if (values.len > 0) {
-            for (*values) |value| {
-                cleanUp(value, allocator);
+                    for (*values) |value| {
+                        cleanUp(value, allocator);
+                    }
+                    
+                    allocator.destroy(*values);
+                }
             }
-
-            allocator.destroy(*values);
-        }
-        }
         }
 
         /// Parse ::self, then ::parser and return the result of both.
@@ -193,9 +193,9 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                     %defer cleanUp(res2, allocator);
 
                     if (@sizeOf(T) > 0) {
-                    const result = %return allocator.alloc(T, 2);
-                    result[0] = res1;
-                    result[1] = res2;
+                        const result = %return allocator.alloc(T, 2);
+                        result[0] = res1;
+                        result[1] = res2;
                         return result;
                     } else {
                         return []T{};
@@ -213,23 +213,23 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
                     const prev = in.pos;
                     if (@sizeOf(T) > 0) {
-                    var results = %return allocator.alloc(T, count);
+                        var results = %return allocator.alloc(T, count);
 
-                    for (results) |_, i| {
-                        results[i] = self.parse(allocator, in) %% |err| {
-                                in.pos = prev;
-                                sliceCleanUp(results[0..i], allocator);
-                            return err;
-                        };
-                    }
+                        for (results) |_, i| {
+                            results[i] = self.parse(allocator, in) %% |err| {
+                                    in.pos = prev;
+                                    sliceCleanUp(results[0..i], allocator);
+                                return err;
+                            };
+                        }
 
-                    return results;
+                        return results;
                     } else {
                         %defer in.pos = prev;
                         var i : usize = 0;
                         while (i < count) : (i += 1) {
                             _ = %return self.parse(allocator, in);
-                }
+                        }
 
                         return []T{};
                     }
@@ -245,17 +245,17 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                 fn parse(allocator: &Allocator, in: &Input) -> %[]T {
                     if (@sizeOf(T) > 0) {
                         const prev = in.pos;
-                    var results = ArrayList(T).init(allocator);
+                        var results = ArrayList(T).init(allocator);
 
-                    while (self.parse(allocator, in)) |value| {
-                        results.append(value) %% |err| {
-                                in.pos = prev;
-                                sliceCleanUp(results.toOwnedSlice(), allocator);
-                            return err;
-                        };
-                    } else |err| { }
+                        while (self.parse(allocator, in)) |value| {
+                            results.append(value) %% |err| {
+                                    in.pos = prev;
+                                    sliceCleanUp(results.toOwnedSlice(), allocator);
+                                return err;
+                            };
+                        } else |err| { }
 
-                    return results.toOwnedSlice();
+                        return results.toOwnedSlice();
                     } else {
                         while (self.parse(allocator, in)) |value| {
                         } else |err| { }
@@ -315,7 +315,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                 fn parse(allocator: &Allocator, in: &Input) -> %T {
                     const prev = in.pos;
                     %defer in.pos = prev;
-
+                    
                     _ = %return before.parse(allocator, in);
                     const result = %return self.parse(allocator, in);
                     return result;
@@ -333,11 +333,11 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
 
                     const result = %return self.parse(allocator, in);
                     %defer cleanUp(result, allocator);
-
+                    
                     _ = %return before.parse(allocator, in);
                     return result;
                 }
-    };
+            };
 
             return Self.init(Func.parse);
         }
@@ -349,7 +349,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         pub fn trim(comptime self: &const Self) -> Self {
             const trimmer = comptime whitespace.discard().many().discard();
             return self.voidSurround(trimmer, trimmer);
-}
+        }
     };
 }
 
