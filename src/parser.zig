@@ -353,23 +353,18 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
     };
 }
 
-/// A parser that matches any character.
-pub fn any() -> Parser(u8) {
-    const Func = struct {
-        fn parse(allocator: &Allocator, in: &Input) -> %u8 {
-            return in.eat() ?? error.EOS;
-        }
-    };
-
-    return Parser(u8).init(Func.parse);
+fn parseAny(allocator: &Allocator, in: &Input) -> %u8 {
+    return in.eat() ?? error.EOS;
 }
 
+/// A parser that matches any character.
+pub const any = Parser(u8).init(parseAny);
+
 test "parser.any" {
-    const parser = comptime any();
     var input = Input.init("abc");
-    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = any.parse(debug.global_allocator, &input) %% unreachable;
+    const res2 = any.parse(debug.global_allocator, &input) %% unreachable;
+    const res3 = any.parse(debug.global_allocator, &input) %% unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -628,7 +623,7 @@ pub fn chainOperatorRight(comptime TOprand: type, comptime TOp: type,
 
 test "parser.Parser.as" {
     var input = Input.init("abc");
-    const parser = comptime any().as(f32);
+    const parser = comptime any.as(f32);
     const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
     const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
     const res3 = parser.parse(debug.global_allocator, &input) %% unreachable;
