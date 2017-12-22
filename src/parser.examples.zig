@@ -68,8 +68,6 @@ const Tree = union(enum) {
     }
 };
 
-
-
 fn toLeaf(str: &const []u8, allocator: &Allocator, cleanUp: CleanUp([]u8)) -> %&Tree {
     defer cleanUp(str, allocator);
 
@@ -98,25 +96,6 @@ fn apply(allocator: &Allocator, treeClean: CleanUp(&Tree), opClean: CleanUp(u8),
     return result;
 }
 
-fn exprRef() -> &const ParserWithCleanup(&Tree, treeCleanUp) {
-    return expr;
-}
-
-
-const program     = expr.voidAfter(end());
-const expr        = comptime chainOperatorLeft(&Tree, u8, treeCleanUp, defaultCleanUp(u8), term, addSubChars, apply);
-const term        = comptime chainOperatorLeft(&Tree, u8, treeCleanUp, defaultCleanUp(u8), factor, mulDivChars, apply);
-const factor      = comptime number._or(
-    ref(&Tree, treeCleanUp, exprRef)
-        .voidSurround(
-            char('(').discard(),
-            char(')').discard())
-        .convertWithCleanUp(&Tree, toPar, treeCleanUp)
-);
-const number      = comptime digit.atLeastOnce().trim().convertWithCleanUp(&Tree, toLeaf, treeCleanUp);
-const addSubChars = comptime char('+')._or(char('-')).trim();
-const mulDivChars = comptime char('*')._or(char('/')).trim();
-
 fn getPrecedence(symbol: u8) -> u8 {
     switch (symbol) {
         '+', '-' => return 4,
@@ -124,7 +103,6 @@ fn getPrecedence(symbol: u8) -> u8 {
         else => unreachable
     }
 }
-
 
 fn printLeaf(self: &Visitor, leaf: i64) -> %void {
     debug.warn("{}", leaf);
@@ -147,11 +125,32 @@ fn precedenceLeaf(self: &Visitor, leaf: i64) -> %void { }
 fn precedencePar(self: &Visitor, par: &Tree) -> %void { 
     return self.visit(par);
 }
-fn precedenceNode(self: &Visitor, node: &TreeNode) -> %void {
+fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) -> %void {
     %return self.visit(node.left);
     switch (*node.left) {
         Tree.Node => |*left| {
             if (getPrecedence(left.symbol) > getPrecedence(node.symbol)) {
+                return error.ParserError;
+            }
+        },
+        else => {}
+    }
+
+    %return self.visit(node.right);
+    switch (*node.right) {
+        Tree.Node => |*right| {
+            if (getPrecedence(right.symbol) >= getPrecedence(node.symbol)) {
+                return error.ParserError;
+            }
+        },
+        else => {}
+    }
+}
+fn precedenceNodeRight(self: &Visitor, node: &TreeNode) -> %void {
+    %return self.visit(node.left);
+    switch (*node.left) {
+        Tree.Node => |*left| {
+            if (getPrecedence(left.symbol) >= getPrecedence(node.symbol)) {
                 return error.ParserError;
             }
         },
@@ -176,14 +175,84 @@ const operators =
     \\1 - (1 + 2)
 ;
 
-test "parser.Example: Expression Parser" {
+const number      = comptime digit.atLeastOnce().trim().convertWithCleanUp(&Tree, toLeaf, treeCleanUp);
+const addSubChars = comptime char('+')._or(char('-')).trim();
+const mulDivChars = comptime char('*')._or(char('/')).trim();
+
+const Left = struct {
+    fn exprRef() -> &const ParserWithCleanup(&Tree, treeCleanUp) {
+        return expr;
+    }
+
+    const program     = expr.voidAfter(end());
+    const expr        = comptime chainOperatorLeft(&Tree, u8, treeCleanUp, defaultCleanUp(u8), term, addSubChars, apply);
+    const term        = comptime chainOperatorLeft(&Tree, u8, treeCleanUp, defaultCleanUp(u8), factor, mulDivChars, apply);
+    const factor      = comptime number._or(
+        ref(&Tree, treeCleanUp, exprRef)
+            .voidSurround(
+                char('(').discard(),
+                char(')').discard())
+            .convertWithCleanUp(&Tree, toPar, treeCleanUp)
+    );
+};
+
+test "parser.Example: Left Precedence Expression Parser" {
     var input = Input.init(operators);
-    var res = program.parse(debug.global_allocator, &input) %% unreachable;
-    var visitor = Visitor {
+    var res = Left.program.parse(debug.global_allocator, &input) %% unreachable;
+    var leftVisitor = Visitor {
         .visitLeaf = precedenceLeaf,
-        .visitNode = precedenceNode,
+        .visitNode = precedenceNodeLeft,
         .visitPar = precedencePar,
     };
     
-    visitor.visit(res) %% unreachable;
+    leftVisitor.visit(res) %% unreachable;
+
+    var rightVisitor = Visitor {
+        .visitLeaf = precedenceLeaf,
+        .visitNode = precedenceNodeRight,
+        .visitPar = precedencePar,
+    };
+    
+    if (rightVisitor.visit(res)) |v| {
+        unreachable;
+    } else |err| { }
+}
+
+const Right = struct {
+    fn exprRef() -> &const ParserWithCleanup(&Tree, treeCleanUp) {
+        return expr;
+    }
+
+    const program     = expr.voidAfter(end());
+    const expr        = comptime chainOperatorRight(&Tree, u8, treeCleanUp, defaultCleanUp(u8), term, addSubChars, apply);
+    const term        = comptime chainOperatorRight(&Tree, u8, treeCleanUp, defaultCleanUp(u8), factor, mulDivChars, apply);
+    const factor      = comptime number._or(
+        ref(&Tree, treeCleanUp, exprRef)
+            .voidSurround(
+                char('(').discard(),
+                char(')').discard())
+            .convertWithCleanUp(&Tree, toPar, treeCleanUp)
+    );
+};
+
+test "parser.Example: Right Precedence Expression Parser" {
+    var input = Input.init(operators);
+    var res = Right.program.parse(debug.global_allocator, &input) %% unreachable;
+    var leftVisitor = Visitor {
+        .visitLeaf = precedenceLeaf,
+        .visitNode = precedenceNodeLeft,
+        .visitPar = precedencePar,
+    };
+    
+    if (leftVisitor.visit(res)) |v| {
+        unreachable;
+    } else |err| { }
+
+    var rightVisitor = Visitor {
+        .visitLeaf = precedenceLeaf,
+        .visitNode = precedenceNodeRight,
+        .visitPar = precedencePar,
+    };
+    
+    rightVisitor.visit(res) %% unreachable;
 }
