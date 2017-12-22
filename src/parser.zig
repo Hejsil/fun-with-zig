@@ -561,6 +561,38 @@ pub fn ref(comptime T: type, comptime cleanUp: CleanUp(T), comptime refFunc: fn 
 
     return ParserWithCleanup(T, cleanUp).init(Func.parse);
 }
+
+pub fn chainOperatorLeft(comptime TOprand: type, comptime TOp: type,
+    comptime operandCleanup: CleanUp(TOprand), comptime opCleanUp: CleanUp(TOp),
+    comptime operand: ParserWithCleanup(TOprand, operandCleanup),
+    comptime operator: ParserWithCleanup(TOp, opCleanUp),
+    comptime apply: fn(&Allocator, CleanUp(TOprand), CleanUp(TOp), &const TOprand, &const TOprand, &const TOp) -> %TOprand) 
+    -> ParserWithCleanup(TOprand, operandCleanup) {
+    
+    const Func = struct {
+        fn parse(allocator: &Allocator, in: &Input) -> %TOprand {
+            const first = %return operand.parse(allocator, in);
+            return parseRest(allocator, in, first) %% first;
+        }
+
+        fn parseRest(allocator: &Allocator, in: &Input, first: TOprand) -> %TOprand {
+            const prev = in.pos;
+            %defer in.pos = prev;
+
+            const op = %return operator.parse(allocator, in);
+            %defer opCleanUp(op, allocator);
+
+            const right = %return operand.parse(allocator, in);
+            %defer operandCleanup(right, allocator);
+
+            const result = %return apply(allocator, operandCleanup, opCleanUp, first, right, op);
+            return parseRest(allocator, in, result) %% result;
+        }
+    };
+
+    return ParserWithCleanup(TOprand, operandCleanup).init(Func.parse);
+}
+
 test "parser.Parser.as" {
     var input = Input.init("abc");
     const parser = comptime any().as(f32);
