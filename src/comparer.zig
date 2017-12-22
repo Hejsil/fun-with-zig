@@ -10,7 +10,7 @@ pub fn lessThan(comptime T: type) -> fn(&const T, &const T) -> bool {
             switch (@typeId(T)) {
                 TypeId.Int, TypeId.Float, 
                 TypeId.FloatLiteral, TypeId.IntLiteral => {
-                    return *a < *b
+                    return *a < *b;
                 },
                 TypeId.Bool => {
                     return u8(*a) < u8(*b);
@@ -152,7 +152,7 @@ pub fn equal(comptime T: type) -> fn(&const T, &const T) -> bool {
                 TypeId.FloatLiteral, TypeId.IntLiteral,
                 TypeId.Error, TypeId.Pointer, 
                 TypeId.NullLiteral, TypeId.Type => {
-                    return *a == *b
+                    return *a == *b;
                 },
                 TypeId.Void => {
                     // Do we give compiler error here, or??

@@ -4,7 +4,7 @@ const assert = @import("std").debug.assert;
 pub fn compose(comptime X: type, comptime Y: type, comptime Z: type, 
     comptime f: fn(X) -> Y, comptime g: fn(Y) -> Z) -> fn(X) -> Z {
     return struct {
-        fn composed(x: X) -> Y { g(f(x)) }
+        fn composed(x: X) -> Y { return g(f(x)); }
     }.composed;
 }
 
