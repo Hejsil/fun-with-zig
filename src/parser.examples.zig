@@ -256,3 +256,165 @@ test "parser.Example: Right Precedence Expression Parser" {
     
     rightVisitor.visit(res) %% unreachable;
 }
+
+const ZigSyntax = struct {
+    // Root = many(TopLevelItem) EOF
+    pub const root = comptime topLevelItem.many().discard().then(end);
+
+    // TopLevelItem = ErrorValueDecl | CompTimeExpression(Block) | TopLevelDecl | TestDecl
+    pub const topLevelItem = 
+        errorValueDecl
+            .orElse(CompTimeExpression)
+            .orElse(TopLevelDecl)
+            .orElse(TestDecl);
+    
+    // TestDecl = "test" String Block
+    pub const testDecl = 
+        string("test")
+            .then(stringLit)
+            .then(block);
+
+    // TopLevelDecl = option("pub") (FnDef | ExternDecl | GlobalVarDecl | UseDecl)
+    pub const topLevelDecl =
+        string("pub").optional()
+            .then(
+                fnDef
+                    .orElse(externDecl)
+                    .orElse(globalVarDecl)
+                    .orElse(useDecl)
+            );
+
+    // ErrorValueDecl = "error" Symbol ";"
+    pub const errorValueDecl =
+        string("error")
+            .then(symbol)
+            .then(char(';'));
+
+    // GlobalVarDecl = option("export") VariableDeclaration ";"
+    pub const globalVarDecl =
+        string("error").optional()
+            .then(variableDeclaration)
+            .then(char(';'));
+
+    // LocalVarDecl = option("comptime") VariableDeclaration
+    pub const localVarDecl = 
+        string("comptime").optional()
+            .then(variableDeclaration);
+
+    // VariableDeclaration = ("var" | "const") Symbol option(":" TypeExpr) option("align" "(" Expression ")") option("section" "(" Expression ")") "=" Expression
+    pub const variableDeclaration =
+        string("var").orElse(string("const"))
+            .then(symbol)
+            .then(
+                char(':')
+                    .then(typeExpr)
+                    .optional()
+            )
+            .then(
+                string("align")
+                    .then(char('('))
+                    .then(expression)
+                    .then(char(')'))
+                    .optional()
+            )
+            .then(
+                string("section")
+                    .then(char('('))
+                    .then(expression)
+                    .then(char(')'))
+                    .optional()
+            )
+            .then(char('='))
+            .then(expression);
+
+    // ContainerMember = (ContainerField | FnDef | GlobalVarDecl)
+    pub const containerMember = 
+        containerField
+            .orElse(fnDef)
+            .orElse(globalVarDecl);
+
+    // UseDecl = "use" Expression ";"
+    pub const useDecl =
+        string("use")
+            .then(expression)
+            .then(char(';'));
+
+    // ExternDecl = "extern" option(String) (FnProto | VariableDeclaration) ";"
+    pub const externDecl =
+        string("extern")
+            .then(stringLit.optional())
+            .then(fnProto.orElse(variableDeclaration))
+            .then(char(';'));
+
+    // FnProto = option("coldcc" | "nakedcc" | "stdcallcc" | "extern") "fn" option(Symbol) ParamDeclList option("align" "(" Expression ")") option("section" "(" Expression ")") option("-&gt;" TypeExpr)
+    pub const fnProto =
+        string("coldcc")
+            .orElse(string("nakedcc"))
+            .orElse(string("stdcallcc"))
+            .orElse(string("extern"))
+            .then(string("fn"))
+            .then(symbol.optional())
+            .then(paramDeclList)
+            .then(
+                string("align")
+                    .then(char('('))
+                    .then(expression)
+                    .then(char(')'))
+                    .optional()
+            )
+            .then(
+                string("section")
+                    .then(char('('))
+                    .then(expression)
+                    .then(char(')'))
+                    .optional()
+            )
+            .then(
+                string("->")
+                    .then(typeExpr)
+                    .optional()
+            );
+
+    // FnDef = option("inline" | "export") FnProto Block
+    pub const fnDef = 
+        string("inline")
+            .orElse("export")
+            .optional()
+            .then(fnProto)
+            .then(block);
+
+    // ParamDeclList = "(" list(ParamDecl, ",") ")"
+    pub const paramDeclList =
+        char('(')
+            .then(
+                paramDecl
+                    .then(char(','))
+                    .many()
+            )
+            .then(char(')'));
+
+    // ParamDecl = option("noalias" | "comptime") option(Symbol ":") (TypeExpr | "...")
+    pub const paramDecl =
+        string("noalias")
+            .orElse(string("comptime"))
+            .optional()
+            .then(
+                symbol
+                    .then(char(':'))
+                    .optional()
+            )
+            .then(typeExpr.orElse(string("...")));
+
+    // Block = option(Symbol ":") "{" many(Statement) "}"
+    pub const block =
+        symbol
+            .then(char(':'))
+            .optional()
+            .then(char('{'))
+            .then(statement.many())
+            .then(char('}'));
+
+    // Statement = LocalVarDecl ";" | Defer(Block) | Defer(Expression) ";" | BlockExpression(Block) | Expression ";" | ";"
+    pub const statement =
+        localVarDecl.then(char(';'));
+};
