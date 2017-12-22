@@ -268,6 +268,38 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
             return ParserWithCleanup([]T, sliceCleanUp).init(Func.parse);
         }
 
+        /// Parse ::self once and then until it failed.
+        pub fn atLeastOnce(comptime self: &const Self) -> ParserWithCleanup([]T, sliceCleanUp) {
+            const Func = struct {
+                fn parse(allocator: &Allocator, in: &Input) -> %[]T {
+                    if (@sizeOf(T) > 0) {
+                        const prev = in.pos;
+                        var results = ArrayList(T).init(allocator);
+
+                        %defer {
+                            in.pos = prev;
+                            sliceCleanUp(results.toOwnedSlice(), allocator);
+                        }
+
+                        %return results.append(%return self.parse(allocator, in));
+
+                        while (self.parse(allocator, in)) |value| {
+                            %return results.append(value);
+                        } else |err| { }
+
+                        return results.toOwnedSlice();
+                    } else {
+                        while (self.parse(allocator, in)) |value| {
+                        } else |err| { }
+
+                        return []T{};
+                    }
+                }
+            };
+
+            return ParserWithCleanup([]T, sliceCleanUp).init(Func.parse);
+        }
+
         pub fn discard(comptime self: &const Self) -> Parser(void) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %void {
@@ -594,6 +626,24 @@ test "parser.Parser.many" {
     const res = asParser.parse(debug.global_allocator, &input) %% unreachable;
     assert(mem.eql(u8, res, "aaaaa"));
     assert(input.pos.index == 5);
+}
+
+test "parser.Parser.atLeastOnce" {
+    const asParser = comptime char('a').atLeastOnce();
+
+    {
+        var input = Input.init("aaaaa");
+        const res = asParser.parse(debug.global_allocator, &input) %% unreachable;
+        assert(mem.eql(u8, res, "aaaaa"));
+        assert(input.pos.index == 5);
+    }
+
+    {
+        var input = Input.init("");
+        if (asParser.parse(debug.global_allocator, &input)) |res| {
+            assert(false);
+        } else |err| { }
+    }
 }
 
 test "parser.Parser.trim" {
