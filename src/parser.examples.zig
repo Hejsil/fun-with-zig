@@ -544,8 +544,144 @@ const ZigSyntax = struct {
 
     //  BlockExpression(body) = Block | IfExpression(body) | TryExpression(body) | TestExpression(body) | WhileExpression(body) | ForExpression(body) | SwitchExpression | CompTimeExpression(body)
     pub fn blockExpression(comptime body: var) -> Parser(void) {
-        
+        return 
+            block.
+                .orElse(ifExpression(body))
+                .orElse(tryExpression(body))
+                .orElse(testExpression(body))
+                .orElse(whileExpression(body))
+                .orElse(forExpression(body))
+                .orElse(switchExpression)
+                .orElse(comparisonExpression(body));
     }
+
+    // CompTimeExpression(body) = "comptime" body
+    pub fn compTimeExpression(comptime body: var) -> Parser(void) {
+        return 
+            string("comptime")
+                .then(body);
+    }
+
+    // SwitchExpression = "switch" "(" Expression ")" "{" many(SwitchProng) "}"
+    pub const switchExpression =
+        string("string")
+            .then(char('('))
+            .then(expression)
+            .then(char(')'))
+            .then(char('{'))
+            .then(switchProng.many())
+            .then(char('}'));
+
+    // SwitchProng = (list(SwitchItem, ",") | "else") "=&gt;" option("|" option("*") Symbol "|") Expression ","
+    pub const switchProng =
+        switchItem.then(char(',')).many()
+            .orElse(string("else"))
+            .then(string("=>"))
+            .then(
+                char('|')
+                    .then(char('*').optional())
+                    .then(symbol)
+                    .then(char('|'))
+                    .optional();
+            )
+            .then(expression)
+            .then(char(','));
+
+    // SwitchItem = Expression | (Expression "..." Expression)
+    pub const switchItem =
+        expression
+            .orElse(
+                expression
+                    .then(string("..."))
+                    .then(expression)
+            );
+
+    // ForExpression(body) = option(Symbol ":") option("inline") "for" "(" Expression ")" option("|" option("*") Symbol option("," Symbol) "|") 
+    body option("else" BlockExpression(body))
+    pub fn forExpression(comptime body: var) -> Parser(void) {
+        return
+            symbol.then(char(':')).optional()
+                .then(string("inline").optional)
+                .then(string("for"))
+                .then(char('('))
+                .then(expression)
+                .then(char(')'))
+                .then(
+                    char('|')
+                        .then(char('*').optional())
+                        .then(symbol)
+                        .then(
+                            char(',')
+                                .then(symbol)
+                                .optional()
+                        )
+                        .then(char('|'))
+                        .optional();
+                )
+                .then(body)
+                .then(
+                    string("else")
+                        .then(blockExpression(body))
+                );
+    }
+
+    // BoolOrExpression = BoolAndExpression "or" BoolOrExpression | BoolAndExpression
+    pub const boolOrExpression =
+        BoolAndExpression
+            .then(string("or"))
+            .then(boolOrExpression)
+            .orElse(boolAndExpression);
+
+    // ReturnExpression = option("%") "return" option(Expression)
+    pub const returnExpression =
+        char('%').optional()
+            .then(string("return"))
+            .then(expression.optional());
+
+    // BreakExpression = "break" option(":" Symbol) option(Expression)
+    pub const breakExpression =
+        string("break")
+            .then(
+                char(':')
+                    .then(symbol)
+                    .optional()
+            )
+            .then(expression.optional());
+
+    // Defer(body) = option("%") "defer" body
+    pub fn deferP(comptime body: var) -> Parser(void) {
+        return
+            char('%').optional()
+                .then(string("defer"))
+                .then(body);
+    }
+
+    // IfExpression(body) = "if" "(" Expression ")" body option("else" BlockExpression(body))
+    pub fn ifExpression(comptime body: var) -> Parser(void) {
+        return
+            string("if")
+                .then(char('('))
+                .then(expression)
+                .then(char(')'))
+                .then(body)
+                .then(
+                    string("else")
+                        .then(blockExpression(body))
+                        .optional()
+                );
+    }
+
+//TryExpression(body) = "if" "(" Expression ")" option("|" option("*") Symbol "|") body "else" "|" Symbol "|" BlockExpression(body)
+//
+//TestExpression(body) = "if" "(" Expression ")" option("|" option("*") Symbol "|") body option("else" BlockExpression(body))
+//
+//WhileExpression(body) = option(Symbol ":") option("inline") "while" "(" Expression ")" option("|" option("*") Symbol "|") option(":" "(" Expression ")") body option("else" option("|" Symbol "|") BlockExpression(body))
+//
+//BoolAndExpression = ComparisonExpression "and" BoolAndExpression | ComparisonExpression
+//
+//ComparisonExpression = BinaryOrExpression ComparisonOperator BinaryOrExpression | BinaryOrExpression
+//
+//ComparisonOperator = "==" | "!=" | "&lt;" | "&gt;" | "&lt;=" | "&gt;="
 
 //CompTimeExpression(body) = "comptime" body
 //
@@ -578,6 +714,10 @@ const ZigSyntax = struct {
 //ComparisonExpression = BinaryOrExpression ComparisonOperator BinaryOrExpression | BinaryOrExpression
 //
 //ComparisonOperator = "==" | "!=" | "&lt;" | "&gt;" | "&lt;=" | "&gt;="
+//
+//BinaryOrExpression = BinaryXorExpression "|" BinaryOrExpression | BinaryXorExpression
+//
+//BinaryXorExpression = BinaryAndExpression "^" BinaryXorExpression | BinaryAndExpression
 //
 //BinaryOrExpression = BinaryXorExpression "|" BinaryOrExpression | BinaryXorExpression
 //
