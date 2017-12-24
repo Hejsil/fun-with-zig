@@ -1149,4 +1149,29 @@ const ZigSyntax = struct {
                             .then(groupedExpression.optional())
                     )
             );
+
+
+    // TOKENS:
+    pub const symbol =
+        alpha.discard()
+            .then(
+                alpha
+                    .orElse(digit)
+                    .many()
+                    .discard()
+            )
+            .discard()
+            .trim();
+
+    // These exists in the parser lib
+    // Alpha = "a" .. "z" | "A" .. "Z"
+    // Digit = "0" .. "9"
 };
+
+// zig: /home/jimmi/Documents/zig/src/analyze.cpp:521: TypeTableEntry* get_error_type(CodeGen*, TypeTableEntry*): Assertion `child_type->type_ref' failed.
+// Aborted (core dumped)
+// Uncomment this and run 'zig test src/index.zig'
+// test "parser.Example: Zig Parser" {
+//     var input = Input.init("const t = 0;");
+//     var res = ZigSyntax.root.parse(debug.global_allocator, &input) %% unreachable;
+// }
