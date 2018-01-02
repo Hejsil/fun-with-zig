@@ -1,6 +1,6 @@
-const debug = @import("std").debug;
-const assert = debug.assert;
 const equal = @import("comparer.zig").equal;
+
+error TestFailed;
 
 pub fn TestCase(comptime TIn: type, comptime TOut: type) -> type {
     return struct {
@@ -16,12 +16,14 @@ pub fn TestCase(comptime TIn: type, comptime TOut: type) -> type {
             };
         }
 
-        pub fn runDefaultEql(self: &const Self, func: fn(&const TIn) -> TOut) {
-            self.run(func, equal(TOut));
+        pub fn runDefaultEql(self: &const Self, func: fn(&const TIn) -> %TOut) -> %void {
+            return self.run(func, equal(TOut));
         }
 
-        pub fn run(self: &const Self, func: fn(&const TIn) -> TOut, eql: fn(&const TOut, &const TOut) -> bool) {
-            assert(eql(func(&self.in), &self.out));
+        pub fn run(self: &const Self, func: fn(&const TIn) -> %TOut, eql: fn(&const TOut, &const TOut) -> bool) -> %void {
+            if (!eql(%return func(&self.in), &self.out)) {
+                return error.TestFailed;
+            }
         }
     };
 }

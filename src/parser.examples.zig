@@ -257,16 +257,21 @@ test "parser.Example: Right Precedence Expression Parser" {
     rightVisitor.visit(res) %% unreachable;
 }
 
+
+/// TODO: This is not done. As long as nothing is used from inside ZigSyntax, all tests
+///       should still compile
 const ZigSyntax = struct {
     // Root = many(TopLevelItem) EOF
-    pub const root = comptime topLevelItem.many().discard().then(end);
+    pub const root = comptime 
+        topLevelItem.many()
+            .then(end);
 
     // TopLevelItem = ErrorValueDecl | CompTimeExpression(Block) | TopLevelDecl | TestDecl
     pub const topLevelItem = 
         errorValueDecl
-            .orElse(compTimeExpression(block))
-            .orElse(TopLevelDecl)
-            .orElse(TestDecl);
+            .orElse(compTimeExpression)
+            .orElse(topLevelDecl)
+            .orElse(testDecl);
     
     // TestDecl = "test" String Block
     pub const testDecl = 
@@ -416,10 +421,757 @@ const ZigSyntax = struct {
 
     // Statement = LocalVarDecl ";" | Defer(Block) | Defer(Expression) ";" | BlockExpression(Block) | Expression ";" | ";"
     pub const statement =
-        localVarDecl.then(char(';'));
+        localVarDecl.then(char(';'))
             .orElse(deferP(block))
             .orElse(deferP(expression).then(char(';')))
             .orElse(blockExpression(block))
-            .orElse(expression.then(char(';'))
+            .orElse(expression.then(char(';')))
             .orElse(char(';'));
+
+    // TypeExpr = PrefixOpExpression | "var"
+    pub const typeExpr = 
+        prefixOpExpression.orElse(string("var"));
+
+    // BlockOrExpression = Block | Expression
+    pub const blockOrExpression =
+        block.orElse(expression);
+
+    // Expression = ReturnExpression | BreakExpression | AssignmentExpression
+    pub const expression = 
+        ReturnExpression
+            .orElse(breakExpression)
+            .orElse(assignmentExpression);
+            
+    // AsmExpression = "asm" option("volatile") "(" String option(AsmOutput) ")"
+    pub const asmExpression =
+        string("asm")
+            .then(string("volatile").optional())
+            .then(char('('))
+            .then(stringLit)
+            .then(asmOutput.optional())
+            .then(char(')'));
+
+    // AsmOutput = ":" list(AsmOutputItem, ",") option(AsmInput)
+    pub const asmOutput =
+        char(':')
+            .then(
+                asmOutputItem
+                    .then(char(','))
+                    .many()
+            )
+            .then(asmInput);
+
+    // AsmInput = ":" list(AsmInputItem, ",") option(AsmClobbers)
+    pub const asmInput =
+        char(':')
+            .then(
+                asmInputItem
+                    .then(char(','))
+                    .many()
+            )
+            .then(asmClobbers);
+
+    // AsmOutputItem = "[" Symbol "]" String "(" (Symbol | "-&gt;" TypeExpr) ")"
+    pub const asmOutputItem =
+        char('[')
+            .then(symbol)
+            .then(char(']'))
+            .then(stringLit)
+            .then(char('('))
+            .then(symbol.orElse(string("->").then(typeExpr)))
+            .then(char(')'));
+
+    // AsmInputItem = "[" Symbol "]" String "(" Expression ")"
+    pub const asmInputItem =
+        char('[')
+            .then(symbol)
+            .then(char(']'))
+            .then(stringLit)
+            .then(char('('))
+            .then(expression)
+            .then(char(')'));
+
+    // AsmClobbers= ":" list(String, ",")
+    pub const asmCloppers =
+        char(':').then(
+                stringLit
+                    .then(char(','))
+                    .many()
+            );
+
+    // UnwrapExpression = BoolOrExpression (UnwrapNullable | UnwrapError) | BoolOrExpression
+    pub const unwrapExpression =
+        BoolOrExpression
+            .then(
+                unwrapNullable
+                    .orElse(unwrapError)
+                    .optional()
+            );
+
+    // UnwrapNullable = "??" Expression
+    pub const unwrapNullable =
+        string("??").then(expression);
+        
+    // UnwrapError = "%%" option("|" Symbol "|") Expression
+    pub const unwrapError =
+        string("%%")
+            .then(
+                char('|')
+                    .then(symbol)
+                    .then(char('|'))
+                    .optional()
+            )
+            .then(expression);
+            
+    // AssignmentExpression = UnwrapExpression AssignmentOperator UnwrapExpression | UnwrapExpression
+    pub const assignmentExpression =
+        unwrapExpression
+            .then(assignmentOperator)
+            .then(unwrapExpression)
+            .orElse(UnwrapExpression);
+
+    // AssignmentOperator = "=" | "*=" | "/=" | "%=" | "+=" | "-=" | "&lt;&lt;=" | "&gt;&gt;=" | "&amp;=" | "^=" | "|=" | "*%=" | "+%=" | "-%="
+    pub const assigmentOperator =
+        char('=')
+            .orElse(string("*="))
+            .orElse(string("/="))
+            .orElse(string("%="))
+            .orElse(string("+="))
+            .orElse(string("-="))
+            .orElse(string("<<="))
+            .orElse(string(">>="))
+            .orElse(string("&="))
+            .orElse(string("^="))
+            .orElse(string("|="))
+            .orElse(string("*%="))
+            .orElse(string("+%="))
+            .orElse(string("-%="));
+
+    //  BlockExpression(body) = Block | IfExpression(body) | TryExpression(body) | TestExpression(body) | WhileExpression(body) | ForExpression(body) | SwitchExpression | CompTimeExpression(body)
+    pub fn blockExpression(comptime body: var) -> Parser(void) {
+        return 
+            block
+                .orElse(ifExpression(body))
+                .orElse(tryExpression(body))
+                .orElse(testExpression(body))
+                .orElse(whileExpression(body))
+                .orElse(forExpression(body))
+                .orElse(switchExpression)
+                .orElse(comparisonExpression(body));
+    }
+
+    // CompTimeExpression(body) = "comptime" body
+    pub fn compTimeExpression(comptime body: var) -> Parser(void) {
+        return 
+            string("comptime")
+                .then(body);
+    }
+
+    // SwitchExpression = "switch" "(" Expression ")" "{" many(SwitchProng) "}"
+    pub const switchExpression =
+        string("string")
+            .then(char('('))
+            .then(expression)
+            .then(char(')'))
+            .then(char('{'))
+            .then(switchProng.many())
+            .then(char('}'));
+
+    // SwitchProng = (list(SwitchItem, ",") | "else") "=&gt;" option("|" option("*") Symbol "|") Expression ","
+    pub const switchProng =
+        switchItem.then(char(',')).many()
+            .orElse(string("else"))
+            .then(string("=>"))
+            .then(
+                char('|')
+                    .then(char('*').optional())
+                    .then(symbol)
+                    .then(char('|'))
+                    .optional()
+            )
+            .then(expression)
+            .then(char(','));
+
+    // SwitchItem = Expression | (Expression "..." Expression)
+    pub const switchItem =
+        expression
+            .orElse(
+                expression
+                    .then(string("..."))
+                    .then(expression)
+            );
+
+    // ForExpression(body) = option(Symbol ":") option("inline") "for" "(" Expression ")" option("|" option("*") Symbol option("," Symbol) "|") body option("else" BlockExpression(body))
+    pub fn forExpression(comptime body: var) -> Parser(void) {
+        return
+            symbol.then(char(':')).optional()
+                .then(string("inline").optional)
+                .then(string("for"))
+                .then(char('('))
+                .then(expression)
+                .then(char(')'))
+                .then(
+                    char('|')
+                        .then(char('*').optional())
+                        .then(symbol)
+                        .then(
+                            char(',')
+                                .then(symbol)
+                                .optional()
+                        )
+                        .then(char('|'))
+                        .optional()
+                )
+                .then(body)
+                .then(
+                    string("else")
+                        .then(blockExpression(body))
+                );
+    }
+
+    // BoolOrExpression = BoolAndExpression "or" BoolOrExpression | BoolAndExpression
+    pub const boolOrExpression =
+        BoolAndExpression
+            .then(string("or"))
+            .then(boolOrExpression)
+            .orElse(boolAndExpression);
+
+    // ReturnExpression = option("%") "return" option(Expression)
+    pub const returnExpression =
+        char('%').optional()
+            .then(string("return"))
+            .then(expression.optional());
+
+    // BreakExpression = "break" option(":" Symbol) option(Expression)
+    pub const breakExpression =
+        string("break")
+            .then(
+                char(':')
+                    .then(symbol)
+                    .optional()
+            )
+            .then(expression.optional());
+
+    // Defer(body) = option("%") "defer" body
+    pub fn deferP(comptime body: var) -> Parser(void) {
+        return
+            char('%').optional()
+                .then(string("defer"))
+                .then(body);
+    }
+
+    // IfExpression(body) = "if" "(" Expression ")" body option("else" BlockExpression(body))
+    pub fn ifExpression(comptime body: var) -> Parser(void) {
+        return
+            string("if")
+                .then(char('('))
+                .then(expression)
+                .then(char(')'))
+                .then(body)
+                .then(
+                    string("else")
+                        .then(blockExpression(body))
+                        .optional()
+                );
+    }
+
+    // TryExpression(body) = "if" "(" Expression ")" option("|" option("*") Symbol "|") body "else" "|" Symbol "|" BlockExpression(body)
+    pub fn tryExpression(comptime body: var) -> Parser(void) {
+        return
+            string("if")
+                .then(char('('))
+                .then(expression)
+                .then(char(')'))
+                .then(
+                    char('|')
+                        .then(char('*').optional())
+                        .then(symbol)
+                        .then(char('|'))
+                        .optional()
+                )
+                .then(body)
+                .then(string("else"))
+                .then(char('|'))
+                .then(symbol)
+                .then(char('|'))
+                .then(blockExpression(body));
+    }
+
+    // TestExpression(body) = "if" "(" Expression ")" option("|" option("*") Symbol "|") body option("else" BlockExpression(body))
+    pub fn testExpression(comptime body: var) -> Parser(void) {
+        return
+            string("if")
+                .then(char('('))
+                .then(expression)
+                .then(char(')'))
+                .then(
+                    char('|')
+                        .then(char('*').optional())
+                        .then(symbol)
+                        .then(char('|'))
+                        .optional()
+                )
+                .then(body)
+                .then(
+                    string("else")
+                        .then(blockExpression(body))
+                        .optional()
+                );
+    }
+
+    // WhileExpression(body) = option(Symbol ":") option("inline") "while" "(" Expression ")" option("|" option("*") Symbol "|") option(":" "(" Expression ")") body option("else" option("|" Symbol "|") BlockExpression(body))
+    pub fn whileExpression(comptime body: var) -> Parser(void) {
+        return
+            symbol
+                .then(char(':'))
+                .optional()
+                .then(string("inline").optional())
+                .then(string("while"))
+                .then(char('('))
+                .then(expression)
+                .then(char(')'))
+                .then(
+                    char('|')
+                        .then(char('*').optional())
+                        .then(symbol)
+                        .then(char('|'))
+                        .optional()
+                )
+                .then(
+                    char(':')
+                        .then(char('('))
+                        .then(expression)
+                        .then(char(')'))
+                )
+                .then(body)
+                .then(
+                    string("else")
+                        .then(
+                            char('|')
+                                .then(symbol)
+                                .then(char('|'))
+                                .optional()
+                        )
+                        .then(blockExpression(body))
+                );
+    }
+
+    // BoolAndExpression = ComparisonExpression "and" BoolAndExpression | ComparisonExpression
+    pub const boolAndExpression =
+        comparisonExpression
+            .then(string("and"))
+            .then(boolAndExpression)
+            .orElse(comparisonExpression);
+
+
+    // ComparisonExpression = BinaryOrExpression ComparisonOperator BinaryOrExpression | BinaryOrExpression
+    pub const comparisonExpression =
+        binaryOrExpression
+            .then(comparisonOperator)
+            .then(binaryOrExpression)
+            .orElse(binaryOrExpression);
+
+    // ComparisonOperator = "==" | "!=" | "&lt;" | "&gt;" | "&lt;=" | "&gt;="
+    pub const comparisonOperator =
+        string("==")
+            .orElse(string("!="))
+            .orElse(char('<'))
+            .orElse(char('>'))
+            .orElse(string("<="))
+            .orElse(string(">="));
+
+    // CompTimeExpression(body) = "comptime" body
+    pub fn compTimeExpression(comptime body: var) -> Parser(void) {
+        return
+            string("comptime")
+                .then(body);
+    }
+
+    // SwitchExpression = "switch" "(" Expression ")" "{" many(SwitchProng) "}"
+    pub const switchExpression =
+        string("string")
+            .then(char('('))
+            .then(expression)
+            .then(char(')'))
+            .then(char('{'))
+            .then(switchProng.many())
+            .then(char('}'));
+
+    // SwitchProng = (list(SwitchItem, ",") | "else") "=&gt;" option("|" option("*") Symbol "|") Expression ","
+    pub const switchProng =
+        switchItem.then(char(',')).many() // TODO: Implement 'list'
+            .orElse(string("else"))
+            .then(string("=>"))
+            .then(
+                char('|')
+                    .then(char('*').optional())
+                    .then(symbol)
+                    .then(char('|'))
+                    .optional()
+            )
+            .then(expression)
+            .then(char(','));
+
+    // SwitchItem = Expression | (Expression "..." Expression)
+    pub const switchItem =
+        expression
+            .then(string("..."))
+            .then(expression)
+            .orElse(expression);
+            
+    // ForExpression(body) = option(Symbol ":") option("inline") "for" "(" Expression ")" option("|" option("*") Symbol option("," Symbol) "|") body option("else" BlockExpression(body))
+    pub fn forExpression(comptime body: var) -> Parser(void) {
+        return 
+            symbol.then(char(':')).optional()
+                .then(string("inline").optional())
+                .then(string("for"))
+                .then(char('('))
+                .then(expression)
+                .then(char(')'))
+                .then(
+                    char('|')
+                        .then(char('*').optional())
+                        .then(symbol)
+                        .then(char('|'))
+                        .optional()
+                )
+                .then(body)
+                .then(
+                    string("else")
+                        .then(blockExpression(body))
+                        .optional()
+                );
+    }
+
+    // BoolOrExpression = BoolAndExpression "or" BoolOrExpression | BoolAndExpression
+    pub const boolOrExpression =
+        boolAndExpression
+            .then(string("or"))
+            .then(boolOrExpression)
+            .orElse(boolAndExpression);
+
+    // ReturnExpression = option("%") "return" option(Expression)
+    pub const returnExpression =
+        char('%').optional()
+            .then(string("return"))
+            .then(expression.optional());
+
+    // BreakExpression = "break" option(":" Symbol) option(Expression)
+    pub const breakExpression =
+        string("break")
+            .then(
+                char(':')
+                    .then(symbol)
+                    .optional()
+            )
+            .then(expression.optional());
+
+    // Defer(body) = option("%") "defer" body
+    pub fn deferP(comptime body: var) -> Parser(void) {
+        char('%').optional()
+            .then(string("return"))
+            .then(body);
+    }
+
+    // IfExpression(body) = "if" "(" Expression ")" body option("else" BlockExpression(body))
+    pub fn ifExpression(comptime body: var) -> Parser(void) {
+        return
+            string("if")
+                .then(char('('))
+                .then(expression)
+                .then(char(')'))
+                .then(body)
+                .then(
+                    string("else")
+                        .then(blockExpression(body))
+                        .optional()
+                );
+    }
+
+    // BinaryOrExpression = BinaryXorExpression "|" BinaryOrExpression | BinaryXorExpression
+    pub const binaryOrExpression =
+        binaryXorExpression
+            .then(char('|'))
+            .then(binaryOrExpression)
+            .orElse(binaryXorExpression);
+
+    // BinaryXorExpression = BinaryAndExpression "^" BinaryXorExpression | BinaryAndExpression
+    pub const binaryXorExpression =
+        binaryAndExpression
+            .then(char('^'))
+            .then(binaryXorExpression)
+            .orElse(binaryAndExpression);
+
+    //BinaryAndExpression = BitShiftExpression "&amp;" BinaryAndExpression | BitShiftExpression
+    pub const binaryAndExpression =
+        bitShiftExpression
+            .then(char('&'))
+            .then(binaryAndExpression)
+            .orElse(bitShiftExpression);
+
+    //BitShiftExpression = AdditionExpression BitShiftOperator BitShiftExpression | AdditionExpression
+    pub const bitShiftExpression =
+        additionExpression
+            .then(bitShiftOperator)
+            .then(bitShiftExpression)
+            .orElse(additionExpression);
+
+    // BitShiftOperator = "&lt;&lt;" | "&gt;&gt;" | "&lt;&lt;"
+    pub const bitShiftOperator =
+        string("<<")
+            .orElse(string(">>"));
+
+    // AdditionExpression = MultiplyExpression AdditionOperator AdditionExpression | MultiplyExpression
+    pub const additionExpression =
+        multiplyExpression
+            .then(additionOperator)
+            .then(additionExpression)
+            .orElse(multiplyExpression);
+
+    // AdditionOperator = "+" | "-" | "++" | "+%" | "-%"
+    pub const additionOperator =
+        char('+')
+            .orElse(char('-'))
+            .orElse(string("++"))
+            .orElse(string("+%"))
+            .orElse(string("-%"));
+
+    // MultiplyExpression = CurlySuffixExpression MultiplyOperator MultiplyExpression | CurlySuffixExpression
+    pub const multiplyExpression =
+        curlySuffixExpression
+            .then(multiplyOperator)
+            .then(multiplyExpression)
+            .orElse(curlySuffixExpression);
+
+    // MultiplyOperator = "*" | "/" | "%" | "**" | "*%"
+    pub const additionOperator =
+        char('*')
+            .orElse(char('/'))
+            .orElse(string("%"))
+            .orElse(string("**"))
+            .orElse(string("*%"));
+
+    // CurlySuffixExpression = TypeExpr option(ContainerInitExpression)
+    pub const curlySuffixExpression =
+        typeExpr
+            .then(containerInitExpression.optional());
+
+    // PrefixOpExpression = PrefixOp PrefixOpExpression | SuffixOpExpression
+    pub const prefixOpExpression = 
+        prefixOp
+            .then(prefixOpExpression)
+            .orElse(suffixOpExpression);
+
+    // SuffixOpExpression = PrimaryExpression option(FnCallExpression | ArrayAccessExpression | FieldAccessExpression | SliceExpression)
+    pub const suffixOpExpression = 
+        primaryExpression
+            .then(
+                fnCallExpression
+                    .orElse(arrayAccessExpression)
+                    .orElse(fieldAccessExpression)
+                    .orElse(sliceExpression)
+                    .optional()
+            );
+
+    // FieldAccessExpression = "." Symbol
+    pub const fieldAccessExpression =
+        char('.')
+            .then(symbol);
+
+    // FnCallExpression = "(" list(Expression, ",") ")"
+    pub const fnCallExpression =
+        char('(')
+            .then(
+                expression
+                    .then(char(','))
+                    .many()
+            )
+            .then(char(')'));
+
+    // ArrayAccessExpression = "[" Expression "]"
+    pub const arrayAccessExpression =
+        char('[')
+            .then(expression)
+            .then(char(']'));
+
+    // SliceExpression = "[" Expression ".." option(Expression) "]"
+    pub const sliceExpression =
+        char('[')
+            .then(expression)
+            .then(string(".."))
+            .then(expression.optional())
+            .then(char(']'));
+
+    // ContainerInitExpression = "{" ContainerInitBody "}"
+    pub const containerInitExpression =
+        char('{')
+            .then(containerInitBody)
+            .then(char('}'));
+
+    // ContainerInitBody = list(StructLiteralField, ",") | list(Expression, ",")
+    pub const containerInitBody =
+        structLiteralField.then(',').many()
+            .orElse(
+                expression
+                    .then(char(','))
+                    .many()
+            );
+
+    // StructLiteralField = "." Symbol "=" Expression
+    pub const structLiteralField =
+        char('.')
+            .then(symbol)
+            .then(char('='))
+            .then(expression);
+
+    // PrefixOp = "!" | "-" | "~" | "*" | ("&amp;" option("align" "(" Expression option(":" Integer ":" Integer) ")" ) option("const") option("volatile")) | "?" | "%" | "%%" | "??" | "-%"
+    pub const prefixOp =
+        char('!')
+            .orElse(char('-'))
+            .orElse(char('~'))
+            .orElse(char('*'))
+            .orElse(
+                char('&')
+                    .then(
+                        string("align")
+                            .then(char('('))
+                            .then(expression)
+                            .then(
+                                char(':')
+                                    .then(integer)
+                                    .then(char(':'))
+                                    .then(Integer)
+                                    .optional()
+                            )
+                            .then(char(')'))
+                            .optional()
+                    )
+                    .then(string("const").optional())
+                    .then(string("volatile").optional())
+            )
+            .orElse(char('?'))
+            .orElse(char('%'))
+            .orElse(string("%%"))
+            .orElse(string("??"))
+            .orElse(string("-%"));
+
+    // PrimaryExpression = Integer | Float | String | CharLiteral | KeywordLiteral | GroupedExpression | BlockExpression(BlockOrExpression) | Symbol | ("@" Symbol FnCallExpression) | ArrayType | FnProto | AsmExpression | ("error" "." Symbol) | ContainerDecl | ("continue" option(":" Symbol))
+    pub const primaryExpression =
+        integer
+            .orElse(float)
+            .orElse(stringLit)
+            .orElse(charLit)
+            .orElse(keywordLit)
+            .orElse(groupedExpression)
+            .orElse(blockExpression(blockOrExpression))
+            .orElse(symbol)
+            .orElse(
+                char('@')
+                    .then(symbol)
+                    .then(fnCallExpression)
+            )
+            .orElse(arrayType)
+            .orElse(fnProto)
+            .orElse(asmExpression)
+            .orElse(
+                string("error")
+                    .then(char('.'))
+                    .then(symbol)
+            )
+            .orElse(containerDecl)
+            .orElse(
+                string("continue")
+                    .then(
+                        char(':')
+                            .then(symbol)
+                            .optional()
+                    )
+            );
+
+    // ArrayType : "[" option(Expression) "]" option("align" "(" Expression option(":" Integer ":" Integer) ")")) option("const") option("volatile") TypeExpr
+    pub const arrayType =
+        char('[')
+            .then(expression.optional())
+            .then(char(']'))
+            .then(
+                string("align")
+                    .then(char('('))
+                    .then(expression)
+                    .then(
+                        char(':')
+                            .then(integer)
+                            .then(char(':'))
+                            .then(integer)
+                            .optional()
+                    )
+                    .then(char(')'))
+                    .optional()
+            )
+            .then(string("const").optional())
+            .then(string("volatile").optional())
+            .then(typeExpr);
+
+    // GroupedExpression = "(" Expression ")"
+    pub const groupedExpression =
+        char('(')
+            .then(expression)
+            .then(char(')'));
+
+    // KeywordLiteral = "true" | "false" | "null" | "undefined" | "error" | "this" | "unreachable"
+    pub const keywordLit =
+        string("true")
+            .orElse(string("false"))
+            .orElse(string("null"))
+            .orElse(string("undefined"))
+            .orElse(string("error"))
+            .orElse(string("this"))
+            .orElse(string("unreachable"));
+
+    // ContainerDecl = option("extern" | "packed") ("struct" option(GroupedExpression) | "union" option("enum" option(GroupedExpression) | GroupedExpression) | ("enum" option(GroupedExpression)))
+    pub const containerDecl =
+        string("extern")
+            .orElse(string("packed"))
+            .optional()
+            .then(
+                string("struct")
+                    .then(groupedExpression.optional())
+                    .orElse(
+                        string("union")
+                            .then(
+                                string("enum")
+                                    .then(groupedExpression.optional())
+                                    .orElse(groupedExpression)
+                                    .optional()
+                            )
+                    )
+                    .orElse(
+                        string("enum")
+                            .then(groupedExpression.optional())
+                    )
+            );
+
+
+    // TOKENS:
+    pub const symbol =
+        alpha.discard()
+            .then(
+                alpha
+                    .orElse(digit)
+                    .many()
+                    .discard()
+            )
+            .discard()
+            .trim();
+
+    // These exists in the parser lib
+    // Alpha = "a" .. "z" | "A" .. "Z"
+    // Digit = "0" .. "9"
 };
+
+// zig: /home/jimmi/Documents/zig/src/analyze.cpp:521: TypeTableEntry* get_error_type(CodeGen*, TypeTableEntry*): Assertion `child_type->type_ref' failed.
+// Aborted (core dumped)
+// Uncomment this and run 'zig test src/index.zig'
+// test "parser.Example: Zig Parser" {
+//     var input = Input.init("const t = 0;");
+//     var res = ZigSyntax.root.parse(debug.global_allocator, &input) %% unreachable;
+// }

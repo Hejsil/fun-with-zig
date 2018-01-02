@@ -40,7 +40,7 @@ const allTests = []AllAnyCase {
     AllAnyCase.init([]i64{ -1,  0,  1,  4 }, Result.init(false, false, false))
 };
 
-fn runAllTest(in: &const []const i64) -> Result {
+fn runAllTest(in: &const []const i64) -> %Result {
     return Result {
         .less    = all(i64, &iter(*in).iter, isLessThan0),
         .equal   = all(i64, &iter(*in).iter, isEqual0),
@@ -50,11 +50,11 @@ fn runAllTest(in: &const []const i64) -> Result {
 
 test "algorithm.search.all" {
     for (allTests) |tst| {
-        tst.runDefaultEql(runAllTest);
+        tst.runDefaultEql(runAllTest) %% unreachable;
     }
 }
 
-fn runAllCTest(in: &const []const i64) -> Result {
+fn runAllCTest(in: &const []const i64) -> %Result {
     return Result {
         .less    = allC(i64, i64, &iter(*in).iter, 0, lessThan),
         .equal   = allC(i64, i64, &iter(*in).iter, 0, equal),
@@ -64,7 +64,7 @@ fn runAllCTest(in: &const []const i64) -> Result {
 
 test "algorithm.search.allC" {
     for (allTests) |tst| {
-        tst.runDefaultEql(runAllCTest);
+        tst.runDefaultEql(runAllCTest) %% unreachable;
     }
 }
 
@@ -83,7 +83,7 @@ const anyTests = []AllAnyCase {
     AllAnyCase.init([]i64{ -1,  0,  1,  4 }, Result.init(true , true , true ))
 };
 
-fn runAnyTest(in: &const []const i64) -> Result {
+fn runAnyTest(in: &const []const i64) -> %Result {
     return Result {
         .less    = any(i64, &iter(*in).iter, isLessThan0),
         .equal   = any(i64, &iter(*in).iter, isEqual0),
@@ -93,11 +93,11 @@ fn runAnyTest(in: &const []const i64) -> Result {
 
 test "algorithm.search.any" {
     for (anyTests) |tst| {
-        tst.runDefaultEql(runAnyTest);
+        tst.runDefaultEql(runAnyTest) %% unreachable;
     }
 }
 
-fn runAnyCTest(in: &const []const i64) -> Result {
+fn runAnyCTest(in: &const []const i64) -> %Result {
     return Result {
         .less    = anyC(i64, i64, &iter(*in).iter, 0, lessThan),
         .equal   = anyC(i64, i64, &iter(*in).iter, 0, equal),
@@ -107,7 +107,7 @@ fn runAnyCTest(in: &const []const i64) -> Result {
 
 test "algorithm.search.anyC" {
     for (anyTests) |tst, i| {
-        tst.runDefaultEql(runAnyCTest);
+        tst.runDefaultEql(runAnyCTest) %% unreachable;
     }
 }
 
@@ -140,7 +140,7 @@ const firstTests = []FirstCase {
     FirstCase.init([]i64{ -1,  0,  1,  4 }, FirstResult.init(-1  , 0   , 1   ))
 };
 
-fn runFirstTest(in: &const []const i64) -> FirstResult {
+fn runFirstTest(in: &const []const i64) -> %FirstResult {
     return FirstResult {
         .less    = first(i64, &iter(*in).iter, isLessThan0),
         .equal   = first(i64, &iter(*in).iter, isEqual0),
@@ -150,11 +150,11 @@ fn runFirstTest(in: &const []const i64) -> FirstResult {
 
 test "algorithm.search.first" {
     for (firstTests) |tst| {
-        tst.runDefaultEql(runFirstTest);
+        tst.runDefaultEql(runFirstTest) %% unreachable;
     }
 }
 
-fn runFirstCTest(in: &const []const i64) -> FirstResult {
+fn runFirstCTest(in: &const []const i64) -> %FirstResult {
     return FirstResult {
         .less    = firstC(i64, i64, &iter(*in).iter, 0, lessThan),
         .equal   = firstC(i64, i64, &iter(*in).iter, 0, equal),
@@ -164,6 +164,6 @@ fn runFirstCTest(in: &const []const i64) -> FirstResult {
 
 test "algorithm.search.firstC" {
     for (firstTests) |tst, i| {
-        tst.runDefaultEql(runFirstCTest);
+        tst.runDefaultEql(runFirstCTest) %% unreachable;
     }
 }
