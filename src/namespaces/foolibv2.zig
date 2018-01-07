@@ -7,6 +7,6 @@ pub fn foo() {
 }
 
 pub fn bar() -> %void {
-    var stdout_file = %return io.getStdOut();
-    %return stdout_file.write("bar");
+    var stdout_file = try io.getStdOut();
+    try stdout_file.write("bar");
 }

@@ -4,8 +4,8 @@ const Namespace = @typeOf(@import("std"));
 
 // We can now define function that take namespaces at comptime.
 fn namespaceHelloWorld(comptime N: Namespace) -> %void {
-    var stdout_file = %return N.getStdOut();
-    %return stdout_file.write("Hello, world!\n");
+    var stdout_file = try N.getStdOut();
+    try stdout_file.write("Hello, world!\n");
 }
 
 // And we can now use this function as we would any other.
@@ -15,7 +15,7 @@ test "namespaces.Example: Namespace Hello World" {
     // Ofc, if we pase a namespace that doesn't have the right public
     // identifiers, then the program won't compile:
     // src/namespaces/namespaces.zig:7:32: error: no member named 'getStdOut' in '/usr/local/lib/zig/std/index.zig'
-    //     var stdout_file = %return N.getStdOut();
+    //     var stdout_file = try N.getStdOut();
     //                                ^
     // src/namespaces/namespaces.zig:17:28: note: called from here
     //     _ = namespaceHelloWorld(@import("std"));
@@ -57,5 +57,5 @@ fn useBar(comptime FooLib: Namespace) {
 }
 
 fn useNewBar(comptime FooLib: Namespace) -> %void {
-    %return FooLib.bar();
+    try FooLib.bar();
 }

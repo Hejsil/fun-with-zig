@@ -50,19 +50,19 @@ const Tree = union(enum) {
     }
 
     pub fn createLeaf(allocator: &Allocator, value: i64) -> %&Tree {
-        const result = %return allocator.create(Tree);
+        const result = try allocator.create(Tree);
         *result = Tree { .Leaf = value };
         return result;
     }
 
     pub fn createNode(allocator: &Allocator, symbol: u8, left: &Tree, right: &Tree) -> %&Tree {
-        const result = %return allocator.create(Tree);
+        const result = try allocator.create(Tree);
         *result = Tree { .Node = TreeNode { .symbol = symbol, .left = left, .right = right } };
         return result;
     }
 
     pub fn createPar(allocator: &Allocator, child: &Tree) -> %&Tree {
-        const result = %return allocator.create(Tree);
+        const result = try allocator.create(Tree);
         *result = Tree { .Par = child };
         return result;
     }
@@ -71,7 +71,7 @@ const Tree = union(enum) {
 fn toLeaf(str: &const []u8, allocator: &Allocator, cleanUp: CleanUp([]u8)) -> %&Tree {
     defer cleanUp(str, allocator);
 
-    const i = %return std.fmt.parseInt(i64, *str, 10);
+    const i = try std.fmt.parseInt(i64, *str, 10);
     return Tree.createLeaf(allocator, i);
 }
 
@@ -92,7 +92,7 @@ fn apply(allocator: &Allocator, treeClean: CleanUp(&Tree), opClean: CleanUp(u8),
     }
     defer opClean(op, allocator);
 
-    const result = %return Tree.createNode(allocator, *op, *left, *right);
+    const result = try Tree.createNode(allocator, *op, *left, *right);
     return result;
 }
 
@@ -111,21 +111,21 @@ fn printLeaf(self: &Visitor, leaf: i64) -> %void {
 
 fn printPar(self: &Visitor, child: &Tree) -> %void {
     debug.warn("(");
-    %return self.visit(child);
+    try self.visit(child);
     debug.warn(")");
 }
 
 fn printNode(self: &Visitor, node: &TreeNode) -> %void {
-    %return self.visit(node.left);
+    try self.visit(node.left);
     debug.warn(" {} ", [1]u8{ node.symbol });
-    %return self.visit(node.right);
+    try self.visit(node.right);
 }
 
 fn precedenceLeaf(self: &Visitor, leaf: i64) -> %void { }
 fn precedencePar(self: &Visitor, par: &Tree) -> %void { return self.visit(par); }
 
 fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) -> %void {
-    %return self.visit(node.left);
+    try self.visit(node.left);
     switch (*node.left) {
         Tree.Node => |*left| {
             if (getPrecedence(left.symbol) > getPrecedence(node.symbol)) {
@@ -135,7 +135,7 @@ fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) -> %void {
         else => {}
     }
 
-    %return self.visit(node.right);
+    try self.visit(node.right);
     switch (*node.right) {
         Tree.Node => |*right| {
             if (getPrecedence(right.symbol) >= getPrecedence(node.symbol)) {
@@ -147,7 +147,7 @@ fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) -> %void {
 }
 
 fn precedenceNodeRight(self: &Visitor, node: &TreeNode) -> %void {
-    %return self.visit(node.left);
+    try self.visit(node.left);
     switch (*node.left) {
         Tree.Node => |*left| {
             if (getPrecedence(left.symbol) >= getPrecedence(node.symbol)) {
@@ -157,7 +157,7 @@ fn precedenceNodeRight(self: &Visitor, node: &TreeNode) -> %void {
         else => {}
     }
 
-    %return self.visit(node.right);
+    try self.visit(node.right);
     switch (*node.right) {
         Tree.Node => |*right| {
             if (getPrecedence(right.symbol) > getPrecedence(node.symbol)) {

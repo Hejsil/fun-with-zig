@@ -21,7 +21,7 @@ pub fn TestCase(comptime TIn: type, comptime TOut: type) -> type {
         }
 
         pub fn run(self: &const Self, func: fn(&const TIn) -> %TOut, eql: fn(&const TOut, &const TOut) -> bool) -> %void {
-            if (!eql(%return func(&self.in), &self.out)) {
+            if (!eql(try func(&self.in), &self.out)) {
                 return error.TestFailed;
             }
         }
