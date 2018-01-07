@@ -2,8 +2,8 @@ const debug = @import("std").debug;
 const io = @import("std").io;
 
 pub fn foo() {
-    var stdout_file = io.getStdOut() %% unreachable;
-    stdout_file.write("foo") %% unreachable;
+    var stdout_file = io.getStdOut() catch unreachable;
+    stdout_file.write("foo") catch unreachable;
 }
 
 pub fn bar() -> %void {

@@ -198,14 +198,14 @@ const Left = struct {
 
 test "parser.Example: Left Precedence Expression Parser" {
     var input = Input.init(operators);
-    var res = Left.program.parse(debug.global_allocator, &input) %% unreachable;
+    var res = Left.program.parse(debug.global_allocator, &input) catch unreachable;
     var leftVisitor = Visitor {
         .visitLeaf = precedenceLeaf,
         .visitNode = precedenceNodeLeft,
         .visitPar = precedencePar,
     };
     
-    leftVisitor.visit(res) %% unreachable;
+    leftVisitor.visit(res) catch unreachable;
 
     var rightVisitor = Visitor {
         .visitLeaf = precedenceLeaf,
@@ -237,7 +237,7 @@ const Right = struct {
 
 test "parser.Example: Right Precedence Expression Parser" {
     var input = Input.init(operators);
-    var res = Right.program.parse(debug.global_allocator, &input) %% unreachable;
+    var res = Right.program.parse(debug.global_allocator, &input) catch unreachable;
     var leftVisitor = Visitor {
         .visitLeaf = precedenceLeaf,
         .visitNode = precedenceNodeLeft,
@@ -254,7 +254,7 @@ test "parser.Example: Right Precedence Expression Parser" {
         .visitPar = precedencePar,
     };
     
-    rightVisitor.visit(res) %% unreachable;
+    rightVisitor.visit(res) catch unreachable;
 }
 
 
@@ -512,9 +512,9 @@ const ZigSyntax = struct {
     pub const unwrapNullable =
         string("??").then(expression);
         
-    // UnwrapError = "%%" option("|" Symbol "|") Expression
+    // UnwrapError = "catch" option("|" Symbol "|") Expression
     pub const unwrapError =
-        string("%%")
+        string("catch")
             .then(
                 char('|')
                     .then(symbol)
@@ -1024,7 +1024,7 @@ const ZigSyntax = struct {
             .then(char('='))
             .then(expression);
 
-    // PrefixOp = "!" | "-" | "~" | "*" | ("&amp;" option("align" "(" Expression option(":" Integer ":" Integer) ")" ) option("const") option("volatile")) | "?" | "%" | "%%" | "??" | "-%"
+    // PrefixOp = "!" | "-" | "~" | "*" | ("&amp;" option("align" "(" Expression option(":" Integer ":" Integer) ")" ) option("const") option("volatile")) | "?" | "%" | "catch" | "??" | "-%"
     pub const prefixOp =
         char('!')
             .orElse(char('-'))
@@ -1051,7 +1051,7 @@ const ZigSyntax = struct {
             )
             .orElse(char('?'))
             .orElse(char('%'))
-            .orElse(string("%%"))
+            .orElse(string("catch"))
             .orElse(string("??"))
             .orElse(string("-%"));
 
@@ -1173,5 +1173,5 @@ const ZigSyntax = struct {
 // Uncomment this and run 'zig test src/index.zig'
 // test "parser.Example: Zig Parser" {
 //     var input = Input.init("const t = 0;");
-//     var res = ZigSyntax.root.parse(debug.global_allocator, &input) %% unreachable;
+//     var res = ZigSyntax.root.parse(debug.global_allocator, &input) catch unreachable;
 // }

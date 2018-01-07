@@ -50,7 +50,7 @@ fn runAllTest(in: &const []const i64) -> %Result {
 
 test "algorithm.search.all" {
     for (allTests) |tst| {
-        tst.runDefaultEql(runAllTest) %% unreachable;
+        tst.runDefaultEql(runAllTest) catch unreachable;
     }
 }
 
@@ -64,7 +64,7 @@ fn runAllCTest(in: &const []const i64) -> %Result {
 
 test "algorithm.search.allC" {
     for (allTests) |tst| {
-        tst.runDefaultEql(runAllCTest) %% unreachable;
+        tst.runDefaultEql(runAllCTest) catch unreachable;
     }
 }
 
@@ -93,7 +93,7 @@ fn runAnyTest(in: &const []const i64) -> %Result {
 
 test "algorithm.search.any" {
     for (anyTests) |tst| {
-        tst.runDefaultEql(runAnyTest) %% unreachable;
+        tst.runDefaultEql(runAnyTest) catch unreachable;
     }
 }
 
@@ -107,7 +107,7 @@ fn runAnyCTest(in: &const []const i64) -> %Result {
 
 test "algorithm.search.anyC" {
     for (anyTests) |tst, i| {
-        tst.runDefaultEql(runAnyCTest) %% unreachable;
+        tst.runDefaultEql(runAnyCTest) catch unreachable;
     }
 }
 
@@ -150,7 +150,7 @@ fn runFirstTest(in: &const []const i64) -> %FirstResult {
 
 test "algorithm.search.first" {
     for (firstTests) |tst| {
-        tst.runDefaultEql(runFirstTest) %% unreachable;
+        tst.runDefaultEql(runFirstTest) catch unreachable;
     }
 }
 
@@ -164,6 +164,6 @@ fn runFirstCTest(in: &const []const i64) -> %FirstResult {
 
 test "algorithm.search.firstC" {
     for (firstTests) |tst, i| {
-        tst.runDefaultEql(runFirstCTest) %% unreachable;
+        tst.runDefaultEql(runFirstCTest) catch unreachable;
     }
 }

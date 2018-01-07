@@ -169,10 +169,10 @@ pub fn equal(comptime T: type) -> fn(&const T, &const T) -> bool {
                     return mem.eql(u8, toBytes(T, a), toBytes(T, b));
                 },
                 TypeId.ErrorUnion => {
-                    const a_not_err = *a %% |err1| {
+                    const a_not_err = *a catch |err1| {
                         return if (*b) |_| false else |err2| err1 == err2;
                     };
-                    const b_not_err = *b %% return false;
+                    const b_not_err = *b catch return false;
 
                     return equal(T.Child)(a_not_err, b_not_err);
                 },

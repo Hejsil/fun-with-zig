@@ -123,7 +123,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                 fn parse(allocator: &Allocator, in: &Input) -> %K {
                     const prev = in.pos;
                     const res = %return self.parse(allocator, in);
-                    return converter(res, allocator, cleanUp) %% |err| {
+                    return converter(res, allocator, cleanUp) catch |err| {
                         in.pos = prev;
                         cleanUp(res, allocator);
                         return err;
@@ -156,7 +156,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                 fn parse(allocator: &Allocator, in: &Input) -> %T {
                     const prev = in.pos;
 
-                    return self.parse(allocator, in) %% {
+                    return self.parse(allocator, in) catch {
                         in.pos = prev;
                         return parser.parse(allocator, in);
                     };
@@ -216,7 +216,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                         var results = %return allocator.alloc(T, count);
 
                         for (results) |_, i| {
-                            results[i] = self.parse(allocator, in) %% |err| {
+                            results[i] = self.parse(allocator, in) catch |err| {
                                     in.pos = prev;
                                     sliceCleanUp(results[0..i], allocator);
                                 return err;
@@ -248,7 +248,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
                         var results = ArrayList(T).init(allocator);
 
                         while (self.parse(allocator, in)) |value| {
-                            results.append(value) %% |err| {
+                            results.append(value) catch |err| {
                                     in.pos = prev;
                                     sliceCleanUp(results.toOwnedSlice(), allocator);
                                 return err;
@@ -307,7 +307,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) -> type {
         pub fn optional(comptime self: &const Self) -> ParserWithCleanup(?T, optionalCleanUp) {
             const Func = struct {
                 fn parse(allocator: &Allocator, in: &Input) -> %?T {
-                    return self.parse(allocator, in) %% null;
+                    return self.parse(allocator, in) catch null;
                 }
             };
 
@@ -376,9 +376,9 @@ pub const any = Parser(u8).init(parseAny);
 
 test "parser.any" {
     var input = Input.init("abc");
-    const res1 = any.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = any.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = any.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = any.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = any.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = any.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -418,9 +418,9 @@ test "parser.char" {
     const b_parser = comptime char('b');
     const c_parser = comptime char('c');
     var input = Input.init("abc");
-    const res1 = a_parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = b_parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = c_parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = a_parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = b_parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = c_parser.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -448,9 +448,9 @@ pub fn range(comptime from: u8, comptime to: u8) -> Parser(u8) {
 test "parser.range" {
     const parser = comptime range('a', 'c');
     var input = Input.init("abc");
-    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = parser.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -462,9 +462,9 @@ pub const digit = comptime range('0', '9');
 
 test "parser.digit" {
     var input = Input.init("123");
-    const res1 = digit.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = digit.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = digit.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = digit.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = digit.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = digit.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == '1');
     assert(res2 == '2');
     assert(res3 == '3');
@@ -476,9 +476,9 @@ pub const lower = comptime range('a', 'z');
 
 test "parser.lower" {
     var input = Input.init("abc");
-    const res1 = lower.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = lower.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = lower.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = lower.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = lower.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = lower.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -490,9 +490,9 @@ pub const upper = comptime range('A', 'Z');
 
 test "parser.upper" {
     var input = Input.init("ABC");
-    const res1 = upper.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = upper.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = upper.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = upper.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = upper.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = upper.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == 'A');
     assert(res2 == 'B');
     assert(res3 == 'C');
@@ -504,9 +504,9 @@ pub const alpha = comptime lower.orElse(upper);
 
 test "parser.alpha" {
     var input = Input.init("abC");
-    const res1 = alpha.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = alpha.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = alpha.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = alpha.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = alpha.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = alpha.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'C');
@@ -520,9 +520,9 @@ pub const whitespace = comptime
 
 test "parser.whitespace" {
     var input = Input.init(" \t\n");
-    const res1 = whitespace.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = whitespace.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = whitespace.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = whitespace.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = whitespace.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = whitespace.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == ' ');
     assert(res2 == '\t');
     assert(res3 == '\n');
@@ -549,8 +549,8 @@ test "parser.string" {
     var input = Input.init("abcd");
     const ab_parser = comptime string("ab");
     const cd_parser = comptime string("cd");
-    const res1 = ab_parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = cd_parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = ab_parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = cd_parser.parse(debug.global_allocator, &input) catch unreachable;
     assert(mem.eql(u8, res1, "ab"));
     assert(mem.eql(u8, res2, "cd"));
     assert(input.pos.index == 4);
@@ -577,7 +577,7 @@ pub fn chainOperatorLeft(comptime TOprand: type, comptime TOp: type,
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %TOprand {
             const first = %return operand.parse(allocator, in);
-            return parseRest(allocator, in, first) %% first;
+            return parseRest(allocator, in, first) catch first;
         }
 
         fn parseRest(allocator: &Allocator, in: &Input, first: TOprand) -> %TOprand {
@@ -591,7 +591,7 @@ pub fn chainOperatorLeft(comptime TOprand: type, comptime TOp: type,
             %defer operandCleanup(right, allocator);
 
             const result = %return apply(allocator, operandCleanup, opCleanUp, first, right, op);
-            return parseRest(allocator, in, result) %% result;
+            return parseRest(allocator, in, result) catch result;
         }
     };
 
@@ -608,7 +608,7 @@ pub fn chainOperatorRight(comptime TOprand: type, comptime TOp: type,
     const Func = struct {
         fn parse(allocator: &Allocator, in: &Input) -> %TOprand {
             const last = %return operand.parse(allocator, in);
-            return parseRest(allocator, in, last) %% last;
+            return parseRest(allocator, in, last) catch last;
         }
 
         fn parseRest(allocator: &Allocator, in: &Input, last: TOprand) -> %TOprand {
@@ -621,7 +621,7 @@ pub fn chainOperatorRight(comptime TOprand: type, comptime TOp: type,
             const tmpRight = %return operand.parse(allocator, in);
             %defer operandCleanup(tmpRight, allocator);
 
-            const right = parseRest(allocator, in, tmpRight) %% tmpRight;
+            const right = parseRest(allocator, in, tmpRight) catch tmpRight;
             %defer operandCleanup(right, allocator);
 
             return apply(allocator, operandCleanup, opCleanUp, last, right, op);
@@ -634,9 +634,9 @@ pub fn chainOperatorRight(comptime TOprand: type, comptime TOp: type,
 test "parser.Parser.as" {
     var input = Input.init("abc");
     const parser = comptime any.as(f32);
-    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = parser.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == f32('a'));
     assert(res2 == f32('b'));
     assert(res3 == f32('c'));
@@ -653,9 +653,9 @@ test "parser.Parser.orElse" {
         .orElse(char('c'));
 
     var input = Input.init("abc");
-    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = parser.parse(debug.global_allocator, &input) catch unreachable;
     assert(res1 == 'a');
     assert(res2 == 'b');
     assert(res3 == 'c');
@@ -668,7 +668,7 @@ test "parser.Parser.then" {
     const parser = comptime ab_parser.then(cd_parser);
 
     var input = Input.init("abcd");
-    const res = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res = parser.parse(debug.global_allocator, &input) catch unreachable;
     assert(mem.eql(u8, res[0], "ab"));
     assert(mem.eql(u8, res[1], "cd"));
     assert(input.pos.index == 4);
@@ -680,9 +680,9 @@ test "parser.Parser.repeat" {
     const c_parser = comptime char('c').repeat(3);
 
     var input = Input.init("aaabbbccc");
-    const res1 = a_parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = b_parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res3 = c_parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = a_parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = b_parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res3 = c_parser.parse(debug.global_allocator, &input) catch unreachable;
     assert(mem.eql(u8, res1, "aaa"));
     assert(mem.eql(u8, res2, "bbb"));
     assert(mem.eql(u8, res3, "ccc"));
@@ -693,7 +693,7 @@ test "parser.Parser.many" {
     const asParser = comptime char('a').many();
 
     var input = Input.init("aaaaa");
-    const res = asParser.parse(debug.global_allocator, &input) %% unreachable;
+    const res = asParser.parse(debug.global_allocator, &input) catch unreachable;
     assert(mem.eql(u8, res, "aaaaa"));
     assert(input.pos.index == 5);
 }
@@ -703,7 +703,7 @@ test "parser.Parser.atLeastOnce" {
 
     {
         var input = Input.init("aaaaa");
-        const res = asParser.parse(debug.global_allocator, &input) %% unreachable;
+        const res = asParser.parse(debug.global_allocator, &input) catch unreachable;
         assert(mem.eql(u8, res, "aaaaa"));
         assert(input.pos.index == 5);
     }
@@ -720,8 +720,8 @@ test "parser.Parser.optional" {
     const parser = comptime char('a').optional();
 
     var input = Input.init("ab");
-    const res1 = parser.parse(debug.global_allocator, &input) %% unreachable;
-    const res2 = parser.parse(debug.global_allocator, &input) %% unreachable;
+    const res1 = parser.parse(debug.global_allocator, &input) catch unreachable;
+    const res2 = parser.parse(debug.global_allocator, &input) catch unreachable;
     assert(??res1 == 'a');
     assert(res2 == null);
     assert(input.pos.index == 1);
@@ -731,7 +731,7 @@ test "parser.Parser.trim" {
     const aParser = comptime char('a').trim();
 
     var input = Input.init("   a       ");
-    const res = aParser.parse(debug.global_allocator, &input) %% unreachable;
+    const res = aParser.parse(debug.global_allocator, &input) catch unreachable;
     assert(res == 'a');
     assert(input.pos.index == 11);
 }
