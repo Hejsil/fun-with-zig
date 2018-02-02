@@ -5,20 +5,20 @@ const Allocator = mem.Allocator;
 
 use @import("parser.zig");
 
-const TreeNode = struct { 
-    symbol: u8, 
-    left: &Tree, 
+const TreeNode = struct {
+    symbol: u8,
+    left: &Tree,
     right: &Tree
 };
 
 const Visitor = struct {
     const Self = this;
 
-    visitLeaf: fn(self: &Self, leaf: i64) -> %void,
-    visitNode: fn(self: &Self, node: &TreeNode) -> %void,
-    visitPar: fn(self: &Self, child: &Tree) -> %void,
+    visitLeaf: fn(self: &Self, leaf: i64) %void,
+    visitNode: fn(self: &Self, node: &TreeNode) %void,
+    visitPar: fn(self: &Self, child: &Tree) %void,
 
-    fn visit(self: &Self, tree: &Tree) -> %void {
+    fn visit(self: &Self, tree: &Tree) %void {
         switch (*tree) {
             Tree.Leaf => | leaf| return self.visitLeaf(self, leaf),
             Tree.Node => |*node| return self.visitNode(self, node),
@@ -34,7 +34,7 @@ const Tree = union(enum) {
     Par: &Tree,
     Node: TreeNode,
 
-    pub fn destroy(self: &const Self, allocator: &Allocator) {
+    pub fn destroy(self: &const Self, allocator: &Allocator) void {
         switch (*self) {
             Self.Node => |node| {
                 node.left.destroy(allocator);
@@ -45,48 +45,48 @@ const Tree = union(enum) {
             },
             else => { }
         }
-        
+
         allocator.destroy(self);
     }
 
-    pub fn createLeaf(allocator: &Allocator, value: i64) -> %&Tree {
+    pub fn createLeaf(allocator: &Allocator, value: i64) %&Tree {
         const result = try allocator.create(Tree);
         *result = Tree { .Leaf = value };
         return result;
     }
 
-    pub fn createNode(allocator: &Allocator, symbol: u8, left: &Tree, right: &Tree) -> %&Tree {
+    pub fn createNode(allocator: &Allocator, symbol: u8, left: &Tree, right: &Tree) %&Tree {
         const result = try allocator.create(Tree);
         *result = Tree { .Node = TreeNode { .symbol = symbol, .left = left, .right = right } };
         return result;
     }
 
-    pub fn createPar(allocator: &Allocator, child: &Tree) -> %&Tree {
+    pub fn createPar(allocator: &Allocator, child: &Tree) %&Tree {
         const result = try allocator.create(Tree);
         *result = Tree { .Par = child };
         return result;
     }
 };
 
-fn toLeaf(str: &const []u8, allocator: &Allocator, cleanUp: CleanUp([]u8)) -> %&Tree {
+fn toLeaf(str: &const []u8, allocator: &Allocator, cleanUp: CleanUp([]u8)) %&Tree {
     defer cleanUp(str, allocator);
 
     const i = try std.fmt.parseInt(i64, *str, 10);
     return Tree.createLeaf(allocator, i);
 }
 
-fn toPar(tree: &const &Tree, allocator: &Allocator, cleanUp: CleanUp(&Tree)) -> %&Tree {
-    %defer cleanUp(tree, allocator);
+fn toPar(tree: &const &Tree, allocator: &Allocator, cleanUp: CleanUp(&Tree)) %&Tree {
+    errdefer cleanUp(tree, allocator);
     return Tree.createPar(allocator, *tree);
 }
 
-fn treeCleanUp(tree: &const &Tree, allocator: &Allocator) {
+fn treeCleanUp(tree: &const &Tree, allocator: &Allocator) void {
     (*tree).destroy(allocator);
 }
 
-fn apply(allocator: &Allocator, treeClean: CleanUp(&Tree), opClean: CleanUp(u8), 
-    left: &const &Tree, right: &const &Tree, op: &const u8) -> %&Tree {
-    %defer {
+fn apply(allocator: &Allocator, treeClean: CleanUp(&Tree), opClean: CleanUp(u8),
+    left: &const &Tree, right: &const &Tree, op: &const u8) %&Tree {
+    errdefer {
         treeClean(left , allocator);
         treeClean(right, allocator);
     }
@@ -96,7 +96,7 @@ fn apply(allocator: &Allocator, treeClean: CleanUp(&Tree), opClean: CleanUp(u8),
     return result;
 }
 
-fn getPrecedence(symbol: u8) -> u8 {
+fn getPrecedence(symbol: u8) u8 {
     switch (symbol) {
         '+', '-' => return 4,
         '*', '/' => return 3,
@@ -104,27 +104,27 @@ fn getPrecedence(symbol: u8) -> u8 {
     }
 }
 
-fn printLeaf(self: &Visitor, leaf: i64) -> %void {
+fn printLeaf(self: &Visitor, leaf: i64) %void {
     debug.warn("{}", leaf);
 }
 
 
-fn printPar(self: &Visitor, child: &Tree) -> %void {
+fn printPar(self: &Visitor, child: &Tree) %void {
     debug.warn("(");
     try self.visit(child);
     debug.warn(")");
 }
 
-fn printNode(self: &Visitor, node: &TreeNode) -> %void {
+fn printNode(self: &Visitor, node: &TreeNode) %void {
     try self.visit(node.left);
     debug.warn(" {} ", [1]u8{ node.symbol });
     try self.visit(node.right);
 }
 
-fn precedenceLeaf(self: &Visitor, leaf: i64) -> %void { }
-fn precedencePar(self: &Visitor, par: &Tree) -> %void { return self.visit(par); }
+fn precedenceLeaf(self: &Visitor, leaf: i64) %void { }
+fn precedencePar(self: &Visitor, par: &Tree) %void { return self.visit(par); }
 
-fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) -> %void {
+fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) %void {
     try self.visit(node.left);
     switch (*node.left) {
         Tree.Node => |*left| {
@@ -146,7 +146,7 @@ fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) -> %void {
     }
 }
 
-fn precedenceNodeRight(self: &Visitor, node: &TreeNode) -> %void {
+fn precedenceNodeRight(self: &Visitor, node: &TreeNode) %void {
     try self.visit(node.left);
     switch (*node.left) {
         Tree.Node => |*left| {
@@ -168,7 +168,7 @@ fn precedenceNodeRight(self: &Visitor, node: &TreeNode) -> %void {
     }
 }
 
-const operators = 
+const operators =
     \\1 + (1 - 2) *
     \\1 - (1 + 2) /
     \\1 + (1 - 2) *
@@ -180,7 +180,7 @@ const addSubChars = comptime char('+').orElse(char('-')).trim();
 const mulDivChars = comptime char('*').orElse(char('/')).trim();
 
 const Left = struct {
-    fn exprRef() -> &const ParserWithCleanup(&Tree, treeCleanUp) {
+    fn exprRef() &const ParserWithCleanup(&Tree, treeCleanUp) {
         return expr;
     }
 
@@ -204,7 +204,7 @@ test "parser.Example: Left Precedence Expression Parser" {
         .visitNode = precedenceNodeLeft,
         .visitPar = precedencePar,
     };
-    
+
     leftVisitor.visit(res) catch unreachable;
 
     var rightVisitor = Visitor {
@@ -212,14 +212,14 @@ test "parser.Example: Left Precedence Expression Parser" {
         .visitNode = precedenceNodeRight,
         .visitPar = precedencePar,
     };
-    
+
     if (rightVisitor.visit(res)) |v| {
         unreachable;
     } else |err| { }
 }
 
 const Right = struct {
-    fn exprRef() -> &const ParserWithCleanup(&Tree, treeCleanUp) {
+    fn exprRef() &const ParserWithCleanup(&Tree, treeCleanUp) {
         return expr;
     }
 
@@ -243,7 +243,7 @@ test "parser.Example: Right Precedence Expression Parser" {
         .visitNode = precedenceNodeLeft,
         .visitPar = precedencePar,
     };
-    
+
     if (leftVisitor.visit(res)) |v| {
         unreachable;
     } else |err| { }
@@ -253,7 +253,7 @@ test "parser.Example: Right Precedence Expression Parser" {
         .visitNode = precedenceNodeRight,
         .visitPar = precedencePar,
     };
-    
+
     rightVisitor.visit(res) catch unreachable;
 }
 
@@ -262,19 +262,19 @@ test "parser.Example: Right Precedence Expression Parser" {
 ///       should still compile
 const ZigSyntax = struct {
     // Root = many(TopLevelItem) EOF
-    pub const root = comptime 
+    pub const root = comptime
         topLevelItem.many()
             .then(end);
 
     // TopLevelItem = ErrorValueDecl | CompTimeExpression(Block) | TopLevelDecl | TestDecl
-    pub const topLevelItem = 
+    pub const topLevelItem =
         errorValueDecl
             .orElse(compTimeExpression)
             .orElse(topLevelDecl)
             .orElse(testDecl);
-    
+
     // TestDecl = "test" String Block
-    pub const testDecl = 
+    pub const testDecl =
         string("test")
             .then(stringLit)
             .then(block);
@@ -302,7 +302,7 @@ const ZigSyntax = struct {
             .then(char(';'));
 
     // LocalVarDecl = option("comptime") VariableDeclaration
-    pub const localVarDecl = 
+    pub const localVarDecl =
         string("comptime").optional()
             .then(variableDeclaration);
 
@@ -333,7 +333,7 @@ const ZigSyntax = struct {
             .then(expression);
 
     // ContainerMember = (ContainerField | FnDef | GlobalVarDecl)
-    pub const containerMember = 
+    pub const containerMember =
         containerField
             .orElse(fnDef)
             .orElse(globalVarDecl);
@@ -381,7 +381,7 @@ const ZigSyntax = struct {
             );
 
     // FnDef = option("inline" | "export") FnProto Block
-    pub const fnDef = 
+    pub const fnDef =
         string("inline")
             .orElse("export")
             .optional()
@@ -429,7 +429,7 @@ const ZigSyntax = struct {
             .orElse(char(';'));
 
     // TypeExpr = PrefixOpExpression | "var"
-    pub const typeExpr = 
+    pub const typeExpr =
         prefixOpExpression.orElse(string("var"));
 
     // BlockOrExpression = Block | Expression
@@ -437,11 +437,11 @@ const ZigSyntax = struct {
         block.orElse(expression);
 
     // Expression = ReturnExpression | BreakExpression | AssignmentExpression
-    pub const expression = 
+    pub const expression =
         ReturnExpression
             .orElse(breakExpression)
             .orElse(assignmentExpression);
-            
+
     // AsmExpression = "asm" option("volatile") "(" String option(AsmOutput) ")"
     pub const asmExpression =
         string("asm")
@@ -511,7 +511,7 @@ const ZigSyntax = struct {
     // UnwrapNullable = "??" Expression
     pub const unwrapNullable =
         string("??").then(expression);
-        
+
     // UnwrapError = "catch" option("|" Symbol "|") Expression
     pub const unwrapError =
         string("catch")
@@ -522,7 +522,7 @@ const ZigSyntax = struct {
                     .optional()
             )
             .then(expression);
-            
+
     // AssignmentExpression = UnwrapExpression AssignmentOperator UnwrapExpression | UnwrapExpression
     pub const assignmentExpression =
         unwrapExpression
@@ -548,8 +548,8 @@ const ZigSyntax = struct {
             .orElse(string("-%="));
 
     //  BlockExpression(body) = Block | IfExpression(body) | TryExpression(body) | TestExpression(body) | WhileExpression(body) | ForExpression(body) | SwitchExpression | CompTimeExpression(body)
-    pub fn blockExpression(comptime body: var) -> Parser(void) {
-        return 
+    pub fn blockExpression(comptime body: var) Parser(void) {
+        return
             block
                 .orElse(ifExpression(body))
                 .orElse(tryExpression(body))
@@ -561,8 +561,8 @@ const ZigSyntax = struct {
     }
 
     // CompTimeExpression(body) = "comptime" body
-    pub fn compTimeExpression(comptime body: var) -> Parser(void) {
-        return 
+    pub fn compTimeExpression(comptime body: var) Parser(void) {
+        return
             string("comptime")
                 .then(body);
     }
@@ -602,7 +602,7 @@ const ZigSyntax = struct {
             );
 
     // ForExpression(body) = option(Symbol ":") option("inline") "for" "(" Expression ")" option("|" option("*") Symbol option("," Symbol) "|") body option("else" BlockExpression(body))
-    pub fn forExpression(comptime body: var) -> Parser(void) {
+    pub fn forExpression(comptime body: var) Parser(void) {
         return
             symbol.then(char(':')).optional()
                 .then(string("inline").optional)
@@ -653,7 +653,7 @@ const ZigSyntax = struct {
             .then(expression.optional());
 
     // Defer(body) = option("%") "defer" body
-    pub fn deferP(comptime body: var) -> Parser(void) {
+    pub fn deferP(comptime body: var) Parser(void) {
         return
             char('%').optional()
                 .then(string("defer"))
@@ -661,7 +661,7 @@ const ZigSyntax = struct {
     }
 
     // IfExpression(body) = "if" "(" Expression ")" body option("else" BlockExpression(body))
-    pub fn ifExpression(comptime body: var) -> Parser(void) {
+    pub fn ifExpression(comptime body: var) Parser(void) {
         return
             string("if")
                 .then(char('('))
@@ -676,7 +676,7 @@ const ZigSyntax = struct {
     }
 
     // TryExpression(body) = "if" "(" Expression ")" option("|" option("*") Symbol "|") body "else" "|" Symbol "|" BlockExpression(body)
-    pub fn tryExpression(comptime body: var) -> Parser(void) {
+    pub fn tryExpression(comptime body: var) Parser(void) {
         return
             string("if")
                 .then(char('('))
@@ -698,7 +698,7 @@ const ZigSyntax = struct {
     }
 
     // TestExpression(body) = "if" "(" Expression ")" option("|" option("*") Symbol "|") body option("else" BlockExpression(body))
-    pub fn testExpression(comptime body: var) -> Parser(void) {
+    pub fn testExpression(comptime body: var) Parser(void) {
         return
             string("if")
                 .then(char('('))
@@ -720,7 +720,7 @@ const ZigSyntax = struct {
     }
 
     // WhileExpression(body) = option(Symbol ":") option("inline") "while" "(" Expression ")" option("|" option("*") Symbol "|") option(":" "(" Expression ")") body option("else" option("|" Symbol "|") BlockExpression(body))
-    pub fn whileExpression(comptime body: var) -> Parser(void) {
+    pub fn whileExpression(comptime body: var) Parser(void) {
         return
             symbol
                 .then(char(':'))
@@ -781,7 +781,7 @@ const ZigSyntax = struct {
             .orElse(string(">="));
 
     // CompTimeExpression(body) = "comptime" body
-    pub fn compTimeExpression(comptime body: var) -> Parser(void) {
+    pub fn compTimeExpression(comptime body: var) Parser(void) {
         return
             string("comptime")
                 .then(body);
@@ -818,10 +818,10 @@ const ZigSyntax = struct {
             .then(string("..."))
             .then(expression)
             .orElse(expression);
-            
+
     // ForExpression(body) = option(Symbol ":") option("inline") "for" "(" Expression ")" option("|" option("*") Symbol option("," Symbol) "|") body option("else" BlockExpression(body))
-    pub fn forExpression(comptime body: var) -> Parser(void) {
-        return 
+    pub fn forExpression(comptime body: var) Parser(void) {
+        return
             symbol.then(char(':')).optional()
                 .then(string("inline").optional())
                 .then(string("for"))
@@ -867,14 +867,14 @@ const ZigSyntax = struct {
             .then(expression.optional());
 
     // Defer(body) = option("%") "defer" body
-    pub fn deferP(comptime body: var) -> Parser(void) {
+    pub fn deferP(comptime body: var) Parser(void) {
         char('%').optional()
             .then(string("return"))
             .then(body);
     }
 
     // IfExpression(body) = "if" "(" Expression ")" body option("else" BlockExpression(body))
-    pub fn ifExpression(comptime body: var) -> Parser(void) {
+    pub fn ifExpression(comptime body: var) Parser(void) {
         return
             string("if")
                 .then(char('('))
@@ -957,13 +957,13 @@ const ZigSyntax = struct {
             .then(containerInitExpression.optional());
 
     // PrefixOpExpression = PrefixOp PrefixOpExpression | SuffixOpExpression
-    pub const prefixOpExpression = 
+    pub const prefixOpExpression =
         prefixOp
             .then(prefixOpExpression)
             .orElse(suffixOpExpression);
 
     // SuffixOpExpression = PrimaryExpression option(FnCallExpression | ArrayAccessExpression | FieldAccessExpression | SliceExpression)
-    pub const suffixOpExpression = 
+    pub const suffixOpExpression =
         primaryExpression
             .then(
                 fnCallExpression

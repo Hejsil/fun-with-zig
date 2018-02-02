@@ -1,6 +1,6 @@
 const Iterator = @import("../iterator.zig").Iterator;
 
-pub fn all(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) -> bool) -> bool {  
+pub fn all(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) bool) bool {
     while (iter.next()) |item| {
         if (!predicate(item)) return false;
     }
@@ -8,9 +8,9 @@ pub fn all(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) 
     return true;
 }
 
-pub fn allC(comptime TData: type, comptime TContext: type, 
+pub fn allC(comptime TData: type, comptime TContext: type,
     iter: &Iterator(&const TData), context: &const TContext,
-    predicate: fn(&const TData, &const TContext) -> bool) -> bool {
+    predicate: fn(&const TData, &const TContext) bool) bool {
     while (iter.next()) |item| {
         if (!predicate(item, context)) return false;
     }
@@ -18,7 +18,7 @@ pub fn allC(comptime TData: type, comptime TContext: type,
     return true;
 }
 
-pub fn any(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) -> bool) -> bool {    
+pub fn any(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) bool) bool {
     while (iter.next()) |item| {
         if (predicate(item)) return true;
     }
@@ -26,9 +26,9 @@ pub fn any(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) 
     return false;
 }
 
-pub fn anyC(comptime TData: type, comptime TContext: type, 
+pub fn anyC(comptime TData: type, comptime TContext: type,
     iter: &Iterator(&const TData), context: &const TContext,
-    predicate: fn(&const TData, &const TContext) -> bool) -> bool {
+    predicate: fn(&const TData, &const TContext) bool) bool {
     while (iter.next()) |item| {
         if (predicate(item, context)) return true;
     }
@@ -36,7 +36,7 @@ pub fn anyC(comptime TData: type, comptime TContext: type,
     return false;
 }
 
-pub fn first(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) -> bool) -> ?T {
+pub fn first(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) bool) ?T {
     while (iter.next()) |item| {
         if (predicate(item)) return *item;
     }
@@ -44,9 +44,9 @@ pub fn first(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T
     return null;
 }
 
-pub fn firstC(comptime TData: type, comptime TContext: type, 
+pub fn firstC(comptime TData: type, comptime TContext: type,
     iter: &Iterator(&const TData), context: &const TContext,
-    predicate: fn(&const TData, &const TContext) -> bool) -> ?TData {
+    predicate: fn(&const TData, &const TContext) bool) ?TData {
     while (iter.next()) |item| {
         if (predicate(item, context)) return *item;
     }
@@ -54,7 +54,7 @@ pub fn firstC(comptime TData: type, comptime TContext: type,
     return null;
 }
 
-pub fn count(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) -> bool) -> usize {
+pub fn count(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T) bool) usize {
     var res : usize = 0;
     while (iter.next()) |item| {
         if (predicate(item)) i += 1;
@@ -63,9 +63,9 @@ pub fn count(comptime T: type, iter: &Iterator(&const T), predicate: fn(&const T
     return res;
 }
 
-pub fn countC(comptime TData: type, comptime TContext: type, 
+pub fn countC(comptime TData: type, comptime TContext: type,
     iter: &Iterator(&const TData), context: &const TContext,
-    predicate: fn(&const TData, &const TContext) -> bool) -> usize {
+    predicate: fn(&const TData, &const TContext) bool) usize {
     var res : usize = 0;
     while (iter.next()) |item| {
         if (predicate(item, context)) i += 1;

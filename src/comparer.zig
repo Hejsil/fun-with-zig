@@ -4,11 +4,11 @@ const TypeId = @import("builtin").TypeId;
 
 /// Get the default less than function for a type.
 /// NOTE: Not all types have a obviouse or useful default. These types give a comptime error.
-pub fn lessThan(comptime T: type) -> fn(&const T, &const T) -> bool {
+pub fn lessThan(comptime T: type) fn(&const T, &const T) bool {
     const LessThanStruct = struct {
-        fn lt(a: &const T, b: &const T) -> bool {
+        fn lt(a: &const T, b: &const T) bool {
             switch (@typeId(T)) {
-                TypeId.Int, TypeId.Float, 
+                TypeId.Int, TypeId.Float,
                 TypeId.FloatLiteral, TypeId.IntLiteral => {
                     return *a < *b;
                 },
@@ -27,9 +27,9 @@ pub fn lessThan(comptime T: type) -> fn(&const T, &const T) -> bool {
                     return mem.lessThan(T.Child, *a, *b);
                 },
 
-                // These types have no obviouse or useful default order, so we don't provide 
+                // These types have no obviouse or useful default order, so we don't provide
                 // a default less than for them.
-                // TypeId.Struct, TypeId.Enum, TypeId.Union, TypeId.ErrorUnion, TypeId.Error, 
+                // TypeId.Struct, TypeId.Enum, TypeId.Union, TypeId.ErrorUnion, TypeId.Error,
                 // TypeId.NullLiteral, TypeId.Pointer
                 else => {
                     @compileLog("Cannot get a default less than for ", T);
@@ -101,7 +101,7 @@ test "comparer.lessThan(bool)" {
     assert(!boolLessThan(true , true ));
     assert(!boolLessThan(true , false));
 }
-    
+
 test "comparer.lessThan(?i64)" {
     const nul : ?i64 = null;
     const nullableLessThan = lessThan(?i64);
@@ -129,8 +129,8 @@ test "comparer.lessThan([1]u8)" {
 // }
 
 // Should probably be in some other library or something
-fn toBytes(comptime T: type, value: &const T) -> []const u8 {
-    return ([]const u8)(value[0..1]); 
+fn toBytes(comptime T: type, value: &const T) []const u8 {
+    return ([]const u8)(value[0..1]);
 }
 
 test "comparer.toBytes" {
@@ -139,18 +139,18 @@ test "comparer.toBytes" {
     assert(mem.eql(u8, toBytes(u32, v), []u8 { 0x78, 0x56, 0x34, 0x12 }));
 }
 
-fn isError(comptime T: type, value: &const %T) -> bool {
+fn isError(comptime T: type, value: &const %T) bool {
     return if (*value) |v| false else |err| true;
 }
 
 /// Get the default equal function for a type.
-pub fn equal(comptime T: type) -> fn(&const T, &const T) -> bool {
+pub fn equal(comptime T: type) fn(&const T, &const T) bool {
     const EqualStruct = struct {
-        fn eql(a: &const T, b: &const T) -> bool {
+        fn eql(a: &const T, b: &const T) bool {
             switch (@typeId(T)) {
                 TypeId.Int, TypeId.Float, TypeId.Bool,
                 TypeId.FloatLiteral, TypeId.IntLiteral,
-                TypeId.Error, TypeId.Pointer, 
+                TypeId.Error, TypeId.Pointer,
                 TypeId.NullLiteral, TypeId.Type => {
                     return *a == *b;
                 },
@@ -236,7 +236,7 @@ test "comparer.equal(error)" {
 }
 
 test "comparer.equal(%i32)" {
-    const a : %i32 = 1; 
+    const a : %i32 = 1;
     const b : %i32 = error.TestError1;
     const errorEqual = equal(%i32);
     assert( errorEqual(a, (%i32)(1)));
@@ -280,7 +280,7 @@ test "comparer.equal(struct)" {
     assert(!structEqual(Struct{ .a = 0, .b = 0.1 }, Struct{ .a = 1, .b = 1.1 }));
 }
 
-//TypeId.Enum, 
+//TypeId.Enum,
 //TypeId.Union,
 //TypeId.Nullable
 //TypeId.NullLiteral

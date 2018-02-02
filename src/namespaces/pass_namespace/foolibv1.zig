@@ -1,9 +1,9 @@
 const debug = @import("std").debug;
 
-pub fn foo() {
+pub fn foo() void {
     debug.warn("foo");
 }
 
-pub fn bar() {
+pub fn bar() void {
     debug.warn("bar");
 }

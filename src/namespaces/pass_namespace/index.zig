@@ -3,7 +3,7 @@
 const Namespace = @typeOf(@import("std"));
 
 // We can now define function that take namespaces at comptime.
-fn namespaceHelloWorld(comptime N: Namespace) -> %void {
+fn namespaceHelloWorld(comptime N: Namespace) %void {
     var stdout_file = try N.getStdOut();
     try stdout_file.write("Hello, world!\n");
 }
@@ -39,7 +39,7 @@ test "namespaces.pass_namespace.Example: foolib" {
     useBar(foolibv1);
     // useBar(foolibv2); // error: expression value is ignored
 
-    // And at some point, we made a new function that handles the new 
+    // And at some point, we made a new function that handles the new
     // signature, so now we use that instead.
     _ = useNewBar(foolibv2);
 
@@ -48,14 +48,14 @@ test "namespaces.pass_namespace.Example: foolib" {
     //       causes more harm than good.
 }
 
-fn useFoo(comptime FooLib: Namespace) {
+fn useFoo(comptime FooLib: Namespace) void {
     FooLib.foo();
 }
 
-fn useBar(comptime FooLib: Namespace) {
+fn useBar(comptime FooLib: Namespace) void {
     FooLib.bar();
 }
 
-fn useNewBar(comptime FooLib: Namespace) -> %void {
+fn useNewBar(comptime FooLib: Namespace) %void {
     try FooLib.bar();
 }
