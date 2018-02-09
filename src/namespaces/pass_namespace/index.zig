@@ -3,7 +3,7 @@
 const Namespace = @typeOf(@import("std"));
 
 // We can now define function that take namespaces at comptime.
-fn namespaceHelloWorld(comptime N: Namespace) %void {
+fn namespaceHelloWorld(comptime N: Namespace) !void {
     var stdout_file = try N.getStdOut();
     try stdout_file.write("Hello, world!\n");
 }
@@ -56,6 +56,6 @@ fn useBar(comptime FooLib: Namespace) void {
     FooLib.bar();
 }
 
-fn useNewBar(comptime FooLib: Namespace) %void {
+fn useNewBar(comptime FooLib: Namespace) !void {
     try FooLib.bar();
 }

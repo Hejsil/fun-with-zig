@@ -1,6 +1,6 @@
 const equal = @import("comparer.zig").equal;
 
-error TestFailed;
+
 
 pub fn TestCase(comptime TIn: type, comptime TOut: type) type {
     return struct {
@@ -16,11 +16,11 @@ pub fn TestCase(comptime TIn: type, comptime TOut: type) type {
             };
         }
 
-        pub fn runDefaultEql(self: &const Self, func: fn(&const TIn) %TOut) %void {
+        pub fn runDefaultEql(self: &const Self, func: fn(&const TIn) error!TOut) !void {
             return self.run(func, equal(TOut));
         }
 
-        pub fn run(self: &const Self, func: fn(&const TIn) %TOut, eql: fn(&const TOut, &const TOut) bool) %void {
+        pub fn run(self: &const Self, func: fn(&const TIn) error!TOut, eql: fn(&const TOut, &const TOut) bool) !void {
             if (!eql(try func(&self.in), &self.out)) {
                 return error.TestFailed;
             }

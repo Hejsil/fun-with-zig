@@ -14,11 +14,11 @@ const TreeNode = struct {
 const Visitor = struct {
     const Self = this;
 
-    visitLeaf: fn(self: &Self, leaf: i64) %void,
-    visitNode: fn(self: &Self, node: &TreeNode) %void,
-    visitPar: fn(self: &Self, child: &Tree) %void,
+    visitLeaf: fn(self: &Self, leaf: i64) error!void,
+    visitNode: fn(self: &Self, node: &TreeNode) error!void,
+    visitPar: fn(self: &Self, child: &Tree) error!void,
 
-    fn visit(self: &Self, tree: &Tree) %void {
+    fn visit(self: &Self, tree: &Tree) !void {
         switch (*tree) {
             Tree.Leaf => | leaf| return self.visitLeaf(self, leaf),
             Tree.Node => |*node| return self.visitNode(self, node),
@@ -49,33 +49,33 @@ const Tree = union(enum) {
         allocator.destroy(self);
     }
 
-    pub fn createLeaf(allocator: &Allocator, value: i64) %&Tree {
+    pub fn createLeaf(allocator: &Allocator, value: i64) !&Tree {
         const result = try allocator.create(Tree);
         *result = Tree { .Leaf = value };
         return result;
     }
 
-    pub fn createNode(allocator: &Allocator, symbol: u8, left: &Tree, right: &Tree) %&Tree {
+    pub fn createNode(allocator: &Allocator, symbol: u8, left: &Tree, right: &Tree) !&Tree {
         const result = try allocator.create(Tree);
         *result = Tree { .Node = TreeNode { .symbol = symbol, .left = left, .right = right } };
         return result;
     }
 
-    pub fn createPar(allocator: &Allocator, child: &Tree) %&Tree {
+    pub fn createPar(allocator: &Allocator, child: &Tree) !&Tree {
         const result = try allocator.create(Tree);
         *result = Tree { .Par = child };
         return result;
     }
 };
 
-fn toLeaf(str: &const []u8, allocator: &Allocator, cleanUp: CleanUp([]u8)) %&Tree {
+fn toLeaf(str: &const []u8, allocator: &Allocator, cleanUp: CleanUp([]u8)) !&Tree {
     defer cleanUp(str, allocator);
 
     const i = try std.fmt.parseInt(i64, *str, 10);
     return Tree.createLeaf(allocator, i);
 }
 
-fn toPar(tree: &const &Tree, allocator: &Allocator, cleanUp: CleanUp(&Tree)) %&Tree {
+fn toPar(tree: &const &Tree, allocator: &Allocator, cleanUp: CleanUp(&Tree)) !&Tree {
     errdefer cleanUp(tree, allocator);
     return Tree.createPar(allocator, *tree);
 }
@@ -85,7 +85,7 @@ fn treeCleanUp(tree: &const &Tree, allocator: &Allocator) void {
 }
 
 fn apply(allocator: &Allocator, treeClean: CleanUp(&Tree), opClean: CleanUp(u8),
-    left: &const &Tree, right: &const &Tree, op: &const u8) %&Tree {
+    left: &const &Tree, right: &const &Tree, op: &const u8) !&Tree {
     errdefer {
         treeClean(left , allocator);
         treeClean(right, allocator);
@@ -104,27 +104,27 @@ fn getPrecedence(symbol: u8) u8 {
     }
 }
 
-fn printLeaf(self: &Visitor, leaf: i64) %void {
+fn printLeaf(self: &Visitor, leaf: i64) !void {
     debug.warn("{}", leaf);
 }
 
 
-fn printPar(self: &Visitor, child: &Tree) %void {
+fn printPar(self: &Visitor, child: &Tree) !void {
     debug.warn("(");
     try self.visit(child);
     debug.warn(")");
 }
 
-fn printNode(self: &Visitor, node: &TreeNode) %void {
+fn printNode(self: &Visitor, node: &TreeNode) !void {
     try self.visit(node.left);
     debug.warn(" {} ", [1]u8{ node.symbol });
     try self.visit(node.right);
 }
 
-fn precedenceLeaf(self: &Visitor, leaf: i64) %void { }
-fn precedencePar(self: &Visitor, par: &Tree) %void { return self.visit(par); }
+fn precedenceLeaf(self: &Visitor, leaf: i64) error!void { }
+fn precedencePar(self: &Visitor, par: &Tree) error!void { return self.visit(par); }
 
-fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) %void {
+fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) !void {
     try self.visit(node.left);
     switch (*node.left) {
         Tree.Node => |*left| {
@@ -146,7 +146,7 @@ fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) %void {
     }
 }
 
-fn precedenceNodeRight(self: &Visitor, node: &TreeNode) %void {
+fn precedenceNodeRight(self: &Visitor, node: &TreeNode) !void {
     try self.visit(node.left);
     switch (*node.left) {
         Tree.Node => |*left| {

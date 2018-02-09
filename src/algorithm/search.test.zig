@@ -40,7 +40,7 @@ const allTests = []AllAnyCase {
     AllAnyCase.init([]i64{ -1,  0,  1,  4 }, Result.init(false, false, false))
 };
 
-fn runAllTest(in: &const []const i64) %Result {
+fn runAllTest(in: &const []const i64) error!Result {
     return Result {
         .less    = all(i64, &iter(*in).iter, isLessThan0),
         .equal   = all(i64, &iter(*in).iter, isEqual0),
@@ -54,7 +54,7 @@ test "algorithm.search.all" {
     }
 }
 
-fn runAllCTest(in: &const []const i64) %Result {
+fn runAllCTest(in: &const []const i64) error!Result {
     return Result {
         .less    = allC(i64, i64, &iter(*in).iter, 0, lessThan),
         .equal   = allC(i64, i64, &iter(*in).iter, 0, equal),
@@ -83,7 +83,7 @@ const anyTests = []AllAnyCase {
     AllAnyCase.init([]i64{ -1,  0,  1,  4 }, Result.init(true , true , true ))
 };
 
-fn runAnyTest(in: &const []const i64) %Result {
+fn runAnyTest(in: &const []const i64) error!Result {
     return Result {
         .less    = any(i64, &iter(*in).iter, isLessThan0),
         .equal   = any(i64, &iter(*in).iter, isEqual0),
@@ -97,7 +97,7 @@ test "algorithm.search.any" {
     }
 }
 
-fn runAnyCTest(in: &const []const i64) %Result {
+fn runAnyCTest(in: &const []const i64) error!Result {
     return Result {
         .less    = anyC(i64, i64, &iter(*in).iter, 0, lessThan),
         .equal   = anyC(i64, i64, &iter(*in).iter, 0, equal),
@@ -140,7 +140,7 @@ const firstTests = []FirstCase {
     FirstCase.init([]i64{ -1,  0,  1,  4 }, FirstResult.init(-1  , 0   , 1   ))
 };
 
-fn runFirstTest(in: &const []const i64) %FirstResult {
+fn runFirstTest(in: &const []const i64) error!FirstResult {
     return FirstResult {
         .less    = first(i64, &iter(*in).iter, isLessThan0),
         .equal   = first(i64, &iter(*in).iter, isEqual0),
@@ -154,7 +154,7 @@ test "algorithm.search.first" {
     }
 }
 
-fn runFirstCTest(in: &const []const i64) %FirstResult {
+fn runFirstCTest(in: &const []const i64) error!FirstResult {
     return FirstResult {
         .less    = firstC(i64, i64, &iter(*in).iter, 0, lessThan),
         .equal   = firstC(i64, i64, &iter(*in).iter, 0, equal),

@@ -6,7 +6,7 @@ pub fn foo() void {
     stdout_file.write("foo") catch unreachable;
 }
 
-pub fn bar() %void {
+pub fn bar() !void {
     var stdout_file = try io.getStdOut();
     try stdout_file.write("bar");
 }
