@@ -1,9 +1,9 @@
 const debug = @import("std").debug;
 const assert = debug.assert;
 
-// TODO: If we get functions with capture one day, then "comptime nextFn fn (&Context) ?Result", because then those can't be used.
-//       We could store the function in the iterator. The iterator will then just grow a little in size every time you construct
-//       iterators from other iterators.
+// TODO: If we get functions with capture one day, then "comptime nextFn fn (&Context) ?Result" wont work, because then those
+//       can't be used. We could store the function in the iterator. The iterator will then just grow a little in size every
+//       time you construct iterators from other iterators.
 pub fn Iterator(comptime Context: type, comptime Res: type, comptime nextFn: fn (&Context) ?Res) type {
     return struct {
         const Result = Res;
