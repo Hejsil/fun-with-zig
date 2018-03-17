@@ -1,12 +1,17 @@
-const debug = @import("std").debug;
+const std = @import("std");
+const debug  = std.debug;
+const mem    = std.mem;
 const assert = debug.assert;
 
 // TODO: If we get functions with capture one day, then "comptime nextFn fn (&Context) ?Result" wont work, because then those
 //       can't be used. We could store the function in the iterator. The iterator will then just grow a little in size every
 //       time you construct iterators from other iterators.
-pub fn Iterator(comptime Context: type, comptime Res: type, comptime nextFn: fn (&Context) ?Res) type {
+
+/// A generic iterator which uses ::nextFn to iterate over a ::TContext.
+pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn: fn (&TContext) ?TResult) type {
     return struct {
-        const Result = Res;
+        const Result  = TResult;
+        const Context = TContext;
         const Self = this;
 
         context: Context,
@@ -151,13 +156,77 @@ pub fn SliceIterator(comptime T: type) type {
     return Iterator([]const T, T, NextFn.next);
 }
 
+pub fn SliceMutableIterator(comptime T: type) type {
+    const NextFn = struct {
+        fn next(context: &[]T) ?&T {
+            if (context.len != 0) {
+                defer *context = (*context)[1..];
+                return &(*context)[0];
+            }
+
+            return null;
+        }
+    };
+
+    return Iterator([]T, &T, NextFn.next);
+}
+
+fn RangeIterator(comptime T: type) type {
+    const RangeContext = struct { current: T, count: T, step: T };
+    const NextFn = struct {
+        fn next(context: &RangeContext) ?T {
+            if (context.count == 0) return null;
+            defer context.count   -= 1;
+            defer context.current += context.step;
+            return context.current;
+        }
+    };
+
+    return Iterator(RangeContext, T, NextFn.next);
+}
+
+pub fn range(comptime T: type, start: T, count: T, step: T) RangeIterator(T) {
+    const Context = RangeIterator(T).Context;
+    return RangeIterator(T).init(Context { .current = start, .count = count, .step = step });
+}
+
+fn RepeatIterator(comptime T: type) type {
+    const NextFn = struct {
+        fn next(context: &T) ?T {
+            return *context;
+        }
+    };
+
+    return Iterator(T, T, NextFn.next);
+}
+
+pub fn repeat(comptime T: type, v: T) RepeatIterator(T) {
+    return RepeatIterator(T).init(v);
+}
+
+fn EmptyIterator(comptime T: type) type {
+    const NextFn = struct {
+        fn next(context: &u8) ?T {
+            return null;
+        }
+    };
+
+    // TODO: The context can't be "void" because of https://github.com/zig-lang/zig/issues/838
+    return Iterator(u8, T, NextFn.next);
+}
+
+pub fn empty(comptime T: type) EmptyIterator(T) {
+    return EmptyIterator(T).init(0);
+}
+
 pub fn aggregate(it: var, func: fn(&const @typeOf(*it).Result, &const @typeOf(*it).Result) @typeOf(*it).Result) ?@typeOf(*it).Result {
     return aggregateAcc(it, it.next() ?? return null, @typeOf(*it).Result, func);
 }
 
 pub fn aggregateAcc(it: var, acc: var, func: fn(@typeOf(acc), &const @typeOf(*it).Result) @typeOf(acc)) ?@typeOf(acc) {
+    var _it = *it;
     var result = acc;
-    while (it.next()) |item| {
+    while (_it.next()) |item| {
         result = func(result, item);
     }
 
@@ -165,7 +234,8 @@ pub fn aggregateAcc(it: var, acc: var, func: fn(@typeOf(acc), &const @typeOf(*it
 }
 
 pub fn all(it: var, predicate: fn(&const @typeOf(*it).Result) bool) bool {
-    while (it.next()) |item| {
+    var _it = *it;
+    while (_it.next()) |item| {
         if (!predicate(item)) return false;
     }
 
@@ -173,18 +243,85 @@ pub fn all(it: var, predicate: fn(&const @typeOf(*it).Result) bool) bool {
 }
 
 pub fn any(it: var, predicate: fn(&const @typeOf(*it).Result) bool) bool {
-    while (it.next()) |item| {
+    var _it = *it;
+    while (_it.next()) |item| {
         if (predicate(item)) return true;
     }
 
     return false;
 }
 
+pub fn countIf(it: var, predicate: fn(&const @typeOf(*it).Result) bool) u64 {
+    var _it = *it;
+    var res = u64(0);
+    while (_it.next()) |item| {
+        if (predicate(item)) res += 1;
+    }
+
+    return res;
+}
+
+test "iterators.SliceIterator" {
+    const data = "abacad";
+    var it = SliceIterator(u8).init(data);
+
+    var i = usize(0);
+    while (it.next()) |item| : (i += 1) {
+        assert(item == data[i]);
+    }
+
+    assert(i == data.len);
+}
+
+test "iterators.SliceMutableIterator" {
+    var data  = "abacac";
+    const res = "bcbdbd";
+    var it = SliceMutableIterator(u8).init(data[0..]);
+
+    while (it.next()) |item| {
+        *item += 1;
+    }
+
+    assert(mem.eql(u8, data, res));
+}
+
+test "iterators.range" {
+    const res  = "abcd";
+    var it = range(u8, 'a', 4, 1);
+
+    var i = usize(0);
+    while (it.next()) |item| : (i += 1) {
+        assert(item == res[i]);
+    }
+
+    assert(i == res.len);
+}
+
+test "iterators.repeat" {
+    var it = repeat(u64, 3);
+
+    var i = usize(0);
+    while (it.next()) |item| : (i += 1) {
+        assert(item == 3);
+        if (i == 10) break;
+    }
+}
+
+test "iterators.empty" {
+    var it = empty(u8);
+    var i = usize(0);
+    while (it.next()) |item| : (i += 1) {
+        assert(false);
+    }
+
+    assert(i == 0);
+}
+
 test "iterators.aggregateAcc" {
     const data = "abacad";
     const countA = struct { fn f(acc: u64, char: &const u8) u64 { return acc + u8(*char == 'a'); }}.f;
 
-    assert(??aggregateAcc(&SliceIterator(u8).init(data), u64(0), countA) == 3);
+    assert(??aggregateAcc(SliceIterator(u8).init(data), u64(0), countA) == 3);
 }
 
 test "iterators.all" {
@@ -192,8 +329,8 @@ test "iterators.all" {
     const data2 = "abaa";
     const isA = struct { fn f(char: &const u8) bool { return *char == 'a'; }}.f;
 
-    assert( all(&SliceIterator(u8).init(data1), isA));
-    assert(!all(&SliceIterator(u8).init(data2), isA));
+    assert( all(SliceIterator(u8).init(data1), isA));
+    assert(!all(SliceIterator(u8).init(data2), isA));
 }
 
 test "iterators.any" {
@@ -201,8 +338,15 @@ test "iterators.any" {
     const data2 = "bbab";
     const isA = struct { fn f(char: &const u8) bool { return *char == 'a'; }}.f;
 
-    assert(!any(&SliceIterator(u8).init(data1), isA));
-    assert( any(&SliceIterator(u8).init(data2), isA));
+    assert(!any(SliceIterator(u8).init(data1), isA));
+    assert( any(SliceIterator(u8).init(data2), isA));
+}
+
+test "iterators.countIf" {
+    const data = "abab";
+    const isA = struct { fn f(char: &const u8) bool { return *char == 'a'; }}.f;
+
+    assert(countIf(SliceIterator(u8).init(data), isA) == 2);
 }
 
 test "iterators.SliceIterator" {
