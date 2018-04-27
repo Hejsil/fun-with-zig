@@ -46,13 +46,13 @@ test "Dynamic.value" {
         const dyn_float = Dynamic.init(f32, 1.0);
         const dyn_string = Dynamic.init([]const u8, "Hello World!");
 
-        // They are all the same type, just like in dynamic typed languages
+        // They are all the same static type, just like in dynamic typed languages
         debug.assert(@typeOf(dyn_int)   == @typeOf(dyn_float));
         debug.assert(@typeOf(dyn_int)   == @typeOf(dyn_string));
         debug.assert(@typeOf(dyn_float) == @typeOf(dyn_string));
 
         // zig: /home/hejsil/Documents/zig/src/analyze.cpp:449: TypeTableEntry* get_pointer_to_type_extra(CodeGen*, TypeTableEntry*, bool, bool, uint32_t, uint32_t, uint32_t):Assertion `byte_alignment == 0' failed.
-        // Their values, are not the same type though.
+        // Their values, are not the dynamic same type though.
         //debug.assert(@typeOf(dyn_int.value())   != @typeOf(dyn_float.value()));
         //debug.assert(@typeOf(dyn_int.value())   != @typeOf(dyn_string.value()));
         //debug.assert(@typeOf(dyn_float.value()) != @typeOf(dyn_string.value()));
