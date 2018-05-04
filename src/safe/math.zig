@@ -16,7 +16,7 @@ fn CombineAdditive(comptime A: type, comptime B: type) type {
     return @IntType(is_signed, bit_count);
 }
 
-test "math.CombineAdditive" {
+test "safe.math.CombineAdditive" {
     comptime {
         const u9 = @IntType(false, 9);
         const i9 = @IntType(true, 9);
@@ -33,7 +33,7 @@ fn add(a: var, b: var) CombineAdditive(@typeOf(a), @typeOf(b)) {
     return Res(a) + Res(b);
 }
 
-test "math.add" {
+test "safe.math.add" {
     const u64_max: u64 = @maxValue(u64);
     const u64_min: u64 = @minValue(u64);
     const i64_max: i64 = @maxValue(i64);
