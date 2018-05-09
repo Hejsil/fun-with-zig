@@ -9,7 +9,7 @@ unconventional ways. This then lead to a few utilites that where actually useful
 
 Now, this repo works by first playing with something in the `fun` directory. Nothing in that directory
 is actually useful, as files might just play around with the oddities of Zig, or the file might be
-just an idea that with no user friendly api.
+just an idea with no user friendly api.
 
 If something in `fun` then turns into anything useful, it'll be moved to `src` and an effort will
 be made to finish up the idea, testing it, and providing a nice api.
