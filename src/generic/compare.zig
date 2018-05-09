@@ -222,6 +222,7 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
                 TypeId.Enum,
                 TypeId.ErrorSet,
                 TypeId.Pointer,
+                TypeId.Type,
                 TypeId.Bool => return a == b,
                 TypeId.Nullable => |nullable| {
                     const a_value = a ?? {
@@ -248,8 +249,17 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
                 TypeId.NullLiteral,
                 TypeId.Void,
                 TypeId.UndefinedLiteral => return true,
+                TypeId.Struct => |struct_info| {
+                    inline for (struct_info.fields) |field| {
+                        const fieldEql = equal(field.field_type);
+                        if (!fieldEql(@field(a, field.name), @field(b, field.name))) {
+                            return false;
+                        }
+                    }
 
-                TypeId.Type,
+                    return true;
+                },
+
                 TypeId.NoReturn,
                 TypeId.Fn,
                 TypeId.Namespace,
@@ -258,7 +268,6 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
                 TypeId.ArgTuple,
                 TypeId.Opaque,
                 TypeId.Promise,
-                TypeId.Struct,
                 TypeId.Union => {
                     @compileError("Cannot get a default equal for " ++ @typeName(T));
                     return false;
@@ -299,6 +308,17 @@ test "generic.compare.equal(bool)" {
     assert( boolEqual(true, true));
     assert(!boolEqual(true, false));
 }
+
+// Require pointer reform
+// src/generic/compare.zig:306:27: error: expected type '&const type', found 'type'
+//        assert( typeEqual(u8, u8));
+//test "generic.compare.equal(type)" {
+//    comptime {
+//        const typeEqual = equal(type);
+//        assert( typeEqual(u8, u8));
+//        assert(!typeEqual(u16, u8));
+//    }
+//}
 
 test "generic.compare.equal(enum)" {
     const E = enum { A, B };
@@ -367,6 +387,15 @@ test "generic.compare.equal(undefined)" {
     assert(nullEqual(undefined, undefined));
 }
 
+// unreachable
+// [1]    9611 abort (core dumped)  zig test src/index.zig
+//test "generic.compare.equal(struct)" {
+//    const Struct = struct { a: i64, b: f64 };
+//    const structEqual = equal(Struct);
+//    assert( structEqual(Struct{ .a = 1, .b = 1.1 }, Struct{ .a = 1, .b = 1.1 }));
+//    assert(!structEqual(Struct{ .a = 0, .b = 0.1 }, Struct{ .a = 1, .b = 1.1 }));
+//}
+
 // test "equal([]const u8)" {
 //     // We ensure that we are testing slice with different memory locations,
 //     // as slices are seen as TypeId.Struct right now, so we want this test
@@ -376,10 +405,3 @@ test "generic.compare.equal(undefined)" {
 //     assert( sliceEqual(a, "1"));
 //     assert(!sliceEqual(a, "0"));
 // }
-
-//test "generic.compare.equal(struct)" {
-//    const Struct = struct { a: i64, b: f64 };
-//    const structEqual = equal(Struct);
-//    assert( structEqual(Struct{ .a = 1, .b = 1.1 }, Struct{ .a = 1, .b = 1.1 }));
-//    assert(!structEqual(Struct{ .a = 0, .b = 0.1 }, Struct{ .a = 1, .b = 1.1 }));
-//}
