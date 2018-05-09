@@ -80,6 +80,7 @@ test "generic.compare.Example: compare.lessThan" {
     assert(mem.eql(f32, farr, []f32 { 1, 2, 3, 4, 5 }));
 }
 
+
 test "generic.compare.lessThan(u64)" {
     const u64LessThan = lessThan(u64);
     assert( u64LessThan(1, 2));
@@ -137,11 +138,65 @@ test "generic.compare.lessThan(?i64)" {
     assert(!nullableLessThan(0  , nul));
 }
 
+//allocation failed
+//[1]    5171 abort (core dumped)  zig test src/index.zig
+//test "generic.compare.lessThan(error!i64)" {
+//    const err : error!i64 = error.No;
+//    const erruniLessThan = lessThan(error!i64);
+//    assert( erruniLessThan(0,  1));
+//    assert(!erruniLessThan(0,  0));
+//    assert(!erruniLessThan(0, -1));
+//    assert( erruniLessThan(err, 0  ));
+//    assert(!erruniLessThan(err, err));
+//    assert(!erruniLessThan(0  , err));
+//}
+
 test "generic.compare.lessThan([1]u8)" {
     const arrLessThan = lessThan([1]u8);
     assert( arrLessThan("1", "2"));
     assert(!arrLessThan("1", "1"));
     assert(!arrLessThan("1", "0"));
+}
+
+test "generic.compare.lessThan(enum)" {
+    const E = enum { A = 0, B = 1 };
+    const enumLessThan = lessThan(E);
+    assert( enumLessThan(E.A, E.B));
+    assert(!enumLessThan(E.B, E.B));
+    assert(!enumLessThan(E.B, E.A));
+}
+
+//allocation failed
+//[1]    5171 abort (core dumped)  zig test src/index.zig
+//test "generic.compare.lessThan(error)" {
+//    const errLessThan = lessThan(error);
+//    assert( errLessThan(error.A, error.B));
+//    assert(!errLessThan(error.B, error.B));
+//    assert(!errLessThan(error.B, error.A));
+//}
+
+test "generic.compare.lessThan(&i64)" {
+    var b: i64 = undefined;
+    var a: i64 = undefined;
+    const ptrLessThan = lessThan(&i64);
+    assert(ptrLessThan(&a, &b) == (@ptrToInt(&a) < @ptrToInt(&b)));
+    assert(ptrLessThan(&b, &b) == (@ptrToInt(&b) < @ptrToInt(&b)));
+    assert(ptrLessThan(&b, &a) == (@ptrToInt(&b) < @ptrToInt(&a)));
+}
+
+test "generic.compare.lessThan(null)" {
+    const ptrLessThan = lessThan(@typeOf(null));
+    assert(!ptrLessThan(&null, &null));
+}
+
+test "generic.compare.lessThan(void)" {
+    const ptrLessThan = lessThan(void);
+    assert(!ptrLessThan(void{}, void{}));
+}
+
+test "generic.compare.lessThan(undefined)" {
+    const ptrLessThan = lessThan(@typeOf(undefined));
+    assert(!ptrLessThan(undefined, undefined));
 }
 
 // How do we check if type is a slice?
@@ -245,14 +300,40 @@ test "generic.compare.equal(bool)" {
     assert(!boolEqual(true, false));
 }
 
+test "generic.compare.equal(enum)" {
+    const E = enum { A, B };
+    const enumEqual = equal(E);
+    assert( enumEqual(E.A, E.A));
+    assert(!enumEqual(E.A, E.B));
+}
 
-
+//allocation failed
+//[1]    4686 abort (core dumped)  zig test src/index.zig
 //test "generic.compare.equal(error)" {
 //    const errorEqual = equal(error);
-//    assert( errorEqual(error.TestError1, error.TestError1));
-//    assert(!errorEqual(error.TestError2, error.TestError1));
+//    assert( errorEqual(error.A, error.A));
+//    assert(!errorEqual(error.A, error.B));
 //}
 
+test "generic.compare.equal(&i64)" {
+    var a: i64 = undefined;
+    var b: i64 = undefined;
+    const ptrEqual = equal(&i64);
+    assert( ptrEqual(&a, &a));
+    assert(!ptrEqual(&a, &b));
+}
+
+test "generic.compare.equal(?i64)" {
+    var nul: ?i64 = null;
+    const nullableEqual = equal(?i64);
+    assert( nullableEqual(1, 1));
+    assert( nullableEqual(nul, nul));
+    assert(!nullableEqual(1, 0));
+    assert(!nullableEqual(1, nul));
+}
+
+//allocation failed
+//[1]    4686 abort (core dumped)  zig test src/index.zig
 //test "generic.compare.equal(%i32)" {
 //    const a : error!i32 = 1;
 //    const b : error!i32 = error.TestError1;
@@ -265,20 +346,25 @@ test "generic.compare.equal(bool)" {
 //    assert(!errorEqual(b, (error!i32)(0)));
 //}
 
-test "generic.compare.equal(&i32)" {
-    var a : i32 = undefined;
-    var b : i32 = undefined;
-    const errorEqual = equal(&i32);
-    assert( errorEqual(&&a, &&a));
-    assert(!errorEqual(&&a, &&b));
+test "generic.compare.equal([1]u8)" {
+    const arrayEqual = equal([1]u8);
+    assert( arrayEqual("1", "1"));
+    assert(!arrayEqual("1", "0"));
 }
 
-test "generic.compare.equal([1]u8)" {
-    // We ensure that we are testing arrays with different memory locations
-    var a : [1]u8 = undefined; a[0] = '1';
-    const arrayEqual = equal([1]u8);
-    assert( arrayEqual(a, "1"));
-    assert(!arrayEqual(a, "0"));
+test "generic.compare.equal(null)" {
+    const nullEqual = equal(@typeOf(null));
+    assert(nullEqual(&null, &null));
+}
+
+test "generic.compare.equal(void)" {
+    const nullEqual = equal(void);
+    assert(nullEqual(void{}, void{}));
+}
+
+test "generic.compare.equal(undefined)" {
+    const nullEqual = equal(@typeOf(undefined));
+    assert(nullEqual(undefined, undefined));
 }
 
 // test "equal([]const u8)" {
