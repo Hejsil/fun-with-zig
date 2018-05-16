@@ -390,8 +390,6 @@ test "generic.compare.equal(undefined)" {
     assert(undefEqual(undefined, undefined));
 }
 
-// unreachable
-// [1]    9611 abort (core dumped)  zig test src/index.zig
 test "generic.compare.equal(struct)" {
     const Struct = struct { a: i64, b: f64 };
     const structEqual = equal(Struct);
