@@ -38,6 +38,7 @@ pub fn lessThan(comptime T: type) fn(&const T, &const T) bool {
                 },
 
                 TypeId.Array => |arr| return mem.lessThan(arr.child, a, b),
+                TypeId.Slice => |slice| return mem.lessThan(slice.child, a, b),
                 TypeId.Enum => |e| return e.tag_type(a) < e.tag_type(b),
                 TypeId.ErrorSet => return u32(a) < u32(b),
                 TypeId.Pointer => return @ptrToInt(a) < @ptrToInt(b),
@@ -199,13 +200,12 @@ test "generic.compare.lessThan(undefined)" {
     assert(!ptrLessThan(undefined, undefined));
 }
 
-// How do we check if type is a slice?
-// test "generic.compare.lessThan([]const u8)" {
-//     const sliceLessThan = lessThan([]const u8);
-//     assert( sliceLessThan("1", "2"));
-//     assert(!sliceLessThan("1", "1"));
-//     assert(!sliceLessThan("1", "0"));
-// }
+test "generic.compare.lessThan([]const u8)" {
+    const sliceLessThan = lessThan([]const u8);
+    assert( sliceLessThan("1", "2"));
+    assert(!sliceLessThan("1", "1"));
+    assert(!sliceLessThan("1", "0"));
+}
 
 
 pub fn equal(comptime T: type) fn(&const T, &const T) bool {
@@ -223,7 +223,13 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
                 TypeId.ErrorSet,
                 TypeId.Pointer,
                 TypeId.Type,
+                TypeId.Void,
+                TypeId.Fn,
+                TypeId.NullLiteral,
                 TypeId.Bool => return a == b,
+                TypeId.UndefinedLiteral => return true,
+                TypeId.Array => |arr| return mem.eql(arr.child, a, b),
+                TypeId.Slice => |slice| return mem.eql(slice.child, a, b),
                 TypeId.Nullable => |nullable| {
                     const a_value = a ?? {
                         return if (b) |_| false else true;
@@ -244,14 +250,12 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
 
                     return equal(err_union.payload)(a_value, b_value);
                 },
-                TypeId.Array => |arr| return mem.eql(arr.child, a, b),
-
-                TypeId.NullLiteral,
-                TypeId.Void,
-                TypeId.UndefinedLiteral => return true,
                 TypeId.Struct => |struct_info| {
                     inline for (struct_info.fields) |field| {
-                        const fieldEql = equal(field.field_type);
+                        // Lots of comptime to avoid:
+                        // zig: zig/src/codegen.cpp:2771: LLVMOpaqueValue* ir_render_decl_var(CodeGen*, IrExecutable*, IrInstructionDeclVar*): Assertion `var->value->type == init_value->value.type' failed.
+                        // [1]    7592 abort (core dumped)  zig test src/index.zig
+                        comptime const fieldEql = comptime equal(field.field_type);
                         if (!fieldEql(@field(a, field.name), @field(b, field.name))) {
                             return false;
                         }
@@ -261,7 +265,6 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
                 },
 
                 TypeId.NoReturn,
-                TypeId.Fn,
                 TypeId.Namespace,
                 TypeId.Block,
                 TypeId.BoundFn,
@@ -378,30 +381,39 @@ test "generic.compare.equal(null)" {
 }
 
 test "generic.compare.equal(void)" {
-    const nullEqual = equal(void);
-    assert(nullEqual(void{}, void{}));
+    const voidEqual = equal(void);
+    assert(voidEqual(void{}, void{}));
 }
 
 test "generic.compare.equal(undefined)" {
-    const nullEqual = equal(@typeOf(undefined));
-    assert(nullEqual(undefined, undefined));
+    const undefEqual = equal(@typeOf(undefined));
+    assert(undefEqual(undefined, undefined));
 }
 
 // unreachable
 // [1]    9611 abort (core dumped)  zig test src/index.zig
-//test "generic.compare.equal(struct)" {
-//    const Struct = struct { a: i64, b: f64 };
-//    const structEqual = equal(Struct);
-//    assert( structEqual(Struct{ .a = 1, .b = 1.1 }, Struct{ .a = 1, .b = 1.1 }));
-//    assert(!structEqual(Struct{ .a = 0, .b = 0.1 }, Struct{ .a = 1, .b = 1.1 }));
-//}
+test "generic.compare.equal(struct)" {
+    const Struct = struct { a: i64, b: f64 };
+    const structEqual = equal(Struct);
+    assert( structEqual(Struct{ .a = 1, .b = 1.1 }, Struct{ .a = 1, .b = 1.1 }));
+    assert(!structEqual(Struct{ .a = 0, .b = 0.1 }, Struct{ .a = 1, .b = 1.1 }));
+}
 
-// test "equal([]const u8)" {
-//     // We ensure that we are testing slice with different memory locations,
-//     // as slices are seen as TypeId.Struct right now, so we want this test
-//     // to fail, while this is true.
-//     var a = "1";
-//     const sliceEqual = equal([]const u8);
-//     assert( sliceEqual(a, "1"));
-//     assert(!sliceEqual(a, "0"));
-// }
+test "equal([]const u8)" {
+    const sliceEqual = equal([]const u8);
+    assert( sliceEqual("1", "1"));
+    assert(!sliceEqual("1", "0"));
+}
+
+//unreachable
+//[1]    6911 abort (core dumped)  zig test src/index.zig
+//test "equal(fn()void)" {
+//    const T = struct {
+//        fn a() void {}
+//        fn b() void {}
+//    };
+//
+//    const fnEqual = equal(fn()void);
+//    assert( fnEqual(T.a, T.a));
+//    assert(!fnEqual(T.a, T.b));
+//}
