@@ -51,7 +51,7 @@ test "Dynamic.value" {
         debug.assert(@typeOf(dyn_int)   == @typeOf(dyn_string));
         debug.assert(@typeOf(dyn_float) == @typeOf(dyn_string));
 
-        // zig: /home/hejsil/Documents/zig/src/analyze.cpp:449: TypeTableEntry* get_pointer_to_type_extra(CodeGen*, TypeTableEntry*, bool, bool, uint32_t, uint32_t, uint32_t):Assertion `byte_alignment == 0' failed.
+        // zig: zig/src/analyze.cpp:449: TypeTableEntry* get_pointer_to_type_extra(CodeGen*, TypeTableEntry*, bool, bool, uint32_t, uint32_t, uint32_t):Assertion `byte_alignment == 0' failed.
         // Their values, are not the same dynamic type though.
         //debug.assert(@typeOf(dyn_int.value())   != @typeOf(dyn_float.value()));
         //debug.assert(@typeOf(dyn_int.value())   != @typeOf(dyn_string.value()));
