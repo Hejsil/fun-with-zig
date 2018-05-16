@@ -106,6 +106,9 @@ fn SliceReturn(comptime Slice: type) type {
     }
 }
 
+/// Slices ::s from ::start to ::end.
+/// Returns errors instead of doing runtime asserts when ::start or ::end are out of bounds,
+/// or when ::end is less that ::start.
 pub fn slice(s: var, start: usize, end: usize) !SliceReturn(@typeOf(s)) {
     if (end < start)
         return error.EndLessThanStart;
@@ -149,4 +152,49 @@ test "generic.slice" {
     const q21 = slice(q2[0..], 0, 2) catch unreachable;
     debug.assert(@typeOf(q11) == []const u8);
     debug.assert(@typeOf(q21) == []u8);
+}
+
+
+// These function are needed because we don't have pointer reform yet
+fn Ptr(comptime T: type) type { return &T; }
+fn ConstPtr(comptime T: type) type { return &const T; }
+
+fn AtReturn(comptime Slice: type) type {
+    switch (@typeInfo(Slice)) {
+        TypeId.Slice => |s| {
+            return if (s.is_const) ConstPtr(s.child) else Ptr(s.child);
+        },
+        else => @compileError("Expected 'Slice' found '" ++ @typeName(Slice) ++ "'"),
+    }
+}
+
+/// Returns a pointer to the item at ::index in ::s.
+/// Returns an error instead of doing a runtime assert when ::index is out of bounds.
+pub fn at(s: var, index: usize) !AtReturn(@typeOf(s)) {
+    if (s.len <= index)
+        return error.OutOfBound;
+
+    return &s[index];
+}
+
+test "generic.slice" {
+    const a = []u8{1,2};
+    const b = at(a[0..], 0) catch unreachable;
+    const c = at(a[0..], 1) catch unreachable;
+
+    debug.assert(*b == 1);
+    debug.assert(*c == 2);
+
+    if (at(a[0..], 2)) |_|
+        unreachable
+    else |err|
+        debug.assert(err == error.OutOfBound);
+
+    const q1 = []u8{1,2};
+    var q2 = []u8{1,2};
+
+    const q11 = at(q1[0..], 0) catch unreachable;
+    const q21 = at(q2[0..], 0) catch unreachable;
+    debug.assert(@typeOf(q11) == &const u8);
+    debug.assert(@typeOf(q21) == &u8);
 }
