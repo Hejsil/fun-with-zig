@@ -228,8 +228,18 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
                 TypeId.NullLiteral,
                 TypeId.Bool => return a == b,
                 TypeId.UndefinedLiteral => return true,
-                TypeId.Array => |arr| return mem.eql(arr.child, a, b),
-                TypeId.Slice => |slice| return mem.eql(slice.child, a, b),
+                TypeId.Array,
+                TypeId.Slice => {
+                    if (a.len != b.len)
+                        return false;
+
+                    for (a) |_, i| {
+                        if (!equal(T.Child)(a[i], b[i]))
+                            return false;
+                    }
+
+                    return true;
+                },
                 TypeId.Nullable => |nullable| {
                     const a_value = a ?? {
                         return if (b) |_| false else true;
