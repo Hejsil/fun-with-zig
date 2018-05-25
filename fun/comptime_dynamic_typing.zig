@@ -1,28 +1,30 @@
 const std = @import("std");
 const debug = std.debug;
 
+const Opaque = @OpaqueType();
+
 pub const Dynamic = struct {
-    v: &const void,
+    v: &const Opaque,
     Type: type,
 
-    fn TakePtr(comptime T: type) type { return &T; }
+    fn TakePtr(comptime T: type) type { return &const T; }
 
     pub fn init(comptime Type: type, v: &const Type) Dynamic {
         return Dynamic {
-            .v = @ptrCast(&const void, v),
+            .v = @ptrCast(&const Opaque, v),
             .Type = Type,
         };
     }
 
-    pub fn value(comptime dyn: Dynamic) dyn.Type {
-        return @ptrCast(TakePtr(dyn.Type), @alignCast(@alignOf(dyn.Type), dyn.v));
+    pub fn value(comptime dyn: &const Dynamic) dyn.Type {
+        return *@ptrCast(TakePtr(dyn.Type), dyn.v);
     }
 
-    pub fn field(comptime dyn: Dynamic, comptime field_name: []const u8) (@typeOf(@field(dyn.Type{}, field_name))) {
+    pub fn field(comptime dyn: &const Dynamic, comptime field_name: []const u8) (@typeOf(@field(dyn.Type{}, field_name))) {
         return @field(dyn.value(), field_name);
     }
 
-    pub fn call(comptime dyn: Dynamic, args: ...) dyn.Type.ReturnType {
+    pub fn call(comptime dyn: &const Dynamic, args: ...) dyn.Type.ReturnType {
         return switch (args.len) {
             0 => dyn.value()(),
             1 => dyn.value()(args[0]),
@@ -51,14 +53,13 @@ test "Dynamic.value" {
         debug.assert(@typeOf(dyn_int)   == @typeOf(dyn_string));
         debug.assert(@typeOf(dyn_float) == @typeOf(dyn_string));
 
-        // zig: zig/src/analyze.cpp:449: TypeTableEntry* get_pointer_to_type_extra(CodeGen*, TypeTableEntry*, bool, bool, uint32_t, uint32_t, uint32_t):Assertion `byte_alignment == 0' failed.
         // Their values, are not the same dynamic type though.
-        //debug.assert(@typeOf(dyn_int.value())   != @typeOf(dyn_float.value()));
-        //debug.assert(@typeOf(dyn_int.value())   != @typeOf(dyn_string.value()));
-        //debug.assert(@typeOf(dyn_float.value()) != @typeOf(dyn_string.value()));
+        debug.assert(@typeOf(dyn_int.value())   != @typeOf(dyn_float.value()));
+        debug.assert(@typeOf(dyn_int.value())   != @typeOf(dyn_string.value()));
+        debug.assert(@typeOf(dyn_float.value()) != @typeOf(dyn_string.value()));
 
-        //debug.assert(dyn_int.value() == 0);
-        //debug.assert(dyn_float.value() == 1.0);
-        //debug.assert(std.mem.eql(u8, dyn_string.value(), "Hello World!"));
+        debug.assert(dyn_int.value() == 0);
+        debug.assert(dyn_float.value() == 1.0);
+        debug.assert(std.mem.eql(u8, dyn_string.value(), "Hello World!"));
     }
 }

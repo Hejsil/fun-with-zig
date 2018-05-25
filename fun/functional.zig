@@ -40,17 +40,16 @@ pub fn reverseSimple(comptime T: type, comptime f: fn(T, T) T) fn(T, T) T {
     return reverse(T, T, f);
 }
 
+fn lt(a: &const i32, b: &const i32) bool {
+    return *a < *b;
+}
+
 test "functional.Example: functional.reverse" {
     const sort = @import("std").sort;
     const mem = @import("std").mem;
-    const lessThan = @import("comparer.zig").lessThan;
 
     var iarr = []i32 { 5, 3, 1, 2, 4 };
-    var farr = []f32 { 5, 3, 1, 2, 4 };
-
-    sort.sort(i32, iarr[0..], comptime reverse(&const i32, bool, lessThan(i32)));
-    sort.sort(f32, farr[0..], comptime reverse(&const f32, bool, lessThan(f32)));
+    sort.sort(i32, iarr[0..], comptime reverse(&const i32, bool, lt));
 
     assert(mem.eql(i32, iarr, []i32 { 5, 4, 3, 2, 1 }));
-    assert(mem.eql(f32, farr, []f32 { 5, 4, 3, 2, 1 }));
 }
