@@ -262,13 +262,8 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
                 },
                 TypeId.Struct => |struct_info| {
                     inline for (struct_info.fields) |field| {
-                        // Lots of comptime to avoid:
-                        // zig: zig/src/codegen.cpp:2771: LLVMOpaqueValue* ir_render_decl_var(CodeGen*, IrExecutable*, IrInstructionDeclVar*): Assertion `var->value->type == init_value->value.type' failed.
-                        // [1]    7592 abort (core dumped)  zig test src/index.zig
-                        comptime const fieldEql = comptime equal(field.field_type);
-                        if (!fieldEql(@field(a, field.name), @field(b, field.name))) {
+                        if (!fieldsEql(field.name, a, b))
                             return false;
-                        }
                     }
 
                     return true;
@@ -286,6 +281,12 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
                     return false;
                 }
             }
+        }
+
+        fn fieldsEql(comptime field: []const u8, a: &const T, b: &const T) bool {
+            const af = @field(a, field);
+            const bf = @field(b, field);
+            return equal(@typeOf(af))(af, bf);
         }
     };
 
@@ -401,10 +402,10 @@ test "generic.compare.equal(undefined)" {
 }
 
 test "generic.compare.equal(struct)" {
-    const Struct = struct { a: i64, b: f64 };
+    const Struct = packed struct { a: u3, b: u3 };
     const structEqual = equal(Struct);
-    assert( structEqual(Struct{ .a = 1, .b = 1.1 }, Struct{ .a = 1, .b = 1.1 }));
-    assert(!structEqual(Struct{ .a = 0, .b = 0.1 }, Struct{ .a = 1, .b = 1.1 }));
+    assert( structEqual(Struct{ .a = 1, .b = 1 }, Struct{ .a = 1, .b = 1 }));
+    assert(!structEqual(Struct{ .a = 0, .b = 0 }, Struct{ .a = 1, .b = 1 }));
 }
 
 test "equal([]const u8)" {
