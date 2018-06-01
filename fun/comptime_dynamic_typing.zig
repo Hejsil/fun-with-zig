@@ -17,7 +17,7 @@ pub const Dynamic = struct {
     }
 
     pub fn value(comptime dyn: &const Dynamic) dyn.Type {
-        return *@ptrCast(TakePtr(dyn.Type), dyn.v);
+        return @ptrCast(TakePtr(dyn.Type), dyn.v).*;
     }
 
     pub fn field(comptime dyn: &const Dynamic, comptime field_name: []const u8) (@typeOf(@field(dyn.Type{}, field_name))) {

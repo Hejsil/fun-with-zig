@@ -169,11 +169,11 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) type {
         fn sliceCleanUp(values: &const []T, allocator: &Allocator) void {
             if (@sizeOf(T) > 0) {
                 if (values.len > 0) {
-                    for (*values) |value| {
+                    for (values.*) |value| {
                         cleanUp(value, allocator);
                     }
 
-                    allocator.destroy(*values);
+                    allocator.destroy(values.*);
                 }
             }
         }
@@ -300,7 +300,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) type {
         }
 
         fn optionalCleanUp(value: &const ?T, allocator: &Allocator) void {
-            if (*value) |v| { cleanUp(v, allocator); }
+            if (value.*) |v| { cleanUp(v, allocator); }
         }
 
         pub fn optional(comptime self: &const Self) ParserWithCleanup(?T, optionalCleanUp) {

@@ -19,7 +19,7 @@ const Visitor = struct {
     visitPar: fn(self: &Self, child: &Tree) error!void,
 
     fn visit(self: &Self, tree: &Tree) !void {
-        switch (*tree) {
+        switch (tree.*) {
             Tree.Leaf => | leaf| return self.visitLeaf(self, leaf),
             Tree.Node => |*node| return self.visitNode(self, node),
             Tree.Par  => |child| return self.visitPar(self, child),
@@ -35,7 +35,7 @@ const Tree = union(enum) {
     Node: TreeNode,
 
     pub fn destroy(self: &const Self, allocator: &Allocator) void {
-        switch (*self) {
+        switch (self.*) {
             Self.Node => |node| {
                 node.left.destroy(allocator);
                 node.right.destroy(allocator);
@@ -51,19 +51,19 @@ const Tree = union(enum) {
 
     pub fn createLeaf(allocator: &Allocator, value: i64) !&Tree {
         const result = try allocator.create(Tree);
-        *result = Tree { .Leaf = value };
+        result.* = Tree { .Leaf = value };
         return result;
     }
 
     pub fn createNode(allocator: &Allocator, symbol: u8, left: &Tree, right: &Tree) !&Tree {
         const result = try allocator.create(Tree);
-        *result = Tree { .Node = TreeNode { .symbol = symbol, .left = left, .right = right } };
+        result.* = Tree { .Node = TreeNode { .symbol = symbol, .left = left, .right = right } };
         return result;
     }
 
     pub fn createPar(allocator: &Allocator, child: &Tree) !&Tree {
         const result = try allocator.create(Tree);
-        *result = Tree { .Par = child };
+        result.* = Tree { .Par = child };
         return result;
     }
 };
@@ -71,17 +71,17 @@ const Tree = union(enum) {
 fn toLeaf(str: &const []u8, allocator: &Allocator, cleanUp: CleanUp([]u8)) !&Tree {
     defer cleanUp(str, allocator);
 
-    const i = try std.fmt.parseInt(i64, *str, 10);
+    const i = try std.fmt.parseInt(i64, str.*, 10);
     return Tree.createLeaf(allocator, i);
 }
 
 fn toPar(tree: &const &Tree, allocator: &Allocator, cleanUp: CleanUp(&Tree)) !&Tree {
     errdefer cleanUp(tree, allocator);
-    return Tree.createPar(allocator, *tree);
+    return Tree.createPar(allocator, tree.*);
 }
 
 fn treeCleanUp(tree: &const &Tree, allocator: &Allocator) void {
-    (*tree).destroy(allocator);
+    tree.*.destroy(allocator);
 }
 
 fn apply(allocator: &Allocator, treeClean: CleanUp(&Tree), opClean: CleanUp(u8),
@@ -92,7 +92,7 @@ fn apply(allocator: &Allocator, treeClean: CleanUp(&Tree), opClean: CleanUp(u8),
     }
     defer opClean(op, allocator);
 
-    const result = try Tree.createNode(allocator, *op, *left, *right);
+    const result = try Tree.createNode(allocator, op.*, left.*, right.*);
     return result;
 }
 
@@ -126,7 +126,7 @@ fn precedencePar(self: &Visitor, par: &Tree) error!void { return self.visit(par)
 
 fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) !void {
     try self.visit(node.left);
-    switch (*node.left) {
+    switch (node.left.*) {
         Tree.Node => |*left| {
             if (getPrecedence(left.symbol) > getPrecedence(node.symbol)) {
                 return error.ParserError;
@@ -136,7 +136,7 @@ fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) !void {
     }
 
     try self.visit(node.right);
-    switch (*node.right) {
+    switch (node.right.*) {
         Tree.Node => |*right| {
             if (getPrecedence(right.symbol) >= getPrecedence(node.symbol)) {
                 return error.ParserError;
@@ -148,7 +148,7 @@ fn precedenceNodeLeft(self: &Visitor, node: &TreeNode) !void {
 
 fn precedenceNodeRight(self: &Visitor, node: &TreeNode) !void {
     try self.visit(node.left);
-    switch (*node.left) {
+    switch (node.left.*) {
         Tree.Node => |*left| {
             if (getPrecedence(left.symbol) >= getPrecedence(node.symbol)) {
                 return error.ParserError;
@@ -158,7 +158,7 @@ fn precedenceNodeRight(self: &Visitor, node: &TreeNode) !void {
     }
 
     try self.visit(node.right);
-    switch (*node.right) {
+    switch (node.right.*) {
         Tree.Node => |*right| {
             if (getPrecedence(right.symbol) > getPrecedence(node.symbol)) {
                 return error.ParserError;

@@ -41,7 +41,7 @@ pub fn reverseSimple(comptime T: type, comptime f: fn(T, T) T) fn(T, T) T {
 }
 
 fn lt(a: &const i32, b: &const i32) bool {
-    return *a < *b;
+    return a.* < b.*;
 }
 
 test "functional.Example: functional.reverse" {

@@ -27,6 +27,6 @@ pub fn allWithContext(slice: var, context: var, predicate: fn(&const @typeOf(sli
 
 
 test "overloading.all" {
-    assert(all("aaaa"[0..], struct { fn l(c: &const u8) bool { return *c == 'a'; } }.l));
-    assert(all("aaaa"[0..], u8('a'), struct { fn l(c: &const u8, c2: u8) bool { return *c == c2; } }.l));
+    assert(all("aaaa"[0..], struct { fn l(c: &const u8) bool { return c.* == 'a'; } }.l));
+    assert(all("aaaa"[0..], u8('a'), struct { fn l(c: &const u8, c2: u8) bool { return c.* == c2; } }.l));
 }
