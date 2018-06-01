@@ -182,8 +182,8 @@ test "generic.slice" {
     const b = at(a[0..], 0) catch unreachable;
     const c = at(a[0..], 1) catch unreachable;
 
-    debug.assert(*b == 1);
-    debug.assert(*c == 2);
+    debug.assert(b.* == 1);
+    debug.assert(c.* == 2);
 
     if (at(a[0..], 2)) |_|
         unreachable

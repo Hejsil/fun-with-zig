@@ -6,8 +6,8 @@ const TypeId = @import("builtin").TypeId;
 pub fn lessThan(comptime T: type) fn(&const T, &const T) bool {
     const LessThanStruct = struct {
         fn lt(a_ptr: &const T, b_ptr: &const T) bool {
-            const a = *a_ptr;
-            const b = *b_ptr;
+            const a = a_ptr.*;
+            const b = b_ptr.*;
             const info = @typeInfo(T);
             switch (info) {
                 TypeId.Int,
@@ -211,8 +211,8 @@ test "generic.compare.lessThan([]const u8)" {
 pub fn equal(comptime T: type) fn(&const T, &const T) bool {
     const EqualStruct = struct {
         fn eql(a_ptr: &const T, b_ptr: &const T) bool {
-            const a = *a_ptr;
-            const b = *b_ptr;
+            const a = a_ptr.*;
+            const b = b_ptr.*;
             const info = @typeInfo(T);
             switch (info) {
                 TypeId.Int,
