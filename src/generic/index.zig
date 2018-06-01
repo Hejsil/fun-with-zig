@@ -158,7 +158,6 @@ test "generic.slice" {
     debug.assert(@typeOf(q21) == []u8);
 }
 
-
 fn AtReturn(comptime Slice: type) type {
     switch (@typeInfo(Slice)) {
         TypeId.Slice => |s| {
