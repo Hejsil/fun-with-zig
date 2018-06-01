@@ -27,7 +27,6 @@ test "safe.math.CombineAdditive" {
     }
 }
 
-
 fn add(a: var, b: var) CombineAdditive(@typeOf(a), @typeOf(b)) {
     const Res = @typeOf(this).ReturnType;
     return Res(a) + Res(b);

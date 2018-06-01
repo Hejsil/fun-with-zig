@@ -1,19 +1,16 @@
-const mem    = @import("std").mem;
+const mem = @import("std").mem;
 const assert = @import("std").debug.assert;
 const TypeId = @import("builtin").TypeId;
 
 /// Generates a lessThan function from ::T
-pub fn lessThan(comptime T: type) fn(&const T, &const T) bool {
+pub fn lessThan(comptime T: type) fn (*const T, *const T) bool {
     const LessThanStruct = struct {
-        fn lt(a_ptr: &const T, b_ptr: &const T) bool {
+        fn lt(a_ptr: *const T, b_ptr: *const T) bool {
             const a = a_ptr.*;
             const b = b_ptr.*;
             const info = @typeInfo(T);
             switch (info) {
-                TypeId.Int,
-                TypeId.Float,
-                TypeId.FloatLiteral,
-                TypeId.IntLiteral => return a < b,
+                TypeId.Int, TypeId.Float, TypeId.FloatLiteral, TypeId.IntLiteral => return a < b,
                 TypeId.Bool => return u8(a) < u8(b),
 
                 TypeId.Nullable => |nullable| {
@@ -43,24 +40,12 @@ pub fn lessThan(comptime T: type) fn(&const T, &const T) bool {
                 TypeId.ErrorSet => return u32(a) < u32(b),
                 TypeId.Pointer => return @ptrToInt(a) < @ptrToInt(b),
 
-                TypeId.NullLiteral,
-                TypeId.Void,
-                TypeId.UndefinedLiteral => return false,
+                TypeId.NullLiteral, TypeId.Void, TypeId.UndefinedLiteral => return false,
 
-                TypeId.Type,
-                TypeId.NoReturn,
-                TypeId.Fn,
-                TypeId.Namespace,
-                TypeId.Block,
-                TypeId.BoundFn,
-                TypeId.ArgTuple,
-                TypeId.Opaque,
-                TypeId.Promise,
-                TypeId.Struct,
-                TypeId.Union => {
+                TypeId.Type, TypeId.NoReturn, TypeId.Fn, TypeId.Namespace, TypeId.Block, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Struct, TypeId.Union => {
                     @compileError("Cannot get a default less than for " ++ @typeName(T));
                     return false;
-                }
+                },
             }
         }
     };
@@ -69,30 +54,29 @@ pub fn lessThan(comptime T: type) fn(&const T, &const T) bool {
 }
 
 test "generic.compare.Example: compare.lessThan" {
-    const sort  = @import("std").sort;
+    const sort = @import("std").sort;
 
-    var iarr = []i32 { 5, 3, 1, 2, 4 };
-    var farr = []f32 { 5, 3, 1, 2, 4 };
+    var iarr = []i32{ 5, 3, 1, 2, 4 };
+    var farr = []f32{ 5, 3, 1, 2, 4 };
 
     sort.sort(i32, iarr[0..], comptime lessThan(i32));
     sort.sort(f32, farr[0..], comptime lessThan(f32));
 
-    assert(mem.eql(i32, iarr, []i32 { 1, 2, 3, 4, 5 }));
-    assert(mem.eql(f32, farr, []f32 { 1, 2, 3, 4, 5 }));
+    assert(mem.eql(i32, iarr, []i32{ 1, 2, 3, 4, 5 }));
+    assert(mem.eql(f32, farr, []f32{ 1, 2, 3, 4, 5 }));
 }
-
 
 test "generic.compare.lessThan(u64)" {
     const u64LessThan = lessThan(u64);
-    assert( u64LessThan(1, 2));
+    assert(u64LessThan(1, 2));
     assert(!u64LessThan(1, 1));
     assert(!u64LessThan(1, 0));
 }
 
 test "generic.compare.lessThan(i64)" {
     const i64LessThan = lessThan(i64);
-    assert( i64LessThan(0,  1));
-    assert(!i64LessThan(0,  0));
+    assert(i64LessThan(0, 1));
+    assert(!i64LessThan(0, 0));
     assert(!i64LessThan(0, -1));
 }
 
@@ -107,8 +91,8 @@ test "generic.compare.lessThan(i64)" {
 
 test "generic.compare.lessThan(f64)" {
     const f64LessThan = lessThan(f64);
-    assert( f64LessThan(0,  1));
-    assert(!f64LessThan(0,  0));
+    assert(f64LessThan(0, 1));
+    assert(!f64LessThan(0, 0));
     assert(!f64LessThan(0, -1));
 }
 
@@ -123,20 +107,20 @@ test "generic.compare.lessThan(f64)" {
 
 test "generic.compare.lessThan(bool)" {
     const boolLessThan = lessThan(bool);
-    assert( boolLessThan(false, true ));
-    assert(!boolLessThan(true , true ));
-    assert(!boolLessThan(true , false));
+    assert(boolLessThan(false, true));
+    assert(!boolLessThan(true, true));
+    assert(!boolLessThan(true, false));
 }
 
 test "generic.compare.lessThan(?i64)" {
-    const nul : ?i64 = null;
+    const nul: ?i64 = null;
     const nullableLessThan = lessThan(?i64);
-    assert( nullableLessThan(0,  1));
-    assert(!nullableLessThan(0,  0));
+    assert(nullableLessThan(0, 1));
+    assert(!nullableLessThan(0, 0));
     assert(!nullableLessThan(0, -1));
-    assert( nullableLessThan(nul, 0  ));
+    assert(nullableLessThan(nul, 0));
     assert(!nullableLessThan(nul, nul));
-    assert(!nullableLessThan(0  , nul));
+    assert(!nullableLessThan(0, nul));
 }
 
 //allocation failed
@@ -154,15 +138,18 @@ test "generic.compare.lessThan(?i64)" {
 
 test "generic.compare.lessThan([1]u8)" {
     const arrLessThan = lessThan([1]u8);
-    assert( arrLessThan("1", "2"));
+    assert(arrLessThan("1", "2"));
     assert(!arrLessThan("1", "1"));
     assert(!arrLessThan("1", "0"));
 }
 
 test "generic.compare.lessThan(enum)" {
-    const E = enum { A = 0, B = 1 };
+    const E = enum {
+        A = 0,
+        B = 1,
+    };
     const enumLessThan = lessThan(E);
-    assert( enumLessThan(E.A, E.B));
+    assert(enumLessThan(E.A, E.B));
     assert(!enumLessThan(E.B, E.B));
     assert(!enumLessThan(E.B, E.A));
 }
@@ -179,7 +166,7 @@ test "generic.compare.lessThan(enum)" {
 test "generic.compare.lessThan(&i64)" {
     var b: i64 = undefined;
     var a: i64 = undefined;
-    const ptrLessThan = lessThan(&i64);
+    const ptrLessThan = lessThan(*i64);
     assert(ptrLessThan(&a, &b) == (@ptrToInt(&a) < @ptrToInt(&b)));
     assert(ptrLessThan(&b, &b) == (@ptrToInt(&b) < @ptrToInt(&b)));
     assert(ptrLessThan(&b, &a) == (@ptrToInt(&b) < @ptrToInt(&a)));
@@ -202,34 +189,21 @@ test "generic.compare.lessThan(undefined)" {
 
 test "generic.compare.lessThan([]const u8)" {
     const sliceLessThan = lessThan([]const u8);
-    assert( sliceLessThan("1", "2"));
+    assert(sliceLessThan("1", "2"));
     assert(!sliceLessThan("1", "1"));
     assert(!sliceLessThan("1", "0"));
 }
 
-
-pub fn equal(comptime T: type) fn(&const T, &const T) bool {
+pub fn equal(comptime T: type) fn (*const T, *const T) bool {
     const EqualStruct = struct {
-        fn eql(a_ptr: &const T, b_ptr: &const T) bool {
+        fn eql(a_ptr: *const T, b_ptr: *const T) bool {
             const a = a_ptr.*;
             const b = b_ptr.*;
             const info = @typeInfo(T);
             switch (info) {
-                TypeId.Int,
-                TypeId.Float,
-                TypeId.FloatLiteral,
-                TypeId.IntLiteral,
-                TypeId.Enum,
-                TypeId.ErrorSet,
-                TypeId.Pointer,
-                TypeId.Type,
-                TypeId.Void,
-                TypeId.Fn,
-                TypeId.NullLiteral,
-                TypeId.Bool => return a == b,
+                TypeId.Int, TypeId.Float, TypeId.FloatLiteral, TypeId.IntLiteral, TypeId.Enum, TypeId.ErrorSet, TypeId.Pointer, TypeId.Type, TypeId.Void, TypeId.Fn, TypeId.NullLiteral, TypeId.Bool => return a == b,
                 TypeId.UndefinedLiteral => return true,
-                TypeId.Array,
-                TypeId.Slice => {
+                TypeId.Array, TypeId.Slice => {
                     if (a.len != b.len)
                         return false;
 
@@ -269,21 +243,14 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
                     return true;
                 },
 
-                TypeId.NoReturn,
-                TypeId.Namespace,
-                TypeId.Block,
-                TypeId.BoundFn,
-                TypeId.ArgTuple,
-                TypeId.Opaque,
-                TypeId.Promise,
-                TypeId.Union => {
+                TypeId.NoReturn, TypeId.Namespace, TypeId.Block, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Union => {
                     @compileError("Cannot get a default equal for " ++ @typeName(T));
                     return false;
-                }
+                },
             }
         }
 
-        fn fieldsEql(comptime field: []const u8, a: &const T, b: &const T) bool {
+        fn fieldsEql(comptime field: []const u8, a: *const T, b: *const T) bool {
             const af = @field(a, field);
             const bf = @field(b, field);
             return equal(@typeOf(af))(af, bf);
@@ -295,7 +262,7 @@ pub fn equal(comptime T: type) fn(&const T, &const T) bool {
 
 test "generic.compare.equal(i32)" {
     const i32Equal = equal(i32);
-    assert( i32Equal(1, 1));
+    assert(i32Equal(1, 1));
     assert(!i32Equal(0, 1));
 }
 
@@ -307,7 +274,7 @@ test "generic.compare.equal(i32)" {
 
 test "generic.compare.equal(f32)" {
     const f32Equal = equal(f32);
-    assert( f32Equal(1, 1));
+    assert(f32Equal(1, 1));
     assert(!f32Equal(0, 1));
 }
 
@@ -319,7 +286,7 @@ test "generic.compare.equal(f32)" {
 
 test "generic.compare.equal(bool)" {
     const boolEqual = equal(bool);
-    assert( boolEqual(true, true));
+    assert(boolEqual(true, true));
     assert(!boolEqual(true, false));
 }
 
@@ -335,9 +302,12 @@ test "generic.compare.equal(bool)" {
 //}
 
 test "generic.compare.equal(enum)" {
-    const E = enum { A, B };
+    const E = enum {
+        A,
+        B,
+    };
     const enumEqual = equal(E);
-    assert( enumEqual(E.A, E.A));
+    assert(enumEqual(E.A, E.A));
     assert(!enumEqual(E.A, E.B));
 }
 
@@ -352,16 +322,16 @@ test "generic.compare.equal(enum)" {
 test "generic.compare.equal(&i64)" {
     var a: i64 = undefined;
     var b: i64 = undefined;
-    const ptrEqual = equal(&i64);
-    assert( ptrEqual(&a, &a));
+    const ptrEqual = equal(*i64);
+    assert(ptrEqual(&a, &a));
     assert(!ptrEqual(&a, &b));
 }
 
 test "generic.compare.equal(?i64)" {
     var nul: ?i64 = null;
     const nullableEqual = equal(?i64);
-    assert( nullableEqual(1, 1));
-    assert( nullableEqual(nul, nul));
+    assert(nullableEqual(1, 1));
+    assert(nullableEqual(nul, nul));
     assert(!nullableEqual(1, 0));
     assert(!nullableEqual(1, nul));
 }
@@ -382,7 +352,7 @@ test "generic.compare.equal(?i64)" {
 
 test "generic.compare.equal([1]u8)" {
     const arrayEqual = equal([1]u8);
-    assert( arrayEqual("1", "1"));
+    assert(arrayEqual("1", "1"));
     assert(!arrayEqual("1", "0"));
 }
 
@@ -402,15 +372,18 @@ test "generic.compare.equal(undefined)" {
 }
 
 test "generic.compare.equal(struct)" {
-    const Struct = packed struct { a: u3, b: u3 };
+    const Struct = packed struct {
+        a: u3,
+        b: u3,
+    };
     const structEqual = equal(Struct);
-    assert( structEqual(Struct{ .a = 1, .b = 1 }, Struct{ .a = 1, .b = 1 }));
+    assert(structEqual(Struct{ .a = 1, .b = 1 }, Struct{ .a = 1, .b = 1 }));
     assert(!structEqual(Struct{ .a = 0, .b = 0 }, Struct{ .a = 1, .b = 1 }));
 }
 
 test "equal([]const u8)" {
     const sliceEqual = equal([]const u8);
-    assert( sliceEqual("1", "1"));
+    assert(sliceEqual("1", "1"));
     assert(!sliceEqual("1", "0"));
 }
 

@@ -5,12 +5,9 @@ pub fn canPassByValue(comptime T: type) bool {
     if (@sizeOf(T) == 0) return true;
 
     switch (@typeId(T)) {
-        TypeId.Struct,
-        TypeId.Union,
-        TypeId.Array       => return false,
-        TypeId.ErrorUnion,
-        TypeId.Nullable    => return canPassByValue(T.Child),
-        else               => return true
+        TypeId.Struct, TypeId.Union, TypeId.Array => return false,
+        TypeId.ErrorUnion, TypeId.Nullable => return canPassByValue(T.Child),
+        else => return true,
     }
 }
 
@@ -19,7 +16,7 @@ pub fn Pass(comptime T: type) type {
     if (canPassByValue(T)) {
         return T;
     } else {
-        return &const T;
+        return *const T;
     }
 }
 

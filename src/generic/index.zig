@@ -29,11 +29,14 @@ pub fn widen(s: var, comptime Out: type) !WidenReturn(@typeOf(s), Out) {
 }
 
 test "generic.widen" {
-    const S = packed struct { a: u8, b: u8 };
+    const S = packed struct {
+        a: u8,
+        b: u8,
+    };
 
     {
         const a = []u8{1};
-        const b = []u8{1,2};
+        const b = []u8{ 1, 2 };
 
         if (widen(a[0..], S)) |_| unreachable else |_| {}
         const v = widen(b[0..], S) catch unreachable;
@@ -45,7 +48,7 @@ test "generic.widen" {
 
     {
         var a = []u8{1};
-        var b = []u8{1,2};
+        var b = []u8{ 1, 2 };
 
         if (widen(a[0..], S)) |_| unreachable else |_| {}
         const v = widen(b[0..], S) catch unreachable;
@@ -56,20 +59,22 @@ test "generic.widen" {
     }
 }
 
-
 /// Widens ::s.
 /// If the widening is a size mismatch, then ::s will be trimmed to nearest fit.
 pub fn widenTrim(s: var, comptime Out: type) WidenReturn(@typeOf(s), Out) {
     const Res = @typeOf(this).ReturnType;
-    return (Res)(s[0..s.len - (s.len % @sizeOf(Out))]);
+    return (Res)(s[0 .. s.len - (s.len % @sizeOf(Out))]);
 }
 
 test "generic.widenTrim" {
-    const S = packed struct { a: u8, b: u8 };
+    const S = packed struct {
+        a: u8,
+        b: u8,
+    };
 
     {
         const a = []u8{1};
-        const b = []u8{1,2};
+        const b = []u8{ 1, 2 };
         const v1 = widenTrim(a[0..], S);
         const v2 = widenTrim(b[0..], S);
 
@@ -83,7 +88,7 @@ test "generic.widenTrim" {
 
     {
         var a = []u8{1};
-        var b = []u8{1,2};
+        var b = []u8{ 1, 2 };
         const v1 = widenTrim(a[0..], S);
         const v2 = widenTrim(b[0..], S);
 
@@ -95,7 +100,6 @@ test "generic.widenTrim" {
         debug.assert(v2[0].b == 2);
     }
 }
-
 
 fn SliceReturn(comptime Slice: type) type {
     switch (@typeInfo(Slice)) {
@@ -119,7 +123,7 @@ pub fn slice(s: var, start: usize, end: usize) !SliceReturn(@typeOf(s)) {
 }
 
 test "generic.slice" {
-    const a = []u8{1,2};
+    const a = []u8{ 1, 2 };
     const b = slice(a[0..], 0, 1) catch unreachable;
     const c = slice(a[0..], 1, 2) catch unreachable;
     const d = slice(a[0..], 0, 2) catch unreachable;
@@ -127,7 +131,7 @@ test "generic.slice" {
 
     debug.assert(mem.eql(u8, b, []u8{1}));
     debug.assert(mem.eql(u8, c, []u8{2}));
-    debug.assert(mem.eql(u8, d, []u8{1,2}));
+    debug.assert(mem.eql(u8, d, []u8{ 1, 2 }));
     debug.assert(mem.eql(u8, e, []u8{}));
 
     if (slice(a[0..], 0, 3)) |_|
@@ -145,8 +149,8 @@ test "generic.slice" {
     else |err|
         debug.assert(err == error.EndLessThanStart);
 
-    const q1 = []u8{1,2};
-    var q2 = []u8{1,2};
+    const q1 = []u8{ 1, 2 };
+    var q2 = []u8{ 1, 2 };
 
     const q11 = slice(q1[0..], 0, 2) catch unreachable;
     const q21 = slice(q2[0..], 0, 2) catch unreachable;
@@ -155,14 +159,10 @@ test "generic.slice" {
 }
 
 
-// These function are needed because we don't have pointer reform yet
-fn Ptr(comptime T: type) type { return &T; }
-fn ConstPtr(comptime T: type) type { return &const T; }
-
 fn AtReturn(comptime Slice: type) type {
     switch (@typeInfo(Slice)) {
         TypeId.Slice => |s| {
-            return if (s.is_const) ConstPtr(s.child) else Ptr(s.child);
+            return if (s.is_const) *const s.child else *s.child;
         },
         else => @compileError("Expected 'Slice' found '" ++ @typeName(Slice) ++ "'"),
     }
@@ -178,7 +178,7 @@ pub fn at(s: var, index: usize) !AtReturn(@typeOf(s)) {
 }
 
 test "generic.slice" {
-    const a = []u8{1,2};
+    const a = []u8{ 1, 2 };
     const b = at(a[0..], 0) catch unreachable;
     const c = at(a[0..], 1) catch unreachable;
 
@@ -190,11 +190,11 @@ test "generic.slice" {
     else |err|
         debug.assert(err == error.OutOfBound);
 
-    const q1 = []u8{1,2};
-    var q2 = []u8{1,2};
+    const q1 = []u8{ 1, 2 };
+    var q2 = []u8{ 1, 2 };
 
     const q11 = at(q1[0..], 0) catch unreachable;
     const q21 = at(q2[0..], 0) catch unreachable;
-    debug.assert(@typeOf(q11) == &const u8);
-    debug.assert(@typeOf(q21) == &u8);
+    debug.assert(@typeOf(q11) == *const u8);
+    debug.assert(@typeOf(q21) == *u8);
 }

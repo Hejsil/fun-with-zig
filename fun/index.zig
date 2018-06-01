@@ -1,7 +1,7 @@
-const parser     = @import("parser.zig");
+const parser = @import("parser.zig");
 const functional = @import("functional.zig");
-const comparer   = @import("comparer.zig");
-const algorithm  = @import("algorithm/index.zig");
+const comparer = @import("comparer.zig");
+const algorithm = @import("algorithm/index.zig");
 
 test "fun-with-zig" {
     _ = @import("namespaces/index.zig");
