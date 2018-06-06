@@ -5,6 +5,7 @@ const debug = std.debug;
 const mem = std.mem;
 
 const TypeId = @import("builtin").TypeId;
+const TypeInfo = @import("builtin").TypeInfo;
 
 test "generic" {
     _ = compare;
@@ -12,8 +13,11 @@ test "generic" {
 
 fn WidenReturn(comptime InSlice: type, comptime Out: type) type {
     switch (@typeInfo(InSlice)) {
-        TypeId.Slice => |s| {
-            return if (s.is_const) []const Out else []Out;
+        TypeId.Pointer => |ptr| {
+            if (ptr.size != TypeInfo.Pointer.Size.Slice)
+                @compileError("Expected 'Slice' found '" ++ @typeName(InSlice) ++ "'");
+
+            return if (ptr.is_const) []const Out else []Out;
         },
         else => @compileError("Expected 'Slice' found '" ++ @typeName(InSlice) ++ "'"),
     }
@@ -103,8 +107,11 @@ test "generic.widenTrim" {
 
 fn SliceReturn(comptime Slice: type) type {
     switch (@typeInfo(Slice)) {
-        TypeId.Slice => |s| {
-            return if (s.is_const) []const s.child else []s.child;
+        TypeId.Pointer => |ptr| {
+            if (ptr.size != TypeInfo.Pointer.Size.Slice)
+                @compileError("Expected 'Slice' found '" ++ @typeName(Slice) ++ "'");
+
+            return if (ptr.is_const) []const ptr.child else []ptr.child;
         },
         else => @compileError("Expected 'Slice' found '" ++ @typeName(Slice) ++ "'"),
     }
@@ -160,8 +167,20 @@ test "generic.slice" {
 
 fn AtReturn(comptime Slice: type) type {
     switch (@typeInfo(Slice)) {
-        TypeId.Slice => |s| {
-            return if (s.is_const) *const s.child else *s.child;
+        TypeId.Pointer => |ptr| {
+            switch (ptr.size) {
+                TypeInfo.Pointer.Size.One => {
+                    switch (@typeInfo(ptr.child)) {
+                        TypeId.Array => |arr| {
+                            return if (ptr.is_const) *const arr.child else *arr.child;
+                        },
+                        else => @compileError("Expected 'Array pointer' found '" ++ @typeName(Slice) ++ "'"),
+                    }
+                },
+                else => {
+                    return if (ptr.is_const) *const ptr.child else *ptr.child;
+                }
+            }
         },
         else => @compileError("Expected 'Slice' found '" ++ @typeName(Slice) ++ "'"),
     }
@@ -176,13 +195,15 @@ pub fn at(s: var, index: usize) !AtReturn(@typeOf(s)) {
     return &s[index];
 }
 
-test "generic.slice" {
+test "generic.at" {
     const a = []u8{ 1, 2 };
     const b = at(a[0..], 0) catch unreachable;
     const c = at(a[0..], 1) catch unreachable;
+    //const d = at(a, 1) catch unreachable;
 
     debug.assert(b.* == 1);
     debug.assert(c.* == 2);
+    //debug.assert(d.* == 2);
 
     if (at(a[0..], 2)) |_|
         unreachable
@@ -196,4 +217,9 @@ test "generic.slice" {
     const q21 = at(q2[0..], 0) catch unreachable;
     debug.assert(@typeOf(q11) == *const u8);
     debug.assert(@typeOf(q21) == *u8);
+
+    //const q31 = at(q1, 0) catch unreachable;
+    //const q41 = at(q2, 0) catch unreachable;
+    //debug.assert(@typeOf(q31) == *const u8);
+    //debug.assert(@typeOf(q41) == *u8);
 }

@@ -1,6 +1,7 @@
 const mem = @import("std").mem;
 const assert = @import("std").debug.assert;
 const TypeId = @import("builtin").TypeId;
+const TypeInfo = @import("builtin").TypeInfo;
 
 /// Generates a lessThan function from ::T
 pub fn lessThan(comptime T: type) fn (*const T, *const T) bool {
@@ -10,7 +11,7 @@ pub fn lessThan(comptime T: type) fn (*const T, *const T) bool {
             const b = b_ptr.*;
             const info = @typeInfo(T);
             switch (info) {
-                TypeId.Int, TypeId.Float, TypeId.FloatLiteral, TypeId.IntLiteral => return a < b,
+                TypeId.Int, TypeId.Float, TypeId.ComptimeFloat, TypeId.ComptimeInt => return a < b,
                 TypeId.Bool => return u8(a) < u8(b),
 
                 TypeId.Nullable => |nullable| {
@@ -34,13 +35,16 @@ pub fn lessThan(comptime T: type) fn (*const T, *const T) bool {
                     return lessThan(err_union.payload)(a_value, b_value);
                 },
 
+                // TODO: mem.lessThan is wrong
                 TypeId.Array => |arr| return mem.lessThan(arr.child, a, b),
-                TypeId.Slice => |slice| return mem.lessThan(slice.child, a, b),
                 TypeId.Enum => |e| return e.tag_type(a) < e.tag_type(b),
                 TypeId.ErrorSet => return u32(a) < u32(b),
-                TypeId.Pointer => return @ptrToInt(a) < @ptrToInt(b),
-
-                TypeId.NullLiteral, TypeId.Void, TypeId.UndefinedLiteral => return false,
+                TypeId.Pointer => |ptr| switch (ptr.size) {
+                    // TODO: mem.lessThan is wrong
+                    TypeInfo.Pointer.Size.Slice => return mem.lessThan(ptr.child, a, b),
+                    else => return @ptrToInt(a) < @ptrToInt(b)
+                },
+                TypeId.Null, TypeId.Void, TypeId.Undefined => return false,
 
                 TypeId.Type, TypeId.NoReturn, TypeId.Fn, TypeId.Namespace, TypeId.Block, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Struct, TypeId.Union => {
                     @compileError("Cannot get a default less than for " ++ @typeName(T));
@@ -201,9 +205,23 @@ pub fn equal(comptime T: type) fn (*const T, *const T) bool {
             const b = b_ptr.*;
             const info = @typeInfo(T);
             switch (info) {
-                TypeId.Int, TypeId.Float, TypeId.FloatLiteral, TypeId.IntLiteral, TypeId.Enum, TypeId.ErrorSet, TypeId.Pointer, TypeId.Type, TypeId.Void, TypeId.Fn, TypeId.NullLiteral, TypeId.Bool => return a == b,
-                TypeId.UndefinedLiteral => return true,
-                TypeId.Array, TypeId.Slice => {
+                TypeId.Int, TypeId.Float, TypeId.ComptimeInt, TypeId.ComptimeFloat, TypeId.Enum, TypeId.ErrorSet, TypeId.Type, TypeId.Void, TypeId.Fn, TypeId.Null, TypeId.Bool => return a == b,
+                TypeId.Undefined => return true,
+                TypeId.Pointer => |ptr| switch (ptr.size) {
+                    TypeInfo.Pointer.Size.Slice => {
+                        if (a.len != b.len)
+                            return false;
+
+                        for (a) |_, i| {
+                            if (!equal(T.Child)(a[i], b[i]))
+                                return false;
+                        }
+
+                        return true;
+                    },
+                    else => return a == b,
+                },
+                TypeId.Array => {
                     if (a.len != b.len)
                         return false;
 

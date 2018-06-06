@@ -173,7 +173,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) type {
                         cleanUp(value, allocator);
                     }
 
-                    allocator.destroy(values.*);
+                    allocator.free(values.*);
                 }
             }
         }
