@@ -36,9 +36,7 @@ fn isConstPtr(comptime T: type) bool {
         info.Pointer.is_const;
 }
 
-pub const WidenError = error {
-    WideningSizeMismatch,
-};
+pub const WidenError = error{WideningSizeMismatch};
 
 fn WidenReturn(comptime In: type, comptime Out: type) type {
     const Result = WidenTrimReturn(In, Out);
@@ -138,7 +136,6 @@ fn WidenTrimReturn(comptime In: type, comptime Out: type) type {
         return if (isConstPtr(In)) *const [new_len]Out else *[new_len]Out;
     }
 
-
     @compileError("Expected 'Slice' or 'Array pointer' found '" ++ @typeName(In) ++ "'");
 }
 
@@ -154,7 +151,7 @@ pub fn widenTrim(s: var, comptime Out: type) WidenTrimReturn(@typeOf(s), Out) {
     if (comptime isSlice(T)) {
         const Bytes = if (comptime isConstPtr(T)) []const u8 else []u8;
         const bytes = (Bytes)(s);
-        const res = (Res)(bytes[0.. new_len * @sizeOf(Out)]);
+        const res = (Res)(bytes[0 .. new_len * @sizeOf(Out)]);
         debug.assert(res.len == new_len);
         return res;
     }
