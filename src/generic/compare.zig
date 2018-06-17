@@ -15,10 +15,10 @@ pub fn lessThan(comptime T: type) fn (*const T, *const T) bool {
                 TypeId.Bool => return u8(a) < u8(b),
 
                 TypeId.Nullable => |nullable| {
-                    const a_value = a ?? {
+                    const a_value = a orelse {
                         return if (b) |_| true else false;
                     };
-                    const b_value = b ?? return false;
+                    const b_value = b orelse return false;
 
                     return lessThan(nullable.child)(a_value, b_value);
                 },
@@ -233,10 +233,10 @@ pub fn equal(comptime T: type) fn (*const T, *const T) bool {
                     return true;
                 },
                 TypeId.Nullable => |nullable| {
-                    const a_value = a ?? {
+                    const a_value = a orelse {
                         return if (b) |_| false else true;
                     };
-                    const b_value = b ?? return false;
+                    const b_value = b orelse return false;
 
                     return equal(nullable.child)(a_value, b_value);
                 },

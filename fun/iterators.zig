@@ -53,7 +53,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
             var res = it.*;
             var i = u64(0);
             while (i < count) : (i += 1) {
-                _ = res.next() ?? return res;
+                _ = res.next() orelse return res;
             }
 
             return res;
@@ -84,7 +84,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
 
             return Iterator(IteratorPair(OtherIterator), Result, struct {
                 fn whereNext(context: *IteratorPair(OtherIterator)) ?Result {
-                    return context.it1.next() ?? {
+                    return context.it1.next() orelse {
                         return context.it2.next();
                     };
                 }
@@ -94,7 +94,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
         fn SelectIterator(comptime SelectResult: type, comptime selector: fn (*const Result) SelectResult) type {
             return Iterator(Context, SelectResult, struct {
                 fn selectNext(context: *Context) ?SelectResult {
-                    const item = nextFn(context) ?? return null;
+                    const item = nextFn(context) orelse return null;
                     return selector(item);
                 }
             }.selectNext);
@@ -137,8 +137,8 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
 
             return Iterator(IteratorPair(OtherIterator), ZipPair, struct {
                 fn whereNext(context: *IteratorPair(OtherIterator)) ?ZipPair {
-                    const first = context.it1.next() ?? return null;
-                    const second = context.it2.next() ?? return null;
+                    const first = context.it1.next() orelse return null;
+                    const second = context.it2.next() orelse return null;
                     return ZipPair{ .first = first, .second = second };
                 }
             }.whereNext);
@@ -229,7 +229,7 @@ pub fn empty(comptime T: type) EmptyIterator(T) {
 }
 
 pub fn aggregate(it: var, func: fn (*const @typeOf(it.*).Result, *const @typeOf(it.*).Result) @typeOf(it.*).Result) ?@typeOf(it.*).Result {
-    return aggregateAcc(it, it.next() ?? return null, @typeOf(it.*).Result, func);
+    return aggregateAcc(it, it.next() orelse return null, @typeOf(it.*).Result, func);
 }
 
 pub fn aggregateAcc(it: var, acc: var, func: fn (@typeOf(acc), *const @typeOf(it.*).Result) @typeOf(acc)) ?@typeOf(acc) {

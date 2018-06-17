@@ -62,7 +62,7 @@ pub const Input = struct {
         const start = self.pos.index;
         var i: usize = 0;
         while (i < count) : (i += 1) {
-            _ = self.eat() ?? return self.str[start..self.pos.index];
+            _ = self.eat() orelse return self.str[start..self.pos.index];
         }
 
         return self.str[start..self.pos.index];
@@ -366,7 +366,7 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) type {
 }
 
 fn parseAny(allocator: *Allocator, in: *Input) !u8 {
-    return in.eat() ?? error.EOS;
+    return in.eat() orelse error.EOS;
 }
 
 /// A parser that matches any character.
@@ -385,7 +385,7 @@ test "parser.any" {
 
 fn parseEnd(allocator: *Allocator, in: *Input) !void {
     const prev = in.pos;
-    _ = in.eat() ?? return;
+    _ = in.eat() orelse return;
 
     in.pos = prev;
     return error.ParserError;
@@ -401,7 +401,7 @@ pub fn char(comptime chr: u8) Parser(u8) {
             const prev = in.pos;
             errdefer in.pos = prev;
 
-            const result = in.eat() ?? return error.EOS;
+            const result = in.eat() orelse return error.EOS;
 
             if (result != chr) return error.ParserError;
             return result;
@@ -433,7 +433,7 @@ pub fn range(comptime from: u8, comptime to: u8) Parser(u8) {
             const prev = in.pos;
             errdefer in.pos = prev;
 
-            const result = in.eat() ?? return error.EOS;
+            const result = in.eat() orelse return error.EOS;
 
             if (result < from or to < result) return error.ParserError;
             return result;
