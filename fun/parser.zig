@@ -720,7 +720,7 @@ test "parser.Parser.optional" {
     var input = Input.init("ab");
     const res1 = parser.parse(debug.global_allocator, &input) catch unreachable;
     const res2 = parser.parse(debug.global_allocator, &input) catch unreachable;
-    assert(??res1 == 'a');
+    assert(res1.? == 'a');
     assert(res2 == null);
     assert(input.pos.index == 1);
 }

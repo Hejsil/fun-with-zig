@@ -334,7 +334,7 @@ test "iterators.aggregateAcc" {
         }
     }.f;
 
-    assert(??aggregateAcc(SliceIterator(u8).init(data), u64(0), countA) == 3);
+    assert(aggregateAcc(SliceIterator(u8).init(data), u64(0), countA).? == 3);
 }
 
 test "iterators.all" {

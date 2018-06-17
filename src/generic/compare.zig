@@ -42,7 +42,7 @@ pub fn lessThan(comptime T: type) fn (*const T, *const T) bool {
                 TypeId.Pointer => |ptr| switch (ptr.size) {
                     // TODO: mem.lessThan is wrong
                     TypeInfo.Pointer.Size.Slice => return mem.lessThan(ptr.child, a, b),
-                    else => return @ptrToInt(a) < @ptrToInt(b)
+                    else => return @ptrToInt(a) < @ptrToInt(b),
                 },
                 TypeId.Null, TypeId.Void, TypeId.Undefined => return false,
 

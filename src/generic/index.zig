@@ -179,7 +179,7 @@ fn AtReturn(comptime Slice: type) type {
                 },
                 else => {
                     return if (ptr.is_const) *const ptr.child else *ptr.child;
-                }
+                },
             }
         },
         else => @compileError("Expected 'Slice' found '" ++ @typeName(Slice) ++ "'"),
