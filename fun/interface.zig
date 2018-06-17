@@ -31,7 +31,7 @@ pub fn Interface(comptime T: type) type {
             return res;
         }
 
-        fn dispatch(vtable: *const Self, comptime fn_name: []const u8, self: *Opaque, args: ...) @field(T, fn_name).ReturnType {
+        fn dispatch(vtable: Self, comptime fn_name: []const u8, self: *Opaque, args: ...) @field(T, fn_name).ReturnType {
             inline for (info.defs) |def, i| {
                 if (comptime !mem.eql(u8, def.name, fn_name))
                     continue;
@@ -77,7 +77,7 @@ pub fn Interface(comptime T: type) type {
             };
         }
 
-        fn call(self: *const Self, comptime fn_name: []const u8, args: ...) @field(T, fn_name).ReturnType {
+        fn call(self: Self, comptime fn_name: []const u8, args: ...) @field(T, fn_name).ReturnType {
             return self.vtable.dispatch(fn_name, self.state, args);
         }
     };

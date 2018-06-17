@@ -14,14 +14,17 @@ pub const Dynamic = struct {
         };
     }
 
+    // TODO: Change to pass-by-value
     pub fn value(comptime dyn: *const Dynamic) dyn.Type {
         return @ptrCast(*const dyn.Type, dyn.v).*;
     }
 
+    // TODO: Change to pass-by-value
     pub fn field(comptime dyn: *const Dynamic, comptime field_name: []const u8) (@typeOf(@field(dyn.Type{}, field_name))) {
         return @field(dyn.value(), field_name);
     }
 
+    // TODO: Change to pass-by-value
     pub fn call(comptime dyn: *const Dynamic, args: ...) dyn.Type.ReturnType {
         return switch (args.len) {
             0 => dyn.value()(),

@@ -34,7 +34,7 @@ const Tree = union(enum) {
     Par: *Tree,
     Node: TreeNode,
 
-    pub fn destroy(self: *const Self, allocator: *Allocator) void {
+    pub fn destroy(self: *Self, allocator: *Allocator) void {
         switch (self.*) {
             Self.Node => |node| {
                 node.left.destroy(allocator);
@@ -47,6 +47,7 @@ const Tree = union(enum) {
         }
 
         allocator.destroy(self);
+        self.* = undefined;
     }
 
     pub fn createLeaf(allocator: *Allocator, value: i64) !*Tree {
@@ -68,19 +69,19 @@ const Tree = union(enum) {
     }
 };
 
-fn toLeaf(str: *const []u8, allocator: *Allocator, cleanUp: CleanUp([]u8)) !*Tree {
+fn toLeaf(str: []u8, allocator: *Allocator, cleanUp: CleanUp([]u8)) !*Tree {
     defer cleanUp(str, allocator);
 
-    const i = try std.fmt.parseInt(i64, str.*, 10);
+    const i = try std.fmt.parseInt(i64, str, 10);
     return Tree.createLeaf(allocator, i);
 }
 
-fn toPar(tree: *const *Tree, allocator: *Allocator, cleanUp: CleanUp(*Tree)) !*Tree {
+fn toPar(tree: *Tree, allocator: *Allocator, cleanUp: CleanUp(*Tree)) !*Tree {
     errdefer cleanUp(tree, allocator);
-    return Tree.createPar(allocator, tree.*);
+    return Tree.createPar(allocator, tree);
 }
 
-fn treeCleanUp(tree: *const *Tree, allocator: *Allocator) void {
+fn treeCleanUp(tree: *Tree, allocator: *Allocator) void {
     tree.*.destroy(allocator);
 }
 
@@ -88,9 +89,9 @@ fn apply(
     allocator: *Allocator,
     treeClean: CleanUp(*Tree),
     opClean: CleanUp(u8),
-    left: *const *Tree,
-    right: *const *Tree,
-    op: *const u8,
+    left: *Tree,
+    right: *Tree,
+    op: u8,
 ) !*Tree {
     errdefer {
         treeClean(left, allocator);
@@ -98,7 +99,7 @@ fn apply(
     }
     defer opClean(op, allocator);
 
-    const result = try Tree.createNode(allocator, op.*, left.*, right.*);
+    const result = try Tree.createNode(allocator, op, left, right);
     return result;
 }
 

@@ -8,7 +8,7 @@ pub fn all(slice: var, rest: ...) bool {
     };
 }
 
-fn allNoContext(slice: var, predicate: fn (*const @typeOf(slice[0])) bool) bool {
+fn allNoContext(slice: var, predicate: fn (@typeOf(slice[0])) bool) bool {
     for (slice) |item| {
         if (!predicate(item)) return false;
     }
@@ -16,7 +16,7 @@ fn allNoContext(slice: var, predicate: fn (*const @typeOf(slice[0])) bool) bool 
     return true;
 }
 
-pub fn allWithContext(slice: var, context: var, predicate: fn (*const @typeOf(slice[0]), @typeOf(context)) bool) bool {
+pub fn allWithContext(slice: var, context: var, predicate: fn (@typeOf(slice[0]), @typeOf(context)) bool) bool {
     for (slice) |item| {
         if (!predicate(item, context)) return false;
     }
@@ -26,13 +26,13 @@ pub fn allWithContext(slice: var, context: var, predicate: fn (*const @typeOf(sl
 
 test "overloading.all" {
     assert(all("aaaa"[0..], struct {
-        fn l(c: *const u8) bool {
-            return c.* == 'a';
+        fn l(c: u8) bool {
+            return c == 'a';
         }
     }.l));
     assert(all("aaaa"[0..], u8('a'), struct {
-        fn l(c: *const u8, c2: u8) bool {
-            return c.* == c2;
+        fn l(c: u8, c2: u8) bool {
+            return c == c2;
         }
     }.l));
 }

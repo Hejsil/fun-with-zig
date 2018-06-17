@@ -3,33 +3,31 @@ const assert = @import("std").debug.assert;
 const TypeId = @import("builtin").TypeId;
 const TypeInfo = @import("builtin").TypeInfo;
 
-pub fn lessThan(comptime T: type, a_ptr: *const T, b_ptr: *const T) bool {
-    const a = a_ptr.*;
-    const b = b_ptr.*;
+pub fn lessThan(comptime T: type, a: T, b: T) bool {
     const info = @typeInfo(T);
     switch (info) {
         TypeId.Int, TypeId.Float, TypeId.ComptimeFloat, TypeId.ComptimeInt => return a < b,
         TypeId.Bool => return u8(a) < u8(b),
 
-        TypeId.Nullable => |nullable| {
-            const a_value = a ?? {
+        TypeId.Optional => |optional| {
+            const a_value = a orelse {
                 return if (b) |_| true else false;
             };
-            const b_value = b ?? return false;
+            const b_value = b orelse return false;
 
-            return lessThan(nullable.child, a_value, b_value);
+            return lessThan(optional.child, a_value, b_value);
         },
         TypeId.ErrorUnion => |err_union| {
             const a_value = a catch |a_err| {
                 if (b) |_| {
                     return true;
                 } else |b_err| {
-                    return lessThan(err_union.error_set)(a_err, b_err);
+                    return lessThan(err_union.error_set, a_err, b_err);
                 }
             };
             const b_value = b catch return false;
 
-            return lessThan(err_union.payload)(a_value, b_value);
+            return lessThan(err_union.payload, a_value, b_value);
         },
 
         // TODO: mem.lessThan is wrong
@@ -62,11 +60,11 @@ test "generic.compare.lessThan(i64)" {
     assert(!lessThan(i64, 0, -1));
 }
 
-//test "lessThan(comptime_int)" {
-//    assert( lessThan(comptime_int, 0,  1));
-//    assert(!lessThan(comptime_int, 0,  0));
-//    assert(!lessThan(comptime_int, 0, -1));
-//}
+test "lessThan(comptime_int)" {
+    assert( lessThan(comptime_int, 0,  1));
+    assert(!lessThan(comptime_int, 0,  0));
+    assert(!lessThan(comptime_int, 0, -1));
+}
 
 test "generic.compare.lessThan(f64)" {
     assert(lessThan(f64, 0, 1));
@@ -141,7 +139,7 @@ test "generic.compare.lessThan(&i64)" {
 }
 
 test "generic.compare.lessThan(null)" {
-    comptime assert(!lessThan(@typeOf(null), &null, &null));
+    comptime assert(!lessThan(@typeOf(null), null, null));
 }
 
 test "generic.compare.lessThan(void)" {
@@ -154,9 +152,7 @@ test "generic.compare.lessThan([]const u8)" {
     assert(!lessThan([]const u8, "1", "0"));
 }
 
-pub fn equal(comptime T: type, a_ptr: *const T, b_ptr: *const T) bool {
-    const a = a_ptr.*;
-    const b = b_ptr.*;
+pub fn equal(comptime T: type, a: T, b: T) bool {
     const info = @typeInfo(T);
     switch (info) {
         TypeId.Int, TypeId.Float, TypeId.ComptimeInt, TypeId.ComptimeFloat, TypeId.Enum, TypeId.ErrorSet, TypeId.Type, TypeId.Void, TypeId.Fn, TypeId.Null, TypeId.Bool => return a == b,
@@ -185,13 +181,13 @@ pub fn equal(comptime T: type, a_ptr: *const T, b_ptr: *const T) bool {
 
             return true;
         },
-        TypeId.Nullable => |nullable| {
-            const a_value = a ?? {
+        TypeId.Optional => |optional| {
+            const a_value = a orelse {
                 return if (b) |_| false else true;
             };
-            const b_value = b ?? return false;
+            const b_value = b orelse return false;
 
-            return equal(nullable.child, a_value, b_value);
+            return equal(optional.child, a_value, b_value);
         },
         TypeId.ErrorUnion => |err_union| {
             const a_value = a catch |a_err| {
@@ -254,8 +250,8 @@ test "generic.compare.equal(bool)" {
 
 test "generic.compare.equal(type)" {
     comptime {
-        assert(equal(type, &u8, &u8));
-        assert(!equal(type, &u16, &u8));
+        assert(equal(type, u8, u8));
+        assert(!equal(type, u16, u8));
     }
 }
 
@@ -310,7 +306,7 @@ test "generic.compare.equal([1]u8)" {
 }
 
 test "generic.compare.equal(null)" {
-    comptime assert(equal(@typeOf(null), &null, &null));
+    comptime assert(equal(@typeOf(null), null, null));
 }
 
 test "generic.compare.equal(void)" {
@@ -339,7 +335,6 @@ test "equal([]const u8)" {
 //        fn b() void {}
 //    };
 //
-//    const fnEqual = equal(fn()void);
-//    assert( fnEqual(T.a, T.a));
-//    assert(!fnEqual(T.a, T.b));
+//    assert( equal(fn()void, T.a, T.a));
+//    assert(!equal(fn()void, T.a, T.b));
 //}

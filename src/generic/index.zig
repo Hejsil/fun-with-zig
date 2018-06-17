@@ -98,7 +98,7 @@ test "generic.widen" {
         debug.assert(v[0].a == 1);
         debug.assert(v[0].b == 2);
 
-        const v2 = widen(b, S) catch unreachable;
+        const v2 = widen(&b, S) catch unreachable;
         debug.assert(@typeOf(v2) == *const [1]S);
         debug.assert(v2.len == 1);
         debug.assert(v2[0].a == 1);
@@ -176,7 +176,7 @@ test "generic.widenTrim" {
         const v1 = widenTrim(a[0..], S);
         const v2 = widenTrim(b[0..], S);
         //const v3 = widenTrim(a, S);
-        const v4 = widenTrim(b, S);
+        const v4 = widenTrim(&b, S);
 
         debug.assert(@typeOf(v1) == []const S);
         debug.assert(@typeOf(v2) == []const S);
@@ -242,7 +242,7 @@ test "generic.slice" {
     const c = slice(a[0..], 1, 2) catch unreachable;
     const d = slice(a[0..], 0, 2) catch unreachable;
     const e = slice(a[0..], 2, 2) catch unreachable;
-    const f = slice(a, 1, 2) catch unreachable;
+    const f = slice(&a, 1, 2) catch unreachable;
 
     debug.assert(mem.eql(u8, b, []u8{1}));
     debug.assert(mem.eql(u8, c, []u8{2}));
@@ -273,8 +273,8 @@ test "generic.slice" {
     debug.assert(@typeOf(q11) == []const u8);
     debug.assert(@typeOf(q21) == []u8);
 
-    const q12 = slice(q1, 0, 2) catch unreachable;
-    const q22 = slice(q2, 0, 2) catch unreachable;
+    const q12 = slice(&q1, 0, 2) catch unreachable;
+    const q22 = slice(&q2, 0, 2) catch unreachable;
     debug.assert(@typeOf(q12) == []const u8);
     debug.assert(@typeOf(q22) == []u8);
 }
@@ -301,7 +301,7 @@ test "generic.at" {
     const a = []u8{ 1, 2 };
     const b = at(a[0..], 0) catch unreachable;
     const c = at(a[0..], 1) catch unreachable;
-    const d = at(a, 1) catch unreachable;
+    const d = at(a[0..], 1) catch unreachable;
 
     debug.assert(b.* == 1);
     debug.assert(c.* == 2);
@@ -320,8 +320,8 @@ test "generic.at" {
     debug.assert(@typeOf(q11) == *const u8);
     debug.assert(@typeOf(q21) == *u8);
 
-    const q31 = at(q1, 0) catch unreachable;
-    const q41 = at(q2, 0) catch unreachable;
+    const q31 = at(&q1, 0) catch unreachable;
+    const q41 = at(&q2, 0) catch unreachable;
     debug.assert(@typeOf(q31) == *const u8);
     debug.assert(@typeOf(q41) == *u8);
 }

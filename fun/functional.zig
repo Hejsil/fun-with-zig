@@ -49,6 +49,7 @@ pub fn reverseSimple(comptime T: type, comptime f: fn (T, T) T) fn (T, T) T {
     return reverse(T, T, f);
 }
 
+// TODO: Change to pass-by-value
 fn lt(a: *const i32, b: *const i32) bool {
     return a.* < b.*;
 }
