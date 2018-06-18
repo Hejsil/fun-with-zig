@@ -7,7 +7,7 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
     const info = @typeInfo(T);
     switch (info) {
         TypeId.Int, TypeId.Float, TypeId.ComptimeFloat, TypeId.ComptimeInt => return a < b,
-        TypeId.Bool => return u8(a) < u8(b),
+        TypeId.Bool => return @boolToInt(a) < @boolToInt(b),
 
         TypeId.Optional => |optional| {
             const a_value = a orelse {

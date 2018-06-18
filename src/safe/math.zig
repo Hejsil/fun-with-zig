@@ -5,11 +5,11 @@ const debug = std.debug;
 fn CombineAdditive(comptime A: type, comptime B: type) type {
     const is_signed = A.is_signed or B.is_signed;
     const bit_count = blk: {
-        const effective_bits_a = A.bit_count - (1 * u8(A.is_signed));
-        const effective_bits_b = B.bit_count - (1 * u8(B.is_signed));
+        const effective_bits_a = A.bit_count - @boolToInt(A.is_signed);
+        const effective_bits_b = B.bit_count - @boolToInt(B.is_signed);
         const effective_bits = math.max(effective_bits_a, effective_bits_b);
         const bit_count_without_sign = effective_bits + 1;
-        const bit_count = bit_count_without_sign + (1 * u8(is_signed));
+        const bit_count = bit_count_without_sign + @boolToInt(is_signed);
         break :blk bit_count;
     };
 

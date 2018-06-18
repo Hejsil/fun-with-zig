@@ -330,7 +330,7 @@ test "iterators.aggregateAcc" {
     const data = "abacad";
     const countA = struct {
         fn f(acc: u64, char: u8) u64 {
-            return acc + u8(char == 'a');
+            return acc + @boolToInt(char == 'a');
         }
     }.f;
 
