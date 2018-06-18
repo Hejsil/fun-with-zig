@@ -417,7 +417,7 @@ test "iterators.select" {
     const data = []f64{ 1.5, 2.5, 3.5 };
     const toI64 = struct {
         fn f(i: f64) i64 {
-            return i64(i);
+            return @floatToInt(i64, i);
         }
     }.f;
 
@@ -425,7 +425,7 @@ test "iterators.select" {
 
     var i: usize = 0;
     while (it.next()) |item| : (i += 1) {
-        assert(item == i64(data[i]));
+        assert(item == @floatToInt(i64, data[i]));
     }
 
     assert(i == data.len);

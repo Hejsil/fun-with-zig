@@ -103,19 +103,6 @@ pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) type {
         }
 
         // TODO: pass-by-value
-        /// Type casts ::T -> ::K.
-        pub fn as(comptime self: *const Self, comptime K: type) Parser(K) {
-            const Func = struct {
-                fn parse(allocator: *Allocator, in: *Input) !K {
-                    const res = try self.parse(allocator, in);
-                    return K(res);
-                }
-            };
-
-            return Parser(K).init(Func.parse);
-        }
-
-        // TODO: pass-by-value
         fn convertFunc(comptime self: *const Self, comptime K: type, comptime converter: Converter(T, K)) fn (*Allocator, *Input) error!K {
             return struct {
                 fn parse(allocator: *Allocator, in: *Input) !K {
@@ -644,18 +631,6 @@ pub fn chainOperatorRight(
     };
 
     return ParserWithCleanup(TOprand, operandCleanup).init(Func.parse);
-}
-
-test "parser.Parser.as" {
-    var input = Input.init("abc");
-    const parser = comptime any.as(f32);
-    const res1 = parser.parse(debug.global_allocator, &input) catch unreachable;
-    const res2 = parser.parse(debug.global_allocator, &input) catch unreachable;
-    const res3 = parser.parse(debug.global_allocator, &input) catch unreachable;
-    assert(res1 == f32('a'));
-    assert(res2 == f32('b'));
-    assert(res3 == f32('c'));
-    assert(input.pos.index == 3);
 }
 
 test "parser.Parser.convert" {
