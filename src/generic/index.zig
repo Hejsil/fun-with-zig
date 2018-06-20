@@ -36,52 +36,14 @@ fn isConstPtr(comptime T: type) bool {
         info.Pointer.is_const;
 }
 
-pub const WidenError = error{WideningSizeMismatch};
+pub fn bytesToSlice(comptime Element: type, bytes: var) !@typeOf(@bytesToSlice(Element, bytes)) {
+    if (bytes.len % @sizeOf(Element) != 0)
+        return error.SizeMismatch;
 
-fn WidenReturn(comptime In: type, comptime Out: type) type {
-    const Result = WidenTrimReturn(In, Out);
-
-    // If we are an array pointer, then we catch the widen mismatch at comptime instead of
-    if (isArrayPtr(In)) {
-        const Array = In.Child;
-        const Child = Array.Child;
-        const old_len = Array.len * @sizeOf(Child);
-        if (old_len % @sizeOf(Out) != 0) {
-            const in_name = "'" ++ @typeName(In) ++ "'";
-            const out_name = "'*[?]" ++ @typeName(Out) ++ "'";
-            @compileError("Widening size mismatch: " ++ in_name ++ " to " ++ out_name);
-        }
-    }
-
-    return Result;
+    return @bytesToSlice(Element, bytes);
 }
 
-/// Widens ::s.
-/// If the widening is a size mismatch, an error is returned instead of doing a
-/// runtime assert.
-pub fn widen(s: var, comptime Out: type) WidenError!WidenReturn(@typeOf(s), Out) {
-    const Res = @typeOf(this).ReturnType.Payload;
-    const T = @typeOf(s);
-
-    if (comptime isSlice(T)) {
-        const old_len = s.len * @sizeOf(T.Child);
-        const new_len = s.len / @sizeOf(Out);
-        if (old_len % @sizeOf(Out) != 0)
-            return error.WideningSizeMismatch;
-
-        const res = (Res)(s);
-        debug.assert(res.len == new_len);
-        return res;
-    }
-
-    if (comptime isArrayPtr(T)) {
-        return @ptrCast(Res, s);
-    }
-
-    @compileError("This should never happen!");
-}
-
-test "generic.widen" {
+test "generic.bytesToSlice" {
     const S = packed struct {
         a: u8,
         b: u8,
@@ -91,14 +53,14 @@ test "generic.widen" {
         const a = []u8{1};
         const b = []u8{ 1, 2 };
 
-        if (widen(a[0..], S)) |_| unreachable else |_| {}
-        const v = widen(b[0..], S) catch unreachable;
+        if (bytesToSlice(S, a[0..])) |_| unreachable else |_| {}
+        const v = bytesToSlice(S, b[0..]) catch unreachable;
         debug.assert(@typeOf(v) == []const S);
         debug.assert(v.len == 1);
         debug.assert(v[0].a == 1);
         debug.assert(v[0].b == 2);
 
-        const v2 = widen(&b, S) catch unreachable;
+        const v2 = bytesToSlice(S, &b) catch unreachable;
         debug.assert(@typeOf(v2) == *const [1]S);
         debug.assert(v2.len == 1);
         debug.assert(v2[0].a == 1);
@@ -109,14 +71,14 @@ test "generic.widen" {
         var a = []u8{1};
         var b = []u8{ 1, 2 };
 
-        if (widen(a[0..], S)) |_| unreachable else |_| {}
-        const v = widen(b[0..], S) catch unreachable;
+        if (bytesToSlice(S, a[0..])) |_| unreachable else |_| {}
+        const v = bytesToSlice(S, b[0..]) catch unreachable;
         debug.assert(@typeOf(v) == []S);
         debug.assert(v.len == 1);
         debug.assert(v[0].a == 1);
         debug.assert(v[0].b == 2);
 
-        const v2 = widen(&b, S) catch unreachable;
+        const v2 = bytesToSlice(S, &b) catch unreachable;
         debug.assert(@typeOf(v2) == *[1]S);
         debug.assert(v2.len == 1);
         debug.assert(v2[0].a == 1);
@@ -124,47 +86,12 @@ test "generic.widen" {
     }
 }
 
-fn WidenTrimReturn(comptime In: type, comptime Out: type) type {
-    if (isSlice(In)) {
-        return if (isConstPtr(In)) []const Out else []Out;
-    }
-    if (isArrayPtr(In)) {
-        const Array = In.Child;
-        const Child = Array.Child;
-        const old_len = Array.len * @sizeOf(Child);
-        const new_len = old_len / @sizeOf(Out);
-        return if (isConstPtr(In)) *const [new_len]Out else *[new_len]Out;
-    }
-
-    @compileError("Expected 'Slice' or 'Array pointer' found '" ++ @typeName(In) ++ "'");
+pub fn bytesToSliceTrim(comptime Element: type, bytes: var) @typeOf(@bytesToSlice(Element, bytes)) {
+    const rem = bytes.len % @sizeOf(Element);
+    return @bytesToSlice(Element, bytes[0..bytes.len - rem]);
 }
 
-/// Widens ::s.
-/// If the widening is a size mismatch, then ::s will be trimmed to nearest fit.
-pub fn widenTrim(s: var, comptime Out: type) WidenTrimReturn(@typeOf(s), Out) {
-    const Res = @typeOf(this).ReturnType;
-    const T = @typeOf(s);
-    const Child = if (comptime isSlice(T)) T.Child else T.Child.Child;
-
-    const old_len = s.len * @sizeOf(Child);
-    const new_len = old_len / @sizeOf(Out);
-    if (comptime isSlice(T)) {
-        const Bytes = if (comptime isConstPtr(T)) []const u8 else []u8;
-        const bytes = (Bytes)(s);
-        const res = (Res)(bytes[0 .. new_len * @sizeOf(Out)]);
-        debug.assert(res.len == new_len);
-        return res;
-    }
-
-    if (comptime isArrayPtr(T)) {
-        // TODO: If *[0]T, then compiler crash. See https://github.com/ziglang/zig/issues/960
-        return @ptrCast(Res, s);
-    }
-
-    @compileError("This should never happen!");
-}
-
-test "generic.widenTrim" {
+test "generic.bytesToSliceTrim" {
     const S = packed struct {
         a: u8,
         b: u8,
@@ -173,18 +100,18 @@ test "generic.widenTrim" {
     {
         const a = []u8{1};
         const b = []u8{ 1, 2 };
-        const v1 = widenTrim(a[0..], S);
-        const v2 = widenTrim(b[0..], S);
-        //const v3 = widenTrim(a, S);
-        const v4 = widenTrim(&b, S);
+        const v1 = bytesToSliceTrim(S, a[0..]);
+        const v2 = bytesToSliceTrim(S, b[0..]);
+        const v3 = bytesToSliceTrim(S, &a);
+        const v4 = bytesToSliceTrim(S, &b);
 
         debug.assert(@typeOf(v1) == []const S);
         debug.assert(@typeOf(v2) == []const S);
-        //debug.assert(@typeOf(v3) == *const [0]S);
+        debug.assert(@typeOf(v3) == *const [0]S);
         debug.assert(@typeOf(v4) == *const [1]S);
         debug.assert(v1.len == 0);
         debug.assert(v2.len == 1);
-        //debug.assert(v3.len == 0);
+        debug.assert(v3.len == 0);
         debug.assert(v4.len == 1);
         debug.assert(v2[0].a == 1);
         debug.assert(v2[0].b == 2);
@@ -195,18 +122,18 @@ test "generic.widenTrim" {
     {
         var a = []u8{1};
         var b = []u8{ 1, 2 };
-        const v1 = widenTrim(a[0..], S);
-        const v2 = widenTrim(b[0..], S);
-        //const v3 = widenTrim(&a, S);
-        const v4 = widenTrim(&b, S);
+        const v1 = bytesToSliceTrim(S, a[0..]);
+        const v2 = bytesToSliceTrim(S, b[0..]);
+        const v3 = bytesToSliceTrim(S, &a);
+        const v4 = bytesToSliceTrim(S, &b);
 
         debug.assert(@typeOf(v1) == []S);
         debug.assert(@typeOf(v2) == []S);
-        //debug.assert(@typeOf(v3) == *[0]S);
+        debug.assert(@typeOf(v3) == *[0]S);
         debug.assert(@typeOf(v4) == *[1]S);
         debug.assert(v1.len == 0);
         debug.assert(v2.len == 1);
-        //debug.assert(v3.len == 0);
+        debug.assert(v3.len == 0);
         debug.assert(v4.len == 1);
         debug.assert(v2[0].a == 1);
         debug.assert(v2[0].b == 2);
@@ -215,19 +142,10 @@ test "generic.widenTrim" {
     }
 }
 
-fn SliceReturn(comptime T: type) type {
-    if (isSlice(T))
-        return if (isConstPtr(T)) []const T.Child else []T.Child;
-    if (isArrayPtr(T))
-        return if (isConstPtr(T)) []const T.Child.Child else []T.Child.Child;
-
-    @compileError("Expected 'Slice' or 'Array pointer' found '" ++ @typeName(T) ++ "'");
-}
-
 /// Slices ::s from ::start to ::end.
 /// Returns errors instead of doing runtime asserts when ::start or ::end are out of bounds,
 /// or when ::end is less that ::start.
-pub fn slice(s: var, start: usize, end: usize) !SliceReturn(@typeOf(s)) {
+pub fn slice(s: var, start: usize, end: usize) !@typeOf(s[0..]) {
     if (end < start)
         return error.EndLessThanStart;
     if (s.len < start or s.len < end)
@@ -279,18 +197,9 @@ test "generic.slice" {
     debug.assert(@typeOf(q22) == []u8);
 }
 
-fn AtReturn(comptime T: type) type {
-    if (isSlice(T))
-        return if (isConstPtr(T)) *const T.Child else *T.Child;
-    if (isArrayPtr(T))
-        return if (isConstPtr(T)) *const T.Child.Child else *T.Child.Child;
-
-    @compileError("Expected 'Slice' or 'Array pointer' found '" ++ @typeName(T) ++ "'");
-}
-
 /// Returns a pointer to the item at ::index in ::s.
 /// Returns an error instead of doing a runtime assert when ::index is out of bounds.
-pub fn at(s: var, index: usize) !AtReturn(@typeOf(s)) {
+pub fn at(s: var, index: usize) !@typeOf(&s[0]) {
     if (s.len <= index)
         return error.OutOfBound;
 

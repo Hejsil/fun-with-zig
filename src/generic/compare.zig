@@ -33,7 +33,7 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
         // TODO: mem.lessThan is wrong
         TypeId.Array => |arr| return mem.lessThan(arr.child, a, b),
         TypeId.Enum => |e| return e.tag_type(a) < e.tag_type(b),
-        TypeId.ErrorSet => return u32(a) < u32(b),
+        TypeId.ErrorSet => return @errorToInt(a) < @errorToInt(b),
         TypeId.Pointer => |ptr| switch (ptr.size) {
             // TODO: mem.lessThan is wrong
             TypeInfo.Pointer.Size.Slice => return mem.lessThan(ptr.child, a, b),

@@ -21,9 +21,9 @@ pub fn Interface(comptime T: type) type {
                 comptime assert(@typeOf(DefType) == type);
 
                 const func_info = @typeInfo(DefType).Fn;
-                comptime assert(func_info.args[0].arg_type == *Opaque);
+                comptime assert(func_info.args[0].arg_type.? == *Opaque);
 
-                const Type = FnType(State, func_info.args[1..], func_info.return_type);
+                const Type = FnType(State, func_info.args[1..], func_info.return_type.?);
                 const func: Type = @field(Funcs, def.name);
                 res.funcs[i] = @ptrCast(fn () void, func);
             }
@@ -52,9 +52,9 @@ pub fn Interface(comptime T: type) type {
         fn FnType(comptime State: type, comptime args: []const builtin.TypeInfo.FnArg, comptime Return: type) type {
             return switch (args.len) {
                 0 => fn (*State) Return,
-                1 => fn (*State, args[0].arg_type) Return,
-                2 => fn (*State, args[0].arg_type, args[1].arg_type) Return,
-                3 => fn (*State, args[0].arg_type, args[1].arg_type, args[2].arg_type) Return,
+                1 => fn (*State, args[0].arg_type.?) Return,
+                2 => fn (*State, args[0].arg_type.?, args[1].arg_type.?) Return,
+                3 => fn (*State, args[0].arg_type.?, args[1].arg_type.?, args[2].arg_type.?) Return,
                 else => comptime unreachable,
             };
         }
