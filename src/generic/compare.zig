@@ -72,11 +72,11 @@ test "generic.compare.lessThan(f64)" {
     assert(!lessThan(f64, 0, -1));
 }
 
-//test "lessThan(comptime_float)" {
-//    assert(lessThan(comptime_float, 0.0, 1.0));
-//    assert(!lessThan(comptime_float, 0.0, 0.0));
-//    assert(!lessThan(comptime_float, 0.0, -1.0));
-//}
+test "lessThan(comptime_float)" {
+    assert(lessThan(comptime_float, 0.0, 1.0));
+    assert(!lessThan(comptime_float, 0.0, 0.0));
+    assert(!lessThan(comptime_float, 0.0, -1.0));
+}
 
 test "generic.compare.lessThan(bool)" {
     assert(lessThan(bool, false, true));
@@ -94,8 +94,7 @@ test "generic.compare.lessThan(?i64)" {
     assert(!lessThan(?i64, 0, nul));
 }
 
-//allocation failed
-//[1]    5171 abort (core dumped)  zig test src/index.zig
+//TODO implement @typeInfo for global error set
 //test "generic.compare.lessThan(error!i64)" {
 //    const err : error!i64 = error.No;
 //    assert( lessThan(error!i64, 0,  1));
@@ -122,8 +121,7 @@ test "generic.compare.lessThan(enum)" {
     assert(!lessThan(E, E.B, E.A));
 }
 
-//allocation failed
-//[1]    5171 abort (core dumped)  zig test src/index.zig
+//TODO implement @typeInfo for global error set
 //test "generic.compare.lessThan(error)" {
 //    assert( lessThan(error, error.A, error.B));
 //    assert(!lessThan(error, error.B, error.B));
@@ -228,20 +226,20 @@ test "generic.compare.equal(i32)" {
     assert(!equal(i32, 0, 1));
 }
 
-//test "equal(comptime_int)" {
-//    assert( equal(comptime_int, 1, 1));
-//    assert(!equal(comptime_int, 0, 1));
-//}
+test "equal(comptime_int)" {
+    assert( equal(comptime_int, 1, 1));
+    assert(!equal(comptime_int, 0, 1));
+}
 
 test "generic.compare.equal(f32)" {
     assert(equal(f32, 1, 1));
     assert(!equal(f32, 0, 1));
 }
 
-//test "equal(comptime_float)" {
-//    assert(equal(comptime_float, 1.1, 1.1));
-//    assert(!equal(comptime_float, 0.0, 1.1));
-//}
+test "equal(comptime_float)" {
+    assert(equal(comptime_float, 1.1, 1.1));
+    assert(!equal(comptime_float, 0.0, 1.1));
+}
 
 test "generic.compare.equal(bool)" {
     assert(equal(bool, true, true));
@@ -264,8 +262,7 @@ test "generic.compare.equal(enum)" {
     assert(!equal(E, E.A, E.B));
 }
 
-//allocation failed
-//[1]    4686 abort (core dumped)  zig test src/index.zig
+//TODO implement @typeInfo for global error set
 //test "generic.compare.equal(error)" {
 //    assert( equal(error, error.A, error.A));
 //    assert(!equal(error, error.A, error.B));
@@ -286,8 +283,7 @@ test "generic.compare.equal(?i64)" {
     assert(!equal(?i64, 1, nul));
 }
 
-//allocation failed
-//[1]    4686 abort (core dumped)  zig test src/index.zig
+//TODO implement @typeInfo for global error set
 //test "generic.compare.equal(%i32)" {
 //    const a : error!i32 = 1;
 //    const b : error!i32 = error.TestError1;
@@ -305,11 +301,9 @@ test "generic.compare.equal([1]u8)" {
     assert(!equal([1]u8, "1", "0"));
 }
 
-//TODO
-//[1]    23587 abort (core dumped)  zig test src/generic/compare.zig
-//test "generic.compare.equal(null)" {
-//    comptime assert(equal(@typeOf(null), null, null));
-//}
+test "generic.compare.equal(null)" {
+    comptime assert(equal(@typeOf(null), null, null));
+}
 
 test "generic.compare.equal(void)" {
     assert(equal(void, void{}, void{}));
