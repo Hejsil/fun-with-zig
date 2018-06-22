@@ -51,21 +51,21 @@ const Tree = union(enum) {
     }
 
     pub fn createLeaf(allocator: *Allocator, value: i64) !*Tree {
-        const result = try allocator.create(Tree);
-        result.* = Tree{ .Leaf = value };
-        return result;
+        return try allocator.create(Tree{ .Leaf = value });
     }
 
     pub fn createNode(allocator: *Allocator, symbol: u8, left: *Tree, right: *Tree) !*Tree {
-        const result = try allocator.create(Tree);
-        result.* = Tree{ .Node = TreeNode{ .symbol = symbol, .left = left, .right = right } };
-        return result;
+        return try allocator.create(Tree{
+            .Node = TreeNode{
+                .symbol = symbol,
+                .left = left,
+                .right = right
+            }
+        });
     }
 
     pub fn createPar(allocator: *Allocator, child: *Tree) !*Tree {
-        const result = try allocator.create(Tree);
-        result.* = Tree{ .Par = child };
-        return result;
+        return try allocator.create(Tree{ .Par = child });
     }
 };
 
