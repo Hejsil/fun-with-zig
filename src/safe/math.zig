@@ -18,9 +18,6 @@ fn CombineAdditive(comptime A: type, comptime B: type) type {
 
 test "safe.math.CombineAdditive" {
     comptime {
-        const u9 = @IntType(false, 9);
-        const i9 = @IntType(true, 9);
-        const i10 = @IntType(true, 10);
         debug.assert(CombineAdditive(u8, u8) == u9);
         debug.assert(CombineAdditive(i8, i8) == i9);
         debug.assert(CombineAdditive(i8, u8) == i10);

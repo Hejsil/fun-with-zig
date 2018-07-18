@@ -50,8 +50,8 @@ pub fn reverseSimple(comptime T: type, comptime f: fn (T, T) T) fn (T, T) T {
 }
 
 // TODO: Change to pass-by-value
-fn lt(a: *const i32, b: *const i32) bool {
-    return a.* < b.*;
+fn lt(a: i32, b: i32) bool {
+    return a < b;
 }
 
 test "functional.Example: functional.reverse" {
@@ -59,7 +59,7 @@ test "functional.Example: functional.reverse" {
     const mem = @import("std").mem;
 
     var iarr = []i32{ 5, 3, 1, 2, 4 };
-    sort.sort(i32, iarr[0..], comptime reverse(*const i32, bool, lt));
+    sort.sort(i32, iarr[0..], comptime reverse(i32, bool, lt));
 
     assert(mem.eql(i32, iarr, []i32{ 5, 4, 3, 2, 1 }));
 }
