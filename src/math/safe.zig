@@ -33,7 +33,7 @@ fn Result(comptime A: type, comptime B: type, comptime operation: @typeOf(Interv
     return MakeInt(operation(a, b));
 }
 
-fn add(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.add) {
+pub fn add(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.add) {
     const Res = @typeOf(this).ReturnType;
     return Res(a) + Res(b);
 }
@@ -58,7 +58,8 @@ test "math.safe.add" {
     debug.assert(add(i64_min, i64_min) == @minValue(i64) + @minValue(i64));
 }
 
-fn sub(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.sub) {
+
+pub fn sub(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.sub) {
     const Res = @typeOf(this).ReturnType;
     return Res(a) - Res(b);
 }
@@ -84,11 +85,10 @@ test "math.safe.sub" {
 }
 
 
-fn mul(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.mul) {
+pub fn mul(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.mul) {
     const Res = @typeOf(this).ReturnType;
     return Res(a) * Res(b);
 }
-
 
 // TODO: Because we can only have Interval(i128), then u64 values might overflow the
 //       Interval.
