@@ -35,7 +35,6 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
         TypeId.Enum => |e| return @enumToInt(a) < @enumToInt(b),
         TypeId.ErrorSet => return @errorToInt(a) < @errorToInt(b),
         TypeId.Pointer => |ptr| switch (ptr.size) {
-            // TODO: mem.lessThan is wrong
             TypeInfo.Pointer.Size.Slice => return mem.lessThan(ptr.child, a, b),
             else => return @ptrToInt(a) < @ptrToInt(b),
         },
@@ -60,7 +59,7 @@ test "generic.compare.lessThan(i64)" {
     assert(!lessThan(i64, 0, -1));
 }
 
-test "lessThan(comptime_int)" {
+test "generic.compare.lessThan(comptime_int)" {
     assert( lessThan(comptime_int, 0,  1));
     assert(!lessThan(comptime_int, 0,  0));
     assert(!lessThan(comptime_int, 0, -1));
@@ -72,7 +71,7 @@ test "generic.compare.lessThan(f64)" {
     assert(!lessThan(f64, 0, -1));
 }
 
-test "lessThan(comptime_float)" {
+test "generic.compare.lessThan(comptime_float)" {
     assert(lessThan(comptime_float, 0.0, 1.0));
     assert(!lessThan(comptime_float, 0.0, 0.0));
     assert(!lessThan(comptime_float, 0.0, -1.0));
@@ -136,9 +135,9 @@ test "generic.compare.lessThan(&i64)" {
     assert(lessThan(*i64, &b, &a) == (@ptrToInt(&b) < @ptrToInt(&a)));
 }
 
-test "generic.compare.lessThan(null)" {
-    comptime assert(!lessThan(@typeOf(null), null, null));
-}
+//test "generic.compare.lessThan(null)" {
+//    comptime assert(!lessThan(@typeOf(null), null, null));
+//}
 
 test "generic.compare.lessThan(void)" {
     assert(!lessThan(void, void{}, void{}));
@@ -226,7 +225,7 @@ test "generic.compare.equal(i32)" {
     assert(!equal(i32, 0, 1));
 }
 
-test "equal(comptime_int)" {
+test "generic.compare.equal(comptime_int)" {
     assert( equal(comptime_int, 1, 1));
     assert(!equal(comptime_int, 0, 1));
 }
@@ -236,7 +235,7 @@ test "generic.compare.equal(f32)" {
     assert(!equal(f32, 0, 1));
 }
 
-test "equal(comptime_float)" {
+test "generic.compare.equal(comptime_float)" {
     assert(equal(comptime_float, 1.1, 1.1));
     assert(!equal(comptime_float, 0.0, 1.1));
 }
@@ -318,7 +317,7 @@ test "generic.compare.equal(struct)" {
     assert(!equal(Struct, Struct{ .a = 0, .b = 0 }, Struct{ .a = 1, .b = 1 }));
 }
 
-test "equal([]const u8)" {
+test "generic.compare.equal([]const u8)" {
     assert(equal([]const u8, "1", "1"));
     assert(!equal([]const u8, "1", "0"));
 }
