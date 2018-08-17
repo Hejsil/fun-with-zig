@@ -34,13 +34,11 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
         TypeId.Array => |arr| return mem.lessThan(arr.child, a, b),
         TypeId.Enum => |e| return @enumToInt(a) < @enumToInt(b),
         TypeId.ErrorSet => return @errorToInt(a) < @errorToInt(b),
-        TypeId.Pointer => |ptr| switch (ptr.size) {
-            TypeInfo.Pointer.Size.Slice => return mem.lessThan(ptr.child, a, b),
-            else => return @ptrToInt(a) < @ptrToInt(b),
-        },
+
         TypeId.Null, TypeId.Void => return false,
 
-        TypeId.Undefined, TypeId.Type, TypeId.NoReturn, TypeId.Fn, TypeId.Namespace, TypeId.Block, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Struct, TypeId.Union => {
+        TypeId.Undefined, TypeId.Type, TypeId.NoReturn, TypeId.Fn, TypeId.Namespace, TypeId.Block, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Struct, TypeId.Union,
+        TypeId.Pointer => {
             @compileError("Cannot get a default less than for " ++ @typeName(T));
             return false;
         },
@@ -127,14 +125,6 @@ test "generic.compare.lessThan(enum)" {
 //    assert(!lessThan(error, error.B, error.A));
 //}
 
-test "generic.compare.lessThan(&i64)" {
-    var b: i64 = undefined;
-    var a: i64 = undefined;
-    assert(lessThan(*i64, &a, &b) == (@ptrToInt(&a) < @ptrToInt(&b)));
-    assert(lessThan(*i64, &b, &b) == (@ptrToInt(&b) < @ptrToInt(&b)));
-    assert(lessThan(*i64, &b, &a) == (@ptrToInt(&b) < @ptrToInt(&a)));
-}
-
 //test "generic.compare.lessThan(null)" {
 //    comptime assert(!lessThan(@typeOf(null), null, null));
 //}
@@ -143,27 +133,14 @@ test "generic.compare.lessThan(void)" {
     assert(!lessThan(void, void{}, void{}));
 }
 
-test "generic.compare.lessThan([]const u8)" {
-    assert(lessThan([]const u8, "1", "2"));
-    assert(!lessThan([]const u8, "1", "1"));
-    assert(!lessThan([]const u8, "1", "0"));
-}
-
 pub fn equal(comptime T: type, a: T, b: T) bool {
     const info = @typeInfo(T);
     switch (info) {
         TypeId.Int, TypeId.Float, TypeId.ComptimeInt, TypeId.ComptimeFloat, TypeId.Enum, TypeId.ErrorSet, TypeId.Type, TypeId.Void, TypeId.Fn, TypeId.Null, TypeId.Bool => return a == b,
+        // We don't follow pointers, as this would `lessThan` recursive on recursive types (like LinkedList
         TypeId.Pointer => |ptr| switch (ptr.size) {
             TypeInfo.Pointer.Size.Slice => {
-                if (a.len != b.len)
-                    return false;
-
-                for (a) |_, i| {
-                    if (!equal(T.Child, a[i], b[i]))
-                        return false;
-                }
-
-                return true;
+                return a.ptr == b.ptr and a.len == b.len;
             },
             else => return a == b,
         },
@@ -318,8 +295,10 @@ test "generic.compare.equal(struct)" {
 }
 
 test "generic.compare.equal([]const u8)" {
-    assert(equal([]const u8, "1", "1"));
-    assert(!equal([]const u8, "1", "0"));
+    const a = "1";
+    const b = "0";
+    assert(equal([]const u8, a, a));
+    assert(!equal([]const u8, a, b));
 }
 
 //unreachable
