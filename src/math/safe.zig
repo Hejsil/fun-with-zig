@@ -1,35 +1,46 @@
 const std = @import("std");
-const math = std.math;
+const interval = @import("interval.zig");
+
 const debug = std.debug;
 
-fn CombineAdditive(comptime A: type, comptime B: type) type {
-    const is_signed = A.is_signed or B.is_signed;
-    const bit_count = blk: {
-        const effective_bits_a = A.bit_count - @boolToInt(A.is_signed);
-        const effective_bits_b = B.bit_count - @boolToInt(B.is_signed);
-        const effective_bits = math.max(effective_bits_a, effective_bits_b);
-        const bit_count_without_sign = effective_bits + 1;
-        const bit_count = bit_count_without_sign + @boolToInt(is_signed);
-        break :blk bit_count;
-    };
+// TODO: We can't use comptime_int, because then all the methods on Interval don't compile
+const Interval = interval.Interval(i128);
 
-    return @IntType(is_signed, bit_count);
-}
+fn MakeInt(int: Interval) type {
+    comptime var i = 1;
 
-test "safe.math.CombineAdditive" {
-    comptime {
-        debug.assert(CombineAdditive(u8, u8) == u9);
-        debug.assert(CombineAdditive(i8, i8) == i9);
-        debug.assert(CombineAdditive(i8, u8) == i10);
+    // TODO: Naive loop to find the type that can contain the interval.
+    //       We can probably use log2 somehow to get the bitcount but meh.
+    while (true) : (i += 1) {
+        inline for ([]bool{ true, false }) |is_signed| {
+            const Int = @IntType(is_signed, i);
+            if (int.min < @minValue(Int) and @maxValue(Int) < int.max)
+                return Int;
+        }
     }
 }
 
-fn add(a: var, b: var) CombineAdditive(@typeOf(a), @typeOf(b)) {
+fn toInterval(comptime T: type) Interval {
+    return Interval{
+        .min = @minValue(T),
+        .max = @maxValue(T),
+    };
+}
+
+fn AddResult(comptime A: type, comptime B: type) type {
+    comptime {
+        const a = toInterval(A);
+        const b = toInterval(B);
+        return MakeInt(a.add(b));
+    }
+}
+
+fn add(a: var, b: var) AddResult(@typeOf(a), @typeOf(b)) {
     const Res = @typeOf(this).ReturnType;
     return Res(a) + Res(b);
 }
 
-test "safe.math.add" {
+test "math.safe.add" {
     const u64_max: u64 = @maxValue(u64);
     const u64_min: u64 = @minValue(u64);
     const i64_max: i64 = @maxValue(i64);
