@@ -21,7 +21,7 @@ pub fn Interval(comptime T: type) type {
         min: T,
         max: T,
 
-        pub fn init(nums: []const T) Self {
+        pub fn fromSlice(nums: []const T) Self {
             return Self{
                 .min = mem.min(T, nums),
                 .max = mem.max(T, nums),
@@ -43,7 +43,7 @@ pub fn Interval(comptime T: type) type {
         }
 
         pub fn mul(a: Self, b: Self) Self {
-            return init([]T{
+            return fromSlice([]T{
                 a.min * b.min,
                 a.min * b.max,
                 a.max * b.min,
@@ -53,7 +53,7 @@ pub fn Interval(comptime T: type) type {
 
         pub fn div(a: Self, b: Self) Self {
             debug.assert(b.min != 0 and b.max != 0);
-            return init([]T{
+            return fromSlice([]T{
                 a.min / b.min,
                 a.min / b.max,
                 a.max / b.min,
@@ -63,7 +63,7 @@ pub fn Interval(comptime T: type) type {
 
         pub fn mod(a: Self, b: Self) Self {
             debug.assert(b.min != 0 and b.max != 0);
-            return init([]T{
+            return fromSlice([]T{
                 a.min % b.min,
                 a.min % b.max,
                 a.max % b.min,
@@ -72,7 +72,7 @@ pub fn Interval(comptime T: type) type {
         }
 
         pub fn shiftLeft(a: Self, b: Self) Self {
-            return init([]T{
+            return fromSlice([]T{
                 a.min << b.min,
                 a.min << b.max,
                 a.max << b.min,
@@ -81,7 +81,7 @@ pub fn Interval(comptime T: type) type {
         }
 
         pub fn shiftRight(a: Self, b: Self) Self {
-            return init([]T{
+            return fromSlice([]T{
                 a.min >> b.min,
                 a.min >> b.max,
                 a.max >> b.min,
