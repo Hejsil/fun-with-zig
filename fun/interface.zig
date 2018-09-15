@@ -9,7 +9,7 @@ pub const Opaque = @OpaqueType();
 pub fn Interface(comptime T: type) type {
     const info = @typeInfo(T).Struct;
     const VTable = struct {
-        const Self = this;
+            const Self = @This();
 
         funcs: [info.defs.len]fn () void,
 
@@ -61,7 +61,7 @@ pub fn Interface(comptime T: type) type {
     };
 
     return struct {
-        const Self = this;
+            const Self = @This();
 
         state: *Opaque,
         vtable: *const VTable,

@@ -16,7 +16,7 @@ pub fn Interval(comptime T: type) type {
         info == builtin.TypeId.ComptimeFloat);
 
     return struct {
-        const Self = this;
+            const Self = @This();
 
         min: T,
         max: T,

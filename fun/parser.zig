@@ -6,14 +6,12 @@ const Allocator = mem.Allocator;
 const ArrayList = std.ArrayList;
 
 pub const Position = struct {
-    const Self = this;
-
     index: u64,
     line: u64,
     column: u64,
 
     pub fn init(index: u64, line: u64, column: u64) Self {
-        return Self{
+        return Position{
             .index = index,
             .line = line,
             .column = column,
@@ -22,28 +20,26 @@ pub const Position = struct {
 };
 
 pub const Input = struct {
-    const Self = this;
-
     pos: Position,
     str: []const u8,
 
     pub fn init(str: []const u8) Self {
-        return Self{
+        return Input{
             .str = str,
             .pos = Position.init(0, 1, 1),
         };
     }
 
-    pub fn peek(self: Self) ?u8 {
+    pub fn peek(self: Input) ?u8 {
         return self.peekOffset(0);
     }
 
-    pub fn peekOffset(self: Self, offset: u64) ?u8 {
+    pub fn peekOffset(self: Input, offset: u64) ?u8 {
         const index = self.pos.index + offset;
         return if (index < self.str.len) self.str[index] else null;
     }
 
-    pub fn eat(self: *Self) ?u8 {
+    pub fn eat(self: *Input) ?u8 {
         if (self.str.len <= self.pos.index) return null;
 
         const result = self.str[self.pos.index];
@@ -58,7 +54,7 @@ pub const Input = struct {
         return result;
     }
 
-    pub fn eatMany(self: *Self, count: u64) []const u8 {
+    pub fn eatMany(self: *Input, count: u64) []const u8 {
         const start = self.pos.index;
         var i: usize = 0;
         while (i < count) : (i += 1) {
@@ -92,7 +88,7 @@ pub fn Parser(comptime T: type) type {
 /// This version can have a custom clean up function.
 pub fn ParserWithCleanup(comptime T: type, comptime clean: CleanUp(T)) type {
     return struct {
-        const Self = this;
+            const Self = @This();
         const Returns = T;
         const cleanUp = clean;
 
