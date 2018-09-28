@@ -12,4 +12,5 @@ test "fun-with-zig" {
     _ = @import("overloading.zig");
     _ = @import("parser.examples.zig");
     _ = @import("parser.zig");
+    _ = @import("reify.zig");
 }
