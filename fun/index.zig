@@ -13,4 +13,5 @@ test "fun-with-zig" {
     _ = @import("parser.examples.zig");
     _ = @import("parser.zig");
     _ = @import("reify.zig");
+    _ = @import("tuple.zig");
 }
