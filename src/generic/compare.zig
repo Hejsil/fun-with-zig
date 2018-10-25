@@ -37,8 +37,7 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
 
         TypeId.Null, TypeId.Void => return false,
 
-        TypeId.Undefined, TypeId.Type, TypeId.NoReturn, TypeId.Fn, TypeId.Namespace, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Struct, TypeId.Union,
-        TypeId.Pointer => {
+        TypeId.Undefined, TypeId.Type, TypeId.NoReturn, TypeId.Fn, TypeId.Namespace, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Struct, TypeId.Union, TypeId.Pointer => {
             @compileError("Cannot get a default less than for " ++ @typeName(T));
             return false;
         },
@@ -58,8 +57,8 @@ test "generic.compare.lessThan(i64)" {
 }
 
 test "generic.compare.lessThan(comptime_int)" {
-    assert( lessThan(comptime_int, 0,  1));
-    assert(!lessThan(comptime_int, 0,  0));
+    assert(lessThan(comptime_int, 0, 1));
+    assert(!lessThan(comptime_int, 0, 0));
     assert(!lessThan(comptime_int, 0, -1));
 }
 
@@ -109,7 +108,7 @@ test "generic.compare.lessThan([1]u8)" {
 }
 
 test "generic.compare.lessThan(enum)" {
-    const E = enum {
+    const E = enum.{
         A = 0,
         B = 1,
     };
@@ -130,7 +129,7 @@ test "generic.compare.lessThan(enum)" {
 //}
 
 test "generic.compare.lessThan(void)" {
-    assert(!lessThan(void, void{}, void{}));
+    assert(!lessThan(void, void.{}, void.{}));
 }
 
 pub fn equal(comptime T: type, a: T, b: T) bool {
@@ -191,7 +190,7 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
     }
 }
 
-fn fieldsEql(comptime T: type, comptime field: []const u8, a: *const T, b: *const T) bool {
+fn fieldsEql(comptime T: type, comptime field: []const u8, a: T, b: T) bool {
     const af = @field(a, field);
     const bf = @field(b, field);
     return equal(@typeOf(af), af, bf);
@@ -203,7 +202,7 @@ test "generic.compare.equal(i32)" {
 }
 
 test "generic.compare.equal(comptime_int)" {
-    assert( equal(comptime_int, 1, 1));
+    assert(equal(comptime_int, 1, 1));
     assert(!equal(comptime_int, 0, 1));
 }
 
@@ -230,7 +229,7 @@ test "generic.compare.equal(type)" {
 }
 
 test "generic.compare.equal(enum)" {
-    const E = enum {
+    const E = enum.{
         A,
         B,
     };
@@ -282,16 +281,16 @@ test "generic.compare.equal(null)" {
 }
 
 test "generic.compare.equal(void)" {
-    assert(equal(void, void{}, void{}));
+    assert(equal(void, void.{}, void.{}));
 }
 
 test "generic.compare.equal(struct)" {
-    const Struct = packed struct {
+    const Struct = packed struct.{
         a: u3,
         b: u3,
     };
-    assert(equal(Struct, Struct{ .a = 1, .b = 1 }, Struct{ .a = 1, .b = 1 }));
-    assert(!equal(Struct, Struct{ .a = 0, .b = 0 }, Struct{ .a = 1, .b = 1 }));
+    assert(equal(Struct, Struct.{ .a = 1, .b = 1 }, Struct.{ .a = 1, .b = 1 }));
+    assert(!equal(Struct, Struct.{ .a = 0, .b = 0 }, Struct.{ .a = 1, .b = 1 }));
 }
 
 test "generic.compare.equal([]const u8)" {

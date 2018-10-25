@@ -1,6 +1,6 @@
 const Namespace = @typeOf(@import("std"));
 
-const modules = []Namespace{
+const modules = []Namespace.{
     @import("a.zig"),
     @import("b.zig"),
 };

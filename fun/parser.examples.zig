@@ -5,13 +5,13 @@ const Allocator = mem.Allocator;
 
 use @import("parser.zig");
 
-const TreeNode = struct {
+const TreeNode = struct.{
     symbol: u8,
     left: *Tree,
     right: *Tree,
 };
 
-const Visitor = struct {
+const Visitor = struct.{
     const Self = this;
 
     visitLeaf: fn (self: *Self, leaf: i64) error!void,
@@ -27,7 +27,7 @@ const Visitor = struct {
     }
 };
 
-const Tree = union(enum) {
+const Tree = union(enum).{
     const Self = this;
 
     Leaf: i64,
@@ -51,21 +51,21 @@ const Tree = union(enum) {
     }
 
     pub fn createLeaf(allocator: *Allocator, value: i64) !*Tree {
-        return try allocator.create(Tree{ .Leaf = value });
+        return try allocator.create(Tree.{ .Leaf = value });
     }
 
     pub fn createNode(allocator: *Allocator, symbol: u8, left: *Tree, right: *Tree) !*Tree {
-        return try allocator.create(Tree{
-            .Node = TreeNode{
+        return try allocator.create(Tree.{
+            .Node = TreeNode.{
                 .symbol = symbol,
                 .left = left,
-                .right = right
-            }
+                .right = right,
+            },
         });
     }
 
     pub fn createPar(allocator: *Allocator, child: *Tree) !*Tree {
-        return try allocator.create(Tree{ .Par = child });
+        return try allocator.create(Tree.{ .Par = child });
     }
 };
 
@@ -123,7 +123,7 @@ fn printPar(self: *Visitor, child: *Tree) !void {
 
 fn printNode(self: *Visitor, node: *TreeNode) !void {
     try self.visit(node.left);
-    debug.warn(" {} ", [1]u8{node.symbol});
+    debug.warn(" {} ", [1]u8.{node.symbol});
     try self.visit(node.right);
 }
 
@@ -187,7 +187,7 @@ const number = comptime digit.atLeastOnce().trim().convertWithCleanUp(*Tree, toL
 const addSubChars = comptime char('+').orElse(char('-')).trim();
 const mulDivChars = comptime char('*').orElse(char('/')).trim();
 
-const Left = struct {
+const Left = struct.{
     fn exprRef() *const ParserWithCleanup(*Tree, treeCleanUp) {
         return expr;
     }
@@ -201,7 +201,7 @@ const Left = struct {
 test "parser.Example: Left Precedence Expression Parser" {
     var input = Input.init(operators);
     var res = Left.program.parse(debug.global_allocator, &input) catch unreachable;
-    var leftVisitor = Visitor{
+    var leftVisitor = Visitor.{
         .visitLeaf = precedenceLeaf,
         .visitNode = precedenceNodeLeft,
         .visitPar = precedencePar,
@@ -209,7 +209,7 @@ test "parser.Example: Left Precedence Expression Parser" {
 
     leftVisitor.visit(res) catch unreachable;
 
-    var rightVisitor = Visitor{
+    var rightVisitor = Visitor.{
         .visitLeaf = precedenceLeaf,
         .visitNode = precedenceNodeRight,
         .visitPar = precedencePar,
@@ -220,7 +220,7 @@ test "parser.Example: Left Precedence Expression Parser" {
     } else |err| {}
 }
 
-const Right = struct {
+const Right = struct.{
     fn exprRef() *const ParserWithCleanup(*Tree, treeCleanUp) {
         return expr;
     }
@@ -234,7 +234,7 @@ const Right = struct {
 test "parser.Example: Right Precedence Expression Parser" {
     var input = Input.init(operators);
     var res = Right.program.parse(debug.global_allocator, &input) catch unreachable;
-    var leftVisitor = Visitor{
+    var leftVisitor = Visitor.{
         .visitLeaf = precedenceLeaf,
         .visitNode = precedenceNodeLeft,
         .visitPar = precedencePar,
@@ -244,7 +244,7 @@ test "parser.Example: Right Precedence Expression Parser" {
         unreachable;
     } else |err| {}
 
-    var rightVisitor = Visitor{
+    var rightVisitor = Visitor.{
         .visitLeaf = precedenceLeaf,
         .visitNode = precedenceNodeRight,
         .visitPar = precedencePar,
@@ -255,7 +255,7 @@ test "parser.Example: Right Precedence Expression Parser" {
 
 /// TODO: This is not done. As long as nothing is used from inside ZigSyntax, all tests
 ///       should still compile
-const ZigSyntax = struct {
+const ZigSyntax = struct.{
     // Root = many(TopLevelItem) EOF
     pub const root = comptime topLevelItem.many().then(end);
 

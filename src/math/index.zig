@@ -14,7 +14,10 @@ fn digits(comptime N: type, comptime base: comptime_int, n: N) usize {
     comptime var res = 1;
     comptime var check = base;
 
-    inline while (check <= @maxValue(N)) : ({check *= base; res += 1;}) {
+    inline while (check <= @maxValue(N)) : ({
+        check *= base;
+        res += 1;
+    }) {
         if (n < check)
             return res;
     }

@@ -15,35 +15,35 @@ pub fn Interval(comptime T: type) type {
         info == builtin.TypeId.ComptimeInt or
         info == builtin.TypeId.ComptimeFloat);
 
-    return struct {
-            const Self = @This();
+    return struct.{
+        const Self = @This();
 
         min: T,
         max: T,
 
         pub fn fromSlice(nums: []const T) Self {
-            return Self{
+            return Self.{
                 .min = mem.min(T, nums),
                 .max = mem.max(T, nums),
             };
         }
 
         pub fn add(a: Self, b: Self) Self {
-            return Self{
+            return Self.{
                 .min = a.min + b.min,
                 .max = a.max + b.max,
             };
         }
 
         pub fn sub(a: Self, b: Self) Self {
-            return Self{
+            return Self.{
                 .min = a.min - b.max,
                 .max = a.max - b.min,
             };
         }
 
         pub fn mul(a: Self, b: Self) Self {
-            return fromSlice([]T{
+            return fromSlice([]T.{
                 a.min * b.min,
                 a.min * b.max,
                 a.max * b.min,
@@ -53,7 +53,7 @@ pub fn Interval(comptime T: type) type {
 
         pub fn div(a: Self, b: Self) Self {
             debug.assert(b.min != 0 and b.max != 0);
-            return fromSlice([]T{
+            return fromSlice([]T.{
                 a.min / b.min,
                 a.min / b.max,
                 a.max / b.min,
@@ -63,7 +63,7 @@ pub fn Interval(comptime T: type) type {
 
         pub fn mod(a: Self, b: Self) Self {
             debug.assert(b.min != 0 and b.max != 0);
-            return fromSlice([]T{
+            return fromSlice([]T.{
                 a.min % b.min,
                 a.min % b.max,
                 a.max % b.min,
@@ -72,7 +72,7 @@ pub fn Interval(comptime T: type) type {
         }
 
         pub fn shiftLeft(a: Self, b: Self) Self {
-            return fromSlice([]T{
+            return fromSlice([]T.{
                 a.min << b.min,
                 a.min << b.max,
                 a.max << b.min,
@@ -81,7 +81,7 @@ pub fn Interval(comptime T: type) type {
         }
 
         pub fn shiftRight(a: Self, b: Self) Self {
-            return fromSlice([]T{
+            return fromSlice([]T.{
                 a.min >> b.min,
                 a.min >> b.max,
                 a.max >> b.min,

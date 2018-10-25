@@ -3,12 +3,12 @@ const debug = std.debug;
 
 const Opaque = @OpaqueType();
 
-pub const Dynamic = struct {
+pub const Dynamic = struct.{
     v: *const Opaque,
     Type: type,
 
     pub fn init(comptime Type: type, v: *const Type) Dynamic {
-        return Dynamic{
+        return Dynamic.{
             .v = @ptrCast(*const Opaque, v),
             .Type = Type,
         };
@@ -20,7 +20,7 @@ pub const Dynamic = struct {
     }
 
     // TODO: Change to pass-by-value
-    pub fn field(comptime dyn: *const Dynamic, comptime field_name: []const u8) (@typeOf(@field(dyn.Type{}, field_name))) {
+    pub fn field(comptime dyn: *const Dynamic, comptime field_name: []const u8) (@typeOf(@field(dyn.Type.{}, field_name))) {
         return @field(dyn.value(), field_name);
     }
 
@@ -44,9 +44,9 @@ pub const Dynamic = struct {
 
 test "Dynamic.value" {
     comptime {
-        const dyn_int = Dynamic.init(u8, 0);
-        const dyn_float = Dynamic.init(f32, 1.0);
-        const dyn_string = Dynamic.init([]const u8, "Hello World!");
+        const dyn_int = Dynamic.init(u8, &u8(0));
+        const dyn_float = Dynamic.init(f32, &f32(1.0));
+        const dyn_string = Dynamic.init([]const u8, &([]const u8)("Hello World!"));
 
         // They are all the same static type, just like in dynamic typed languages
         debug.assert(@typeOf(dyn_int) == @typeOf(dyn_float));
