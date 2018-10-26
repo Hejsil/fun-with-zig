@@ -17,70 +17,72 @@ fn runtimeSize(comptime fields: var) comptime_int {
 
 pub fn Field(comptime T: type) type {
     return struct.{
-        symbol: T,
+        key: T,
         Payload: type,
 
-        pub fn init(symbol: T, comptime Payload: type) @This() {
+        pub fn init(key: T, comptime Payload: type) @This() {
             return @This().{
-                .symbol = symbol,
+                .key = key,
                 .Payload = Payload,
             };
         }
     };
 }
 
-pub fn Union(comptime Symbol: type, comptime fields: var) type {
+pub fn Union(comptime Key: type, comptime fields: var) type {
     for (fields) |a, i| {
         for (fields[i+1..]) |b| {
-            // TODO: Abitrary symbol equal
-            debug.assert(a.symbol != b.symbol);
+            // TODO: Abitrary key equal
+            debug.assert(a.key != b.key);
         }
     }
 
     return struct.{
+        pub const fields = fields;
+
         // In order for us to store the eithers values, we have
         // to type erase away the values, and store them as bytes.
         payload: [runtimeSize(fields)]u8,
 
-        symbol: usize, // TODO: Log2Int
+        key: usize, // TODO: Log2Int
 
-        pub fn init(comptime symbol: Symbol, value: At(symbol).Payload) @This() {
+        pub fn init(comptime key: Key, value: GetField(key).Payload) @This() {
             var res: @This() = undefined;
-            res.symbol = comptime index(symbol);
-            res.ptr(symbol).?.* = value;
+            res.key = comptime index(key);
+            res.ptr(key).?.* = value;
             return res;
         }
 
-        pub fn field(either: @This(), comptime symbol: Symbol) ?At(symbol).Payload {
-            if (either.ptrConst(symbol)) |p|
+        pub fn field(u: @This(), comptime key: Key) ?GetField(key).Payload {
+            if (u.ptrConst(key)) |p|
                 return p.*;
 
             return null;
         }
 
-        pub fn ptr(either: *@This(), comptime symbol: Symbol) ?*At(symbol).Payload {
-            const i = comptime index(symbol);
-            if (either.symbol != i)
+        pub fn ptr(u: *@This(), comptime key: Key) ?*align(1) GetField(key).Payload {
+            const i = comptime index(key);
+            if (u.key != i)
                 return null;
 
-            return &@bytesToSlice(At(symbol).Payload, either.payload[0..])[0];
+            return &@bytesToSlice(GetField(key).Payload, u.payload[0..])[0];
         }
 
-        pub fn ptrConst(either: *const @This(), comptime symbol: Symbol) ?*const At(symbol).Payload {
-            const i = comptime index(symbol);
-            if (either.symbol != i)
+        pub fn ptrConst(u: *const @This(), comptime key: Key) ?*align(1) const GetField(key).Payload {
+            const i = comptime index(key);
+            if (u.key != i)
                 return null;
 
-            return &@bytesToSlice(At(symbol).Payload, either.payload[0..])[0];
+            return &@bytesToSlice(GetField(key).Payload, u.payload[0..])[0];
         }
 
-        pub fn At(comptime symbol: Symbol) Field(Symbol) {
-            return fields[index(symbol)];
+        fn GetField(comptime key: Key) Field(Key) {
+            return fields[index(key)];
         }
 
-        fn index(comptime symbol: Symbol) usize {
+        fn index(comptime key: Key) usize {
             inline for (fields) |f, i| {
-                if (f.symbol == symbol)
+                if (f.key == key)
                     return i;
             }
 
@@ -92,8 +94,8 @@ pub fn Union(comptime Symbol: type, comptime fields: var) type {
 test "union" {
     const T = Union(u8, []Field(u8).{
         Field(u8).init(0, u8),
-        Field(u8).init(1, u8),
-        Field(u8).init(2, u8),
+        Field(u8).init(1, u16),
+        Field(u8).init(2, f32),
     });
     const a = T.init(0, 11);
     const b = T.init(1, 22);
