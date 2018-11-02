@@ -7,6 +7,7 @@ test "fun-with-zig" {
     _ = @import("namespaces/index.zig");
     _ = @import("comptime_dynamic_typing.zig");
     _ = @import("functional.zig");
+    _ = @import("handle.zig");
     _ = @import("interface.zig");
     _ = @import("iterators.zig");
     _ = @import("overloading.zig");
