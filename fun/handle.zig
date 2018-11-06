@@ -1,7 +1,7 @@
 const std = @import("std");
 const debug = std.debug;
 
-pub fn OpaqueHandle(comptime T: type, comptime hack_around_comptime_cache: comptime_int) type {
+pub fn OpaqueHandle(comptime T: type, comptime hack_around_comptime_cache: type) type {
     return packed struct.{
         // We could store this variable as a @IntType(false, @sizeOf(T) * 8)
         // but we lose the exact size in bits this way. If we had @sizeOfBits,
@@ -20,8 +20,8 @@ pub fn OpaqueHandle(comptime T: type, comptime hack_around_comptime_cache: compt
 
 
 test "OpaqueHandle" {
-    const A = OpaqueHandle(u64, 0);
-    const B = OpaqueHandle(u64, 1);
+    const A = OpaqueHandle(u64, @OpaqueType());
+    const B = OpaqueHandle(u64, @OpaqueType());
     debug.assert(A != B);
     const a = A.init(10);
     const b = B.init(10);
