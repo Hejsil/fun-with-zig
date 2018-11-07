@@ -2,6 +2,7 @@ const std = @import("std");
 const interval = @import("interval.zig");
 
 const debug = std.debug;
+const math = std.math;
 
 // TODO: We can't use comptime_int, because then all the methods on Interval don't compile
 const Interval = interval.Interval(i128);
@@ -14,7 +15,7 @@ fn MakeInt(int: Interval) type {
     while (true) : (i += 1) {
         inline for ([]bool.{ false, true }) |is_signed| {
             const Int = @IntType(is_signed, i);
-            if (@minValue(Int) <= int.min and int.max <= @maxValue(Int))
+            if (math.minInt(Int) <= int.min and int.max <= math.maxInt(Int))
                 return Int;
         }
     }
@@ -22,8 +23,8 @@ fn MakeInt(int: Interval) type {
 
 fn toInterval(comptime T: type) Interval {
     return Interval.{
-        .min = @minValue(T),
-        .max = @maxValue(T),
+        .min = math.minInt(T),
+        .max = math.maxInt(T),
     };
 }
 
@@ -39,23 +40,23 @@ pub fn add(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.add) {
 }
 
 fn testAdd() void {
-    const u64_max: u64 = @maxValue(u64);
-    const u64_min: u64 = @minValue(u64);
-    const i64_max: i64 = @maxValue(i64);
-    const i64_min: i64 = @minValue(i64);
-    debug.assert(add(u64_max, u64_max) == @maxValue(u64) + @maxValue(u64));
-    debug.assert(add(u64_max, u64_min) == @maxValue(u64) + @minValue(u64));
-    debug.assert(add(u64_max, i64_max) == @maxValue(u64) + @maxValue(i64));
-    debug.assert(add(u64_max, i64_min) == @maxValue(u64) + @minValue(i64));
+    const u64_max: u64 = math.maxInt(u64);
+    const u64_min: u64 = math.minInt(u64);
+    const i64_max: i64 = math.maxInt(i64);
+    const i64_min: i64 = math.minInt(i64);
+    debug.assert(add(u64_max, u64_max) == math.maxInt(u64) + math.maxInt(u64));
+    debug.assert(add(u64_max, u64_min) == math.maxInt(u64) + math.minInt(u64));
+    debug.assert(add(u64_max, i64_max) == math.maxInt(u64) + math.maxInt(i64));
+    debug.assert(add(u64_max, i64_min) == math.maxInt(u64) + math.minInt(i64));
 
-    debug.assert(add(u64_min, u64_min) == @minValue(u64) + @minValue(u64));
-    debug.assert(add(u64_min, i64_max) == @minValue(u64) + @maxValue(i64));
-    debug.assert(add(u64_min, i64_min) == @minValue(u64) + @minValue(i64));
+    debug.assert(add(u64_min, u64_min) == math.minInt(u64) + math.minInt(u64));
+    debug.assert(add(u64_min, i64_max) == math.minInt(u64) + math.maxInt(i64));
+    debug.assert(add(u64_min, i64_min) == math.minInt(u64) + math.minInt(i64));
 
-    debug.assert(add(i64_max, i64_max) == @maxValue(i64) + @maxValue(i64));
-    debug.assert(add(i64_max, i64_min) == @maxValue(i64) + @minValue(i64));
+    debug.assert(add(i64_max, i64_max) == math.maxInt(i64) + math.maxInt(i64));
+    debug.assert(add(i64_max, i64_min) == math.maxInt(i64) + math.minInt(i64));
 
-    debug.assert(add(i64_min, i64_min) == @minValue(i64) + @minValue(i64));
+    debug.assert(add(i64_min, i64_min) == math.minInt(i64) + math.minInt(i64));
 }
 
 test "math.safe.add" {
@@ -69,23 +70,23 @@ pub fn sub(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.sub) {
 }
 
 fn testSub() void {
-    const u64_max: u64 = @maxValue(u64);
-    const u64_min: u64 = @minValue(u64);
-    const i64_max: i64 = @maxValue(i64);
-    const i64_min: i64 = @minValue(i64);
-    debug.assert(sub(u64_max, u64_max) == @maxValue(u64) - @maxValue(u64));
-    debug.assert(sub(u64_max, u64_min) == @maxValue(u64) - @minValue(u64));
-    debug.assert(sub(u64_max, i64_max) == @maxValue(u64) - @maxValue(i64));
-    debug.assert(sub(u64_max, i64_min) == @maxValue(u64) - @minValue(i64));
+    const u64_max: u64 = math.maxInt(u64);
+    const u64_min: u64 = math.minInt(u64);
+    const i64_max: i64 = math.maxInt(i64);
+    const i64_min: i64 = math.minInt(i64);
+    debug.assert(sub(u64_max, u64_max) == math.maxInt(u64) - math.maxInt(u64));
+    debug.assert(sub(u64_max, u64_min) == math.maxInt(u64) - math.minInt(u64));
+    debug.assert(sub(u64_max, i64_max) == math.maxInt(u64) - math.maxInt(i64));
+    debug.assert(sub(u64_max, i64_min) == math.maxInt(u64) - math.minInt(i64));
 
-    debug.assert(sub(u64_min, u64_min) == @minValue(u64) - @minValue(u64));
-    debug.assert(sub(u64_min, i64_max) == @minValue(u64) - @maxValue(i64));
-    debug.assert(sub(u64_min, i64_min) == @minValue(u64) - @minValue(i64));
+    debug.assert(sub(u64_min, u64_min) == math.minInt(u64) - math.minInt(u64));
+    debug.assert(sub(u64_min, i64_max) == math.minInt(u64) - math.maxInt(i64));
+    debug.assert(sub(u64_min, i64_min) == math.minInt(u64) - math.minInt(i64));
 
-    debug.assert(sub(i64_max, i64_max) == @maxValue(i64) - @maxValue(i64));
-    debug.assert(sub(i64_max, i64_min) == @maxValue(i64) - @minValue(i64));
+    debug.assert(sub(i64_max, i64_max) == math.maxInt(i64) - math.maxInt(i64));
+    debug.assert(sub(i64_max, i64_min) == math.maxInt(i64) - math.minInt(i64));
 
-    debug.assert(sub(i64_min, i64_min) == @minValue(i64) - @minValue(i64));
+    debug.assert(sub(i64_min, i64_min) == math.minInt(i64) - math.minInt(i64));
 }
 
 test "math.safe.sub" {
@@ -101,23 +102,23 @@ pub fn mul(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.mul) {
 fn testMul() void {
     // TODO: Because we can only have Interval(i128), then u64 values might overflow the
     //       Interval.
-    const u32_max: u32 = @maxValue(u32);
-    const u32_min: u32 = @minValue(u32);
-    const i32_max: i32 = @maxValue(i32);
-    const i32_min: i32 = @minValue(i32);
-    debug.assert(mul(u32_max, u32_max) == @maxValue(u32) * @maxValue(u32));
-    debug.assert(mul(u32_max, u32_min) == @maxValue(u32) * @minValue(u32));
-    //debug.assert(mul(u32_max, i32_max) == @maxValue(u32) * @maxValue(i32));
-    //debug.assert(mul(u32_max, i32_min) == @maxValue(u32) * @minValue(i32));
+    const u32_max: u32 = math.maxInt(u32);
+    const u32_min: u32 = math.minInt(u32);
+    const i32_max: i32 = math.maxInt(i32);
+    const i32_min: i32 = math.minInt(i32);
+    debug.assert(mul(u32_max, u32_max) == math.maxInt(u32) * math.maxInt(u32));
+    debug.assert(mul(u32_max, u32_min) == math.maxInt(u32) * math.minInt(u32));
+    //debug.assert(mul(u32_max, i32_max) == math.maxInt(u32) * math.maxInt(i32));
+    //debug.assert(mul(u32_max, i32_min) == math.maxInt(u32) * math.minInt(i32));
 
-    debug.assert(mul(u32_min, u32_min) == @minValue(u32) * @minValue(u32));
-    //debug.assert(mul(u32_min, i32_max) == @minValue(u32) * @maxValue(i32));
-    //debug.assert(mul(u32_min, i32_min) == @minValue(u32) * @minValue(i32));
+    debug.assert(mul(u32_min, u32_min) == math.minInt(u32) * math.minInt(u32));
+    //debug.assert(mul(u32_min, i32_max) == math.minInt(u32) * math.maxInt(i32));
+    //debug.assert(mul(u32_min, i32_min) == math.minInt(u32) * math.minInt(i32));
 
-    //debug.assert(mul(i32_max, i32_max) == @maxValue(i32) * @maxValue(i32));
-    //debug.assert(mul(i32_max, i32_min) == @maxValue(i32) * @minValue(i32));
+    //debug.assert(mul(i32_max, i32_max) == math.maxInt(i32) * math.maxInt(i32));
+    //debug.assert(mul(i32_max, i32_min) == math.maxInt(i32) * math.minInt(i32));
 
-    //debug.assert(mul(i32_min, i32_min) == @minValue(i32) * @minValue(i32));
+    //debug.assert(mul(i32_min, i32_min) == math.minInt(i32) * math.minInt(i32));
 }
 
 test "math.safe.mul" {

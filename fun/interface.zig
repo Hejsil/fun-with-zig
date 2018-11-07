@@ -4,24 +4,22 @@ const debug = std.debug;
 const mem = std.mem;
 const assert = debug.assert;
 
-pub const Opaque = @OpaqueType();
+pub const Self = @OpaqueType();
 
 pub fn Interface(comptime T: type) type {
     const info = @typeInfo(T).Struct;
     const VTable = struct.{
-        const Self = @This();
-
         funcs: [info.defs.len]fn () void,
 
-        fn init(comptime Funcs: type, comptime State: type) Self {
-            var res: Self = undefined;
+        fn init(comptime Funcs: type, comptime State: type) @This() {
+            var res: @This() = undefined;
 
             inline for (info.defs) |def, i| {
                 const DefType = @field(T, def.name);
                 comptime assert(@typeOf(DefType) == type);
 
                 const func_info = @typeInfo(DefType).Fn;
-                comptime assert(func_info.args[0].arg_type.? == *Opaque);
+                comptime assert(func_info.args[0].arg_type.? == *Self);
 
                 const Type = FnType(State, func_info.args[1..], func_info.return_type.?);
                 const func: Type = @field(Funcs, def.name);
@@ -31,7 +29,7 @@ pub fn Interface(comptime T: type) type {
             return res;
         }
 
-        fn dispatch(vtable: Self, comptime fn_name: []const u8, self: *Opaque, args: ...) @field(T, fn_name).ReturnType {
+        fn dispatch(vtable: @This(), comptime fn_name: []const u8, self: *Self, args: ...) @field(T, fn_name).ReturnType {
             inline for (info.defs) |def, i| {
                 if (comptime !mem.eql(u8, def.name, fn_name))
                     continue;
@@ -61,23 +59,21 @@ pub fn Interface(comptime T: type) type {
     };
 
     return struct.{
-        const Self = @This();
-
-        state: *Opaque,
+        state: *Self,
         vtable: *const VTable,
 
-        pub fn init(comptime State: type, state: *State) Self {
+        pub fn init(comptime State: type, state: *State) @This() {
             return initWithFuncs(State, state, State);
         }
 
-        pub fn initWithFuncs(comptime State: type, state: *State, comptime Funcs: type) Self {
-            return Self.{
-                .state = @ptrCast(*Opaque, state),
+        pub fn initWithFuncs(comptime State: type, state: *State, comptime Funcs: type) @This() {
+            return @This().{
+                .state = @ptrCast(*Self, state),
                 .vtable = &comptime VTable.init(Funcs, State),
             };
         }
 
-        fn call(self: Self, comptime fn_name: []const u8, args: ...) @field(T, fn_name).ReturnType {
+        fn call(self: @This(), comptime fn_name: []const u8, args: ...) @field(T, fn_name).ReturnType {
             return self.vtable.dispatch(fn_name, self.state, args);
         }
     };
@@ -100,7 +96,7 @@ const Sq = struct.{
 };
 
 const IA = Interface(struct.{
-    const a = fn (*Opaque, u8) u8;
+    const a = fn (*Self, u8) u8;
 });
 
 test "" {

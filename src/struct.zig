@@ -26,16 +26,16 @@ pub fn Field(comptime T: type) type {
     };
 }
 
-pub fn Struct(comptime Key: type, comptime fields: var) type {
-    for (fields) |a, i| {
-        for (fields[i+1..]) |b| {
+pub fn Struct(comptime Key: type, comptime field_array: var) type {
+    for (field_array) |a, i| {
+        for (field_array[i+1..]) |b| {
             // TODO: Abitrary key equal
             debug.assert(a.key != b.key);
         }
     }
 
     return struct.{
-        pub const fields = fields;
+        pub const fields = field_array;
 
         // In order for us to store the tuples values, we have
         // to type erase away the values, and store them as bytes.
