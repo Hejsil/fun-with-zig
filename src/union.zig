@@ -16,12 +16,12 @@ fn runtimeSize(comptime fields: var) comptime_int {
 }
 
 pub fn Field(comptime T: type) type {
-    return struct.{
+    return struct {
         key: T,
         Payload: type,
 
         pub fn init(key: T, comptime Payload: type) @This() {
-            return @This().{
+            return @This(){
                 .key = key,
                 .Payload = Payload,
             };
@@ -31,13 +31,13 @@ pub fn Field(comptime T: type) type {
 
 pub fn Union(comptime Key: type, comptime field_array: var) type {
     for (field_array) |a, i| {
-        for (field_array[i+1..]) |b| {
+        for (field_array[i + 1 ..]) |b| {
             // TODO: Abitrary key equal
             debug.assert(a.key != b.key);
         }
     }
 
-    return struct.{
+    return struct {
         pub const fields = field_array;
 
         // In order for us to store the eithers values, we have
@@ -92,7 +92,7 @@ pub fn Union(comptime Key: type, comptime field_array: var) type {
 }
 
 test "union" {
-    const T = Union(u8, []Field(u8).{
+    const T = Union(u8, []Field(u8){
         Field(u8).init(0, u8),
         Field(u8).init(1, u16),
         Field(u8).init(2, f32),

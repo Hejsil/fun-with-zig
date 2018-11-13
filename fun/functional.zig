@@ -8,7 +8,7 @@ pub fn compose(
     comptime f: fn (X) Y,
     comptime g: fn (Y) Z,
 ) fn (X) Z {
-    return struct.{
+    return struct {
         fn composed(x: X) Y {
             return g(f(x));
         }
@@ -38,7 +38,7 @@ test "functional.Example: functional.compose" {
 }
 
 pub fn reverse(comptime X: type, comptime Y: type, comptime f: fn (X, X) Y) fn (X, X) Y {
-    return struct.{
+    return struct {
         fn reversed(a: X, b: X) Y {
             return f(b, a);
         }
@@ -57,8 +57,8 @@ test "functional.Example: functional.reverse" {
     const sort = @import("std").sort;
     const mem = @import("std").mem;
 
-    var iarr = []i32.{ 5, 3, 1, 2, 4 };
+    var iarr = []i32{ 5, 3, 1, 2, 4 };
     sort.sort(i32, iarr[0..], comptime reverse(i32, bool, lt));
 
-    assert(mem.eql(i32, iarr, []i32.{ 5, 4, 3, 2, 1 }));
+    assert(mem.eql(i32, iarr, []i32{ 5, 4, 3, 2, 1 }));
 }

@@ -8,7 +8,7 @@ pub const Self = @OpaqueType();
 
 pub fn Interface(comptime T: type) type {
     const info = @typeInfo(T).Struct;
-    const VTable = struct.{
+    const VTable = struct {
         funcs: [info.defs.len]fn () void,
 
         fn init(comptime Funcs: type, comptime State: type) @This() {
@@ -58,7 +58,7 @@ pub fn Interface(comptime T: type) type {
         }
     };
 
-    return struct.{
+    return struct {
         state: *Self,
         vtable: *const VTable,
 
@@ -67,7 +67,7 @@ pub fn Interface(comptime T: type) type {
         }
 
         pub fn initWithFuncs(comptime State: type, state: *State, comptime Funcs: type) @This() {
-            return @This().{
+            return @This(){
                 .state = @ptrCast(*Self, state),
                 .vtable = &comptime VTable.init(Funcs, State),
             };
@@ -79,7 +79,7 @@ pub fn Interface(comptime T: type) type {
     };
 }
 
-const Sb = struct.{
+const Sb = struct {
     b: u8,
 
     fn a(self: *Sb, v: u8) u8 {
@@ -87,7 +87,7 @@ const Sb = struct.{
     }
 };
 
-const Sq = struct.{
+const Sq = struct {
     q: u8,
 
     fn a(self: *Sq, v: u8) u8 {
@@ -95,13 +95,13 @@ const Sq = struct.{
     }
 };
 
-const IA = Interface(struct.{
+const IA = Interface(struct {
     const a = fn (*Self, u8) u8;
 });
 
 test "" {
-    var sb = Sb.{ .b = 3 };
-    var sq = Sq.{ .q = 3 };
+    var sb = Sb{ .b = 3 };
+    var sq = Sq{ .q = 3 };
     const ib = IA.init(Sb, &sb);
     const iq = IA.init(Sq, &sq);
     assert(ib.call("a", u8(2)) == 5);

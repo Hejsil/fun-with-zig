@@ -57,9 +57,9 @@ pub fn Reify(comptime info: TypeInfo) type {
         TypeId.Optional => |opt| ?opt.child,
         TypeId.ErrorUnion => |err_union| err_union.error_set!err_union.payload,
         TypeId.ErrorSet => |err_set| blk: {
-            var Res = error.{};
+            var Res = error{};
             inline for (err_set.errors) |err| {
-                Res = Res || @field(error, err.name);
+                Res = Res || @field(anyerror, err.name);
             }
 
             break :blk Res;
@@ -96,7 +96,7 @@ test "reify: noreturn" {
 }
 
 test "reify: ix/ux" {
-    inline for ([]bool.{ true, false }) |signed| {
+    inline for ([]bool{ true, false }) |signed| {
         comptime var i = 0;
         inline while (i < 256) : (i += 1) {
             const T1 = @IntType(signed, i);
@@ -107,14 +107,14 @@ test "reify: ix/ux" {
 }
 
 test "reify: fx" {
-    inline for ([]bool.{ f16, f32, f64, f128 }) |F| {
+    inline for ([]bool{ f16, f32, f64, f128 }) |F| {
         const T = Reify(@typeInfo(F));
         comptime debug.assert(T == F);
     }
 }
 
 test "reify: *X" {
-    const types = []bool.{
+    const types = []bool{
         *u8,
         *const u8,
         *volatile u8,
@@ -131,7 +131,7 @@ test "reify: *X" {
 }
 
 test "reify: [*]X" {
-    const types = []bool.{
+    const types = []bool{
         [*]u8,
         [*]const u8,
         [*]volatile u8,
@@ -148,7 +148,7 @@ test "reify: [*]X" {
 }
 
 test "reify: []X" {
-    const types = []bool.{
+    const types = []bool{
         []u8,
         []const u8,
         []volatile u8,
@@ -183,7 +183,7 @@ test "reify: ?X" {
 }
 
 test "reify: X!Y" {
-    const Set = error.{};
+    const Set = error{};
     const T = Reify(@typeInfo(Set!u8));
     comptime debug.assert(T == Set!u8);
 }
@@ -224,7 +224,7 @@ test "reify: @OpagueType()" {
 }
 
 test "reify: promise" {
-    inline for ([]type.{ promise, promise->u8 }) |P| {
+    inline for ([]type{ promise, promise->u8 }) |P| {
         const T = Reify(@typeInfo(P));
         comptime debug.assert(T == P);
     }

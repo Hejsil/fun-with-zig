@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const mem = std.mem;
 const debug = std.debug;
 
-pub const BytesToSliceError = error.{SizeMismatch};
+pub const BytesToSliceError = error{SizeMismatch};
 
 pub fn bytesToSlice(comptime Element: type, bytes: var) BytesToSliceError!@typeOf(@bytesToSlice(Element, bytes)) {
     if (bytes.len % @sizeOf(Element) != 0)
@@ -13,14 +13,14 @@ pub fn bytesToSlice(comptime Element: type, bytes: var) BytesToSliceError!@typeO
 }
 
 test "generic.slice.bytesToSlice" {
-    const S = packed struct.{
+    const S = packed struct {
         a: u8,
         b: u8,
     };
 
     {
-        const a = []u8.{1};
-        const b = []u8.{ 1, 2 };
+        const a = []u8{1};
+        const b = []u8{ 1, 2 };
 
         if (bytesToSlice(S, a[0..])) |_| unreachable else |_| {}
         const v = bytesToSlice(S, b[0..]) catch unreachable;
@@ -37,8 +37,8 @@ test "generic.slice.bytesToSlice" {
     }
 
     {
-        var a = []u8.{1};
-        var b = []u8.{ 1, 2 };
+        var a = []u8{1};
+        var b = []u8{ 1, 2 };
 
         if (bytesToSlice(S, a[0..])) |_| unreachable else |_| {}
         const v = bytesToSlice(S, b[0..]) catch unreachable;
@@ -61,14 +61,14 @@ pub fn bytesToSliceTrim(comptime Element: type, bytes: var) @typeOf(@bytesToSlic
 }
 
 test "generic.slice.bytesToSliceTrim" {
-    const S = packed struct.{
+    const S = packed struct {
         a: u8,
         b: u8,
     };
 
     {
-        const a = []u8.{1};
-        const b = []u8.{ 1, 2 };
+        const a = []u8{1};
+        const b = []u8{ 1, 2 };
         const v1 = bytesToSliceTrim(S, a[0..]);
         const v2 = bytesToSliceTrim(S, b[0..]);
         //const v3 = bytesToSliceTrim(S, &a);
@@ -89,8 +89,8 @@ test "generic.slice.bytesToSliceTrim" {
     }
 
     {
-        var a = []u8.{1};
-        var b = []u8.{ 1, 2 };
+        var a = []u8{1};
+        var b = []u8{ 1, 2 };
         const v1 = bytesToSliceTrim(S, a[0..]);
         const v2 = bytesToSliceTrim(S, b[0..]);
         const v3 = bytesToSliceTrim(S, &a);
@@ -124,18 +124,18 @@ pub fn slice(s: var, start: usize, end: usize) !@typeOf(s[0..]) {
 }
 
 test "generic.slice.slice" {
-    const a = []u8.{ 1, 2 };
+    const a = []u8{ 1, 2 };
     const b = slice(a[0..], 0, 1) catch unreachable;
     const c = slice(a[0..], 1, 2) catch unreachable;
     const d = slice(a[0..], 0, 2) catch unreachable;
     const e = slice(a[0..], 2, 2) catch unreachable;
     const f = slice(&a, 1, 2) catch unreachable;
 
-    debug.assert(mem.eql(u8, b, []u8.{1}));
-    debug.assert(mem.eql(u8, c, []u8.{2}));
-    debug.assert(mem.eql(u8, d, []u8.{ 1, 2 }));
-    debug.assert(mem.eql(u8, e, []u8.{}));
-    debug.assert(mem.eql(u8, f, []u8.{2}));
+    debug.assert(mem.eql(u8, b, []u8{1}));
+    debug.assert(mem.eql(u8, c, []u8{2}));
+    debug.assert(mem.eql(u8, d, []u8{ 1, 2 }));
+    debug.assert(mem.eql(u8, e, []u8{}));
+    debug.assert(mem.eql(u8, f, []u8{2}));
 
     if (slice(a[0..], 0, 3)) |_|
         unreachable
@@ -152,8 +152,8 @@ test "generic.slice.slice" {
     else |err|
         debug.assert(err == error.EndLessThanStart);
 
-    const q1 = []u8.{ 1, 2 };
-    var q2 = []u8.{ 1, 2 };
+    const q1 = []u8{ 1, 2 };
+    var q2 = []u8{ 1, 2 };
 
     const q11 = slice(q1[0..], 0, 2) catch unreachable;
     const q21 = slice(q2[0..], 0, 2) catch unreachable;
@@ -176,7 +176,7 @@ pub fn at(s: var, index: usize) !@typeOf(&s[0]) {
 }
 
 test "generic.slice.at" {
-    const a = []u8.{ 1, 2 };
+    const a = []u8{ 1, 2 };
     const b = at(a[0..], 0) catch unreachable;
     const c = at(a[0..], 1) catch unreachable;
     const d = at(a[0..], 1) catch unreachable;
@@ -190,8 +190,8 @@ test "generic.slice.at" {
     else |err|
         debug.assert(err == error.OutOfBound);
 
-    const q1 = []u8.{ 1, 2 };
-    var q2 = []u8.{ 1, 2 };
+    const q1 = []u8{ 1, 2 };
+    var q2 = []u8{ 1, 2 };
 
     const q11 = at(q1[0..], 0) catch unreachable;
     const q21 = at(q2[0..], 0) catch unreachable;
@@ -214,12 +214,12 @@ pub fn all(s: var, predicate: fn (@typeOf(s[0])) bool) bool {
 
 test "generic.slice.all" {
     const s = "aaa"[0..];
-    debug.assert(all(s, struct.{
+    debug.assert(all(s, struct {
         fn l(c: u8) bool {
             return c == 'a';
         }
     }.l));
-    debug.assert(!all(s, struct.{
+    debug.assert(!all(s, struct {
         fn l(c: u8) bool {
             return c != 'a';
         }
@@ -236,12 +236,12 @@ pub fn any(s: var, predicate: fn (@typeOf(s[0])) bool) bool {
 
 test "generic.slice.any" {
     const s = "abc";
-    debug.assert(any(s, struct.{
+    debug.assert(any(s, struct {
         fn l(c: u8) bool {
             return c == 'a';
         }
     }.l));
-    debug.assert(!any(s, struct.{
+    debug.assert(!any(s, struct {
         fn l(c: u8) bool {
             return c == 'd';
         }
@@ -268,7 +268,7 @@ pub fn transform(s: var, transformer: fn (@typeOf(s[0])) @typeOf(s[0])) void {
 
 test "generic.slice.transform" {
     var arr = "abcd";
-    transform(arr[0..], struct.{
+    transform(arr[0..], struct {
         fn l(c: u8) u8 {
             return if ('a' <= c and c <= 'z') c - ('a' - 'A') else c;
         }

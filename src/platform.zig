@@ -28,7 +28,7 @@ pub const bi128 = Int(i128, builtin.Endian.Big);
 pub fn Int(comptime Inner: type, comptime endian: builtin.Endian) type {
     comptime debug.assert(@typeId(Inner) == builtin.TypeId.Int);
 
-    return packed struct.{
+    return packed struct {
         const Self = @This();
 
         bytes: [@sizeOf(Inner)]u8,
@@ -52,6 +52,6 @@ test "platform.Int" {
     const numBig = Int(u32, builtin.Endian.Big).init(value);
     assert(numLittle.value() == value);
     assert(numBig.value() == value);
-    assert(mem.eql(u8, []u8.{ 0x78, 0x56, 0x34, 0x12 }, numLittle.bytes));
-    assert(mem.eql(u8, []u8.{ 0x12, 0x34, 0x56, 0x78 }, numBig.bytes));
+    assert(mem.eql(u8, []u8{ 0x78, 0x56, 0x34, 0x12 }, numLittle.bytes));
+    assert(mem.eql(u8, []u8{ 0x12, 0x34, 0x56, 0x78 }, numBig.bytes));
 }

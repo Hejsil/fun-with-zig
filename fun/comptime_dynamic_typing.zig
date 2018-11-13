@@ -3,12 +3,12 @@ const debug = std.debug;
 
 const Opaque = @OpaqueType();
 
-pub const Dynamic = struct.{
+pub const Dynamic = struct {
     v: *const Opaque,
     Type: type,
 
     pub fn init(comptime Type: type, v: *const Type) Dynamic {
-        return Dynamic.{
+        return Dynamic{
             .v = @ptrCast(*const Opaque, v),
             .Type = Type,
         };
@@ -20,7 +20,7 @@ pub const Dynamic = struct.{
     }
 
     // TODO: Change to pass-by-value
-    pub fn field(comptime dyn: *const Dynamic, comptime field_name: []const u8) (@typeOf(@field(dyn.Type.{}, field_name))) {
+    pub fn field(comptime dyn: *const Dynamic, comptime field_name: []const u8) (@typeOf(@field(dyn.Type{}, field_name))) {
         return @field(dyn.value(), field_name);
     }
 

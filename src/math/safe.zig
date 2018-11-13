@@ -13,7 +13,7 @@ fn MakeInt(int: Interval) type {
     // TODO: Naive loop to find the type that can contain the interval.
     //       We can probably use log2 somehow to get the bitcount but meh.
     while (true) : (i += 1) {
-        inline for ([]bool.{ false, true }) |is_signed| {
+        inline for ([]bool{ false, true }) |is_signed| {
             const Int = @IntType(is_signed, i);
             if (math.minInt(Int) <= int.min and int.max <= math.maxInt(Int))
                 return Int;
@@ -22,7 +22,7 @@ fn MakeInt(int: Interval) type {
 }
 
 fn toInterval(comptime T: type) Interval {
-    return Interval.{
+    return Interval{
         .min = math.minInt(T),
         .max = math.maxInt(T),
     };

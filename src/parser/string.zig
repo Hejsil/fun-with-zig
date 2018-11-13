@@ -8,13 +8,11 @@ const fmt = std.fmt;
 
 const ParseResult = parser.ParseResult;
 
-pub const Input = struct.{
+pub const Input = struct {
     str: []const u8,
 
     pub fn init(str: []const u8) Input {
-        return Input.{
-            .str = str,
-        };
+        return Input{ .str = str };
     }
 
     pub fn curr(input: Input) ?u8 {
@@ -25,14 +23,12 @@ pub const Input = struct.{
     }
 
     pub fn next(input: Input) Input {
-        return Input.{
-            .str = if (input.str.len != 0) input.str[1..] else input.str,
-        };
+        return Input{ .str = if (input.str.len != 0) input.str[1..] else input.str };
     }
 };
 
 pub fn char(comptime c1: u8) type {
-    return parser.eatIf(u8, struct.{
+    return parser.eatIf(u8, struct {
         fn predicate(c2: u8) bool {
             return c1 == c2;
         }
@@ -40,7 +36,7 @@ pub fn char(comptime c1: u8) type {
 }
 
 pub fn range(comptime a: u8, comptime b: u8) type {
-    return parser.eatIf(u8, struct.{
+    return parser.eatIf(u8, struct {
         fn predicate(c: u8) bool {
             return a <= c and c <= b;
         }
@@ -48,7 +44,7 @@ pub fn range(comptime a: u8, comptime b: u8) type {
 }
 
 pub fn uint(comptime Int: type, comptime base: u8) type {
-    return struct.{
+    return struct {
         pub const Result = Int;
 
         pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
@@ -63,7 +59,7 @@ pub fn uint(comptime Int: type, comptime base: u8) type {
                 res = math.add(Result, res, digit) catch return null;
             }
 
-            return ParseResult(@typeOf(input), Result).{
+            return ParseResult(@typeOf(input), Result){
                 .input = next,
                 .result = res,
             };
@@ -72,7 +68,7 @@ pub fn uint(comptime Int: type, comptime base: u8) type {
 }
 
 pub fn string(comptime s: []const u8) type {
-    return struct.{
+    return struct {
         pub const Result = []const u8;
 
         pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
@@ -85,7 +81,7 @@ pub fn string(comptime s: []const u8) type {
                 next = next.next();
             }
 
-            return ParseResult(@typeOf(input), Result).{
+            return ParseResult(@typeOf(input), Result){
                 .input = next,
                 .result = s,
             };
@@ -112,11 +108,11 @@ test "parser.string.char" {
 
     comptime var i = 0;
     inline while (i < 'a') : (i += 1)
-        testFail(P, []u8.{i});
+        testFail(P, []u8{i});
     inline while (i <= 'a') : (i += 1)
-        testSuccess(P, []u8.{i}, u8(i));
+        testSuccess(P, []u8{i}, u8(i));
     inline while (i <= math.maxInt(u8)) : (i += 1)
-        testFail(P, []u8.{i});
+        testFail(P, []u8{i});
 }
 
 test "parser.string.range" {
@@ -124,15 +120,15 @@ test "parser.string.range" {
 
     comptime var i = 0;
     inline while (i < 'a') : (i += 1)
-        testFail(P, []u8.{i});
+        testFail(P, []u8{i});
     inline while (i <= 'z') : (i += 1)
-        testSuccess(P, []u8.{i}, u8(i));
+        testSuccess(P, []u8{i}, u8(i));
     inline while (i <= math.maxInt(u8)) : (i += 1)
-        testFail(P, []u8.{i});
+        testFail(P, []u8{i});
 }
 
 test "parser.string.uint" {
-    for ([][]const u8.{
+    for ([][]const u8{
         "0000", "1111", "7777", "9999",
         "aaaa", "AAAA", "ffff", "FFFF",
         "zzzz", "ZZZZ", "0123", "4567",

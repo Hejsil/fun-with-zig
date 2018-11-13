@@ -13,12 +13,12 @@ fn runtimeSize(comptime fields: var) comptime_int {
 }
 
 pub fn Field(comptime T: type) type {
-    return struct.{
+    return struct {
         key: T,
         Value: type,
 
         pub fn init(key: T, comptime Value: type) @This() {
-            return @This().{
+            return @This(){
                 .key = key,
                 .Value = Value,
             };
@@ -28,13 +28,13 @@ pub fn Field(comptime T: type) type {
 
 pub fn Struct(comptime Key: type, comptime field_array: var) type {
     for (field_array) |a, i| {
-        for (field_array[i+1..]) |b| {
+        for (field_array[i + 1 ..]) |b| {
             // TODO: Abitrary key equal
             debug.assert(a.key != b.key);
         }
     }
 
-    return struct.{
+    return struct {
         pub const fields = field_array;
 
         // In order for us to store the tuples values, we have
@@ -73,7 +73,7 @@ pub fn Struct(comptime Key: type, comptime field_array: var) type {
 }
 
 test "struct" {
-    const T = Struct(u8, []Field(u8).{
+    const T = Struct(u8, []Field(u8){
         Field(u8).init(0, u8),
         Field(u8).init(1, u16),
         Field(u8).init(2, f32),

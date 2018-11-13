@@ -9,7 +9,7 @@ const assert = debug.assert;
 
 /// A generic iterator which uses ::nextFn to iterate over a ::TContext.
 pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn: fn (*TContext) ?TResult) type {
-    return struct.{
+    return struct {
         const Result = TResult;
         const Context = TContext;
         const Self = @This();
@@ -17,7 +17,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
         context: Context,
 
         pub fn init(context: Context) Self {
-            return Self.{ .context = context };
+            return Self{ .context = context };
         }
 
         pub fn next(it: *Self) ?Result {
@@ -32,7 +32,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
 
         pub fn concat(it: Self, other: var) ConcatIterator(@typeOf(other)) {
             const OtherIterator = @typeOf(other);
-            return ConcatIterator(OtherIterator).init(IteratorPair(OtherIterator).{ .it1 = it, .it2 = other });
+            return ConcatIterator(OtherIterator).init(IteratorPair(OtherIterator){ .it1 = it, .it2 = other });
         }
 
         pub fn intersect(it: Self, other: var) void {
@@ -60,7 +60,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
         }
 
         pub fn take(it: Self, count: u64) TakeIterator() {
-            return TakeIterator().init(TakeContext.{ .it = it, .count = count });
+            return TakeIterator().init(TakeContext{ .it = it, .count = count });
         }
 
         pub fn where(it: Self, comptime predicate: fn (Result) bool) WhereIterator(predicate) {
@@ -69,11 +69,11 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
 
         pub fn zip(it: Self, other: var) ZipIterator(@typeOf(other)) {
             const OtherIterator = @typeOf(other);
-            return ZipIterator(OtherIterator).init(IteratorPair(OtherIterator).{ .it1 = it, .it2 = other });
+            return ZipIterator(OtherIterator).init(IteratorPair(OtherIterator){ .it1 = it, .it2 = other });
         }
 
         fn IteratorPair(comptime OtherIterator: type) type {
-            return struct.{
+            return struct {
                 it1: Self,
                 it2: OtherIterator,
             };
@@ -82,7 +82,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
         fn ConcatIterator(comptime OtherIterator: type) type {
             const OtherResult = @typeOf(OtherIterator.next).ReturnType.Child;
 
-            return Iterator(IteratorPair(OtherIterator), Result, struct.{
+            return Iterator(IteratorPair(OtherIterator), Result, struct {
                 fn whereNext(context: *IteratorPair(OtherIterator)) ?Result {
                     return context.it1.next() orelse {
                         return context.it2.next();
@@ -92,7 +92,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
         }
 
         fn SelectIterator(comptime SelectResult: type, comptime selector: fn (Result) SelectResult) type {
-            return Iterator(Context, SelectResult, struct.{
+            return Iterator(Context, SelectResult, struct {
                 fn selectNext(context: *Context) ?SelectResult {
                     const item = nextFn(context) orelse return null;
                     return selector(item);
@@ -100,13 +100,13 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
             }.selectNext);
         }
 
-        const TakeContext = struct.{
+        const TakeContext = struct {
             it: Self,
             count: u64,
         };
 
         fn TakeIterator() type {
-            return Iterator(TakeContext, Result, struct.{
+            return Iterator(TakeContext, Result, struct {
                 fn takeNext(context: *TakeContext) ?Result {
                     if (context.count == 0) return null;
 
@@ -117,7 +117,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
         }
 
         fn WhereIterator(comptime predicate: fn (Result) bool) type {
-            return Iterator(Context, Result, struct.{
+            return Iterator(Context, Result, struct {
                 fn whereNext(context: *Context) ?Result {
                     while (nextFn(context)) |item| {
                         if (predicate(item)) return item;
@@ -130,16 +130,16 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
 
         fn ZipIterator(comptime OtherIterator: type) type {
             const OtherResult = @typeOf(OtherIterator.next).ReturnType.Child;
-            const ZipPair = struct.{
+            const ZipPair = struct {
                 first: Result,
                 second: OtherResult,
             };
 
-            return Iterator(IteratorPair(OtherIterator), ZipPair, struct.{
+            return Iterator(IteratorPair(OtherIterator), ZipPair, struct {
                 fn whereNext(context: *IteratorPair(OtherIterator)) ?ZipPair {
                     const first = context.it1.next() orelse return null;
                     const second = context.it2.next() orelse return null;
-                    return ZipPair.{ .first = first, .second = second };
+                    return ZipPair{ .first = first, .second = second };
                 }
             }.whereNext);
         }
@@ -147,7 +147,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
 }
 
 pub fn SliceIterator(comptime T: type) type {
-    const NextFn = struct.{
+    const NextFn = struct {
         fn next(context: *[]const T) ?T {
             if (context.len != 0) {
                 defer context.* = (context.*)[1..];
@@ -162,7 +162,7 @@ pub fn SliceIterator(comptime T: type) type {
 }
 
 pub fn SliceMutableIterator(comptime T: type) type {
-    const NextFn = struct.{
+    const NextFn = struct {
         fn next(context: *[]T) ?*T {
             if (context.len != 0) {
                 defer context.* = (context.*)[1..];
@@ -177,12 +177,12 @@ pub fn SliceMutableIterator(comptime T: type) type {
 }
 
 fn RangeIterator(comptime T: type) type {
-    const RangeContext = struct.{
+    const RangeContext = struct {
         current: T,
         count: T,
         step: T,
     };
-    const NextFn = struct.{
+    const NextFn = struct {
         fn next(context: *RangeContext) ?T {
             if (context.count == 0) return null;
             defer context.count -= 1;
@@ -196,11 +196,11 @@ fn RangeIterator(comptime T: type) type {
 
 pub fn range(comptime T: type, start: T, count: T, step: T) RangeIterator(T) {
     const Context = RangeIterator(T).Context;
-    return RangeIterator(T).init(Context.{ .current = start, .count = count, .step = step });
+    return RangeIterator(T).init(Context{ .current = start, .count = count, .step = step });
 }
 
 fn RepeatIterator(comptime T: type) type {
-    const NextFn = struct.{
+    const NextFn = struct {
         fn next(context: *T) ?T {
             return context.*;
         }
@@ -214,7 +214,7 @@ pub fn repeat(comptime T: type, v: T) RepeatIterator(T) {
 }
 
 fn EmptyIterator(comptime T: type) type {
-    const NextFn = struct.{
+    const NextFn = struct {
         fn next(context: *u8) ?T {
             return null;
         }
@@ -328,7 +328,7 @@ test "iterators.empty" {
 
 test "iterators.aggregateAcc" {
     const data = "abacad";
-    const countA = struct.{
+    const countA = struct {
         fn f(acc: u64, char: u8) u64 {
             return acc + @boolToInt(char == 'a');
         }
@@ -340,7 +340,7 @@ test "iterators.aggregateAcc" {
 test "iterators.all" {
     const data1 = "aaaa";
     const data2 = "abaa";
-    const isA = struct.{
+    const isA = struct {
         fn f(char: u8) bool {
             return char == 'a';
         }
@@ -353,7 +353,7 @@ test "iterators.all" {
 test "iterators.any" {
     const data1 = "bbbb";
     const data2 = "bbab";
-    const isA = struct.{
+    const isA = struct {
         fn f(char: u8) bool {
             return char == 'a';
         }
@@ -365,7 +365,7 @@ test "iterators.any" {
 
 test "iterators.countIf" {
     const data = "abab";
-    const isA = struct.{
+    const isA = struct {
         fn f(char: u8) bool {
             return char == 'a';
         }
@@ -414,8 +414,8 @@ test "iterators.intersect: TODO" {}
 test "iterators.prepend: TODO" {}
 
 test "iterators.select" {
-    const data = []f64.{ 1.5, 2.5, 3.5 };
-    const toI64 = struct.{
+    const data = []f64{ 1.5, 2.5, 3.5 };
+    const toI64 = struct {
         fn f(i: f64) i64 {
             return @floatToInt(i64, i);
         }
@@ -466,7 +466,7 @@ test "iterators.takeWhile: TODO" {}
 test "iterators.where" {
     const data = "abc";
     const res = "ac";
-    const isB = struct.{
+    const isB = struct {
         fn f(i: u8) bool {
             return i != 'b';
         }

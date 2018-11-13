@@ -1,7 +1,7 @@
 const std = @import("std");
 const string = @import("string.zig");
 const @"struct" = @import("../struct.zig");
-const @"union"= @import("../union.zig");
+const @"union" = @import("../union.zig");
 
 const StructField = @"struct".Field;
 const Struct = @"struct".Struct;
@@ -12,22 +12,22 @@ const debug = std.debug;
 const mem = std.mem;
 
 pub fn ParseResult(comptime Input: type, comptime Result: type) type {
-    return struct.{
+    return struct {
         input: Input,
         result: Result,
     };
 }
 
 fn Func(comptime Result: type) type {
-    return @typeOf(struct.{
+    return @typeOf(struct {
         fn func(input: var) ?ParseResult(@typeOf(input), Result) {
             unreachable;
         }
     }.func);
 }
 
-pub fn eatIf(comptime Token: type, comptime predicate: fn(Token)bool) type {
-    return struct.{
+pub fn eatIf(comptime Token: type, comptime predicate: fn (Token) bool) type {
+    return struct {
         pub const Result = Token;
 
         pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
@@ -35,7 +35,7 @@ pub fn eatIf(comptime Token: type, comptime predicate: fn(Token)bool) type {
             if (!predicate(curr))
                 return null;
 
-            return ParseResult(@typeOf(input), Result).{
+            return ParseResult(@typeOf(input), Result){
                 .input = input.next(),
                 .result = curr,
             };
@@ -44,12 +44,12 @@ pub fn eatIf(comptime Token: type, comptime predicate: fn(Token)bool) type {
 }
 
 pub fn end() type {
-    return struct.{
+    return struct {
         pub const Result = void;
 
         pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
             if (input.curr() == null) {
-                return ParseResult(@typeOf(input), void).{
+                return ParseResult(@typeOf(input), void){
                     .input = input,
                     .result = {},
                 };
@@ -61,7 +61,7 @@ pub fn end() type {
 }
 
 pub fn sequence(comptime parsers: []const type) type {
-    return struct.{
+    return struct {
         pub const Result = SeqParserResult(parsers);
 
         pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
@@ -74,7 +74,7 @@ pub fn sequence(comptime parsers: []const type) type {
                 res.ptr(i).* = r.result;
             }
 
-            return ParseResult(@typeOf(input), Result).{
+            return ParseResult(@typeOf(input), Result){
                 .input = next,
                 .result = res,
             };
@@ -91,13 +91,13 @@ fn SeqParserResult(comptime parsers: []const type) type {
 }
 
 pub fn options(comptime parsers: []const type) type {
-    return struct.{
+    return struct {
         pub const Result = OptParserResult(parsers);
 
         pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
             inline for (parsers) |Par| {
                 if (Par.parse(input)) |res| {
-                    return ParseResult(@typeOf(input), Result).{
+                    return ParseResult(@typeOf(input), Result){
                         .input = res.input,
                         .result = res.result,
                     };
@@ -119,10 +119,12 @@ fn OptParserResult(comptime parsers: []const type) type {
     return Res;
 }
 
-fn refFunc() type {unreachable;}
+fn refFunc() type {
+    unreachable;
+}
 
 pub fn ref(comptime Res: type, comptime f: @typeOf(refFunc)) type {
-    return struct.{
+    return struct {
         pub const Result = Res;
 
         pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
@@ -131,8 +133,8 @@ pub fn ref(comptime Res: type, comptime f: @typeOf(refFunc)) type {
     };
 }
 
-fn isPred(comptime c: u8) fn(u8)bool {
-    return struct.{
+fn isPred(comptime c: u8) fn (u8) bool {
+    return struct {
         fn predicate(char: u8) bool {
             return char == c;
         }
@@ -171,7 +173,7 @@ test "parser.sequence" {
     const A = eatIf(u8, comptime isPred('a'));
     const B = eatIf(u8, comptime isPred('b'));
     const C = eatIf(u8, comptime isPred('c'));
-    const P = sequence([]type.{A, B, C});
+    const P = sequence([]type{ A, B, C });
 
     testSuccess(P, "abc", "abc");
     testFail(P, "cba");
@@ -181,7 +183,7 @@ test "parser.options" {
     const A = eatIf(u8, comptime isPred('a'));
     const B = eatIf(u8, comptime isPred('b'));
     const C = eatIf(u8, comptime isPred('c'));
-    const P = options([]type.{A, B, C});
+    const P = options([]type{ A, B, C });
 
     testSuccess(P, "a", u8('a'));
     testSuccess(P, "b", u8('b'));
