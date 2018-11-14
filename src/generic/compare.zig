@@ -135,7 +135,18 @@ test "generic.compare.lessThan(void)" {
 pub fn equal(comptime T: type, a: T, b: T) bool {
     const info = @typeInfo(T);
     switch (info) {
-        TypeId.Int, TypeId.Float, TypeId.ComptimeInt, TypeId.ComptimeFloat, TypeId.Enum, TypeId.ErrorSet, TypeId.Type, TypeId.Void, TypeId.Fn, TypeId.Null, TypeId.Bool => return a == b,
+        TypeId.Int,
+        TypeId.Float,
+        TypeId.ComptimeInt,
+        TypeId.ComptimeFloat,
+        TypeId.Enum,
+        TypeId.ErrorSet,
+        TypeId.Type,
+        TypeId.Void,
+        TypeId.Fn,
+        TypeId.Null,
+        TypeId.Bool,
+        => return a == b,
         // We don't follow pointers, as this would `lessThan` recursive on recursive types (like LinkedList
         TypeId.Pointer => |ptr| switch (ptr.size) {
             TypeInfo.Pointer.Size.Slice => {
