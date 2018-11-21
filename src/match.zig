@@ -4,50 +4,44 @@ const debug = std.debug;
 const mem = std.mem;
 const sort = std.sort;
 
-pub const StringSwitch = struct {
-    strings: []const []const u8,
+pub fn StringSwitch(comptime strings: []const []const u8) type {
+    var sorted: [strings.len][]const u8 = undefined;
+    mem.copy([]const u8, sorted[0..], strings);
+    sort.sort([]const u8, sorted[0..], struct {
+        fn lessThan(a: []const u8, b: []const u8) bool {
+            return mem.lessThan(u8, a, b);
+        }
+    }.lessThan);
 
-    pub fn init(comptime strings: []const []const u8) StringSwitch {
-        return StringSwitch{
-            .strings = comptime blk: {
-                var res: [strings.len][]const u8 = undefined;
-                mem.copy([]const u8, res[0..], strings);
-                sort.sort([]const u8, res[0..], lessThan);
-                break :blk res;
-            },
-        };
-    }
 
-    pub fn match(comptime sw: StringSwitch, str: []const u8) usize {
-        var curr: usize = 0;
-        next: for (sw.strings) |s, i| {
-            while (curr < s.len) : (curr += 1) {
-                const a = str[curr];
-                const b = s[curr];
-                if (a != b)
-                    continue :next;
+    return struct {
+        pub fn match(str: []const u8) usize {
+            var curr: usize = 0;
+            next: for (sorted) |s, i| {
+                while (curr < s.len) : (curr += 1) {
+                    const a = str[curr];
+                    const b = s[curr];
+                    if (a != b)
+                        continue :next;
+                }
+
+                if (s.len == str.len)
+                    return i;
             }
 
-            if (s.len == str.len)
-                return i;
+            return sorted.len;
         }
 
-        return sw.strings.len;
-    }
-
-    pub fn case(comptime sw: StringSwitch, comptime str: []const u8) usize {
-        const i = sw.match(str);
-        debug.assert(i < sw.strings.len);
-        return i;
-    }
-
-    fn lessThan(a: []const u8, b: []const u8) bool {
-        return mem.lessThan(u8, a, b);
-    }
-};
+        pub fn case(comptime str: []const u8) usize {
+            const i = match(str);
+            debug.assert(i < sorted.len);
+            return i;
+        }
+    };
+}
 
 test "switch.StringSwitch" {
-    const sw = comptime StringSwitch.init([][]const u8{
+    const sw = comptime StringSwitch([][]const u8{
         "Summer",
         "Winter",
         "Fall",
