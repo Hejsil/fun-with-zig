@@ -2,6 +2,7 @@ const std = @import("std");
 
 const debug = std.debug;
 const mem = std.mem;
+const rand = std.rand;
 const sort = std.sort;
 
 pub fn StringSwitch(comptime strings: []const []const u8) type {
@@ -12,6 +13,8 @@ pub fn StringSwitch(comptime strings: []const []const u8) type {
             return mem.lessThan(u8, a, b);
         }
     }.lessThan);
+    for (sorted[1..]) |_, i|
+        debug.assert(!mem.eql(u8, strings[i], strings[i + 1]));
 
 
     return struct {
@@ -41,19 +44,23 @@ pub fn StringSwitch(comptime strings: []const []const u8) type {
 }
 
 test "switch.StringSwitch" {
-    const sw = comptime StringSwitch([][]const u8{
-        "Summer",
-        "Winter",
-        "Fall",
-        "Spring",
-    });
+    @setEvalBranchQuota(1000000);
+    const strings = comptime blk: {
+        var res: [100][]const u8 = undefined;
+        var r = rand.DefaultPrng.init(0);
 
-    inline for ([][]const u8{
-        "Winter",
-        "Spring",
-        "Fall",
-        "Summer",
-    }) |str| switch (sw.match(str)) {
+        for (res) |_, i| {
+            var s: [(i + 2) * 2]u8 = undefined;
+            r.random.bytes(s[0..]);
+            res[i] = s;
+        }
+
+        break :blk res;
+    };
+
+    const sw = comptime StringSwitch(strings);
+
+    inline for (strings) |str| switch (sw.match(str)) {
         sw.case(str) => {},
         else => unreachable,
     };
