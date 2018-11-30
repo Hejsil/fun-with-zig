@@ -23,18 +23,13 @@ pub fn scan(ps: var, comptime fmt: []const u8, args: ...) !void {
                 '{' => state = State.OpenBrace,
                 '}' => state = State.CloseBrace,
                 else => {
-                    const byte = try ps.stream.readByte();
-                    if (byte != c)
-                        return error.NoMatch;
+                    try expect(ps, c);
                 },
             },
             State.OpenBrace => switch (c) {
                 '{' => {
                     state = State.Start;
-
-                    const byte = try ps.stream.readByte();
-                    if (byte != c)
-                        return error.InvalidCharacter;
+                    try expect(ps, c);
                 },
                 '}' => {
                     args[next_arg].* = try scanOne(ps, @typeOf(args[next_arg].*));
@@ -46,10 +41,7 @@ pub fn scan(ps: var, comptime fmt: []const u8, args: ...) !void {
             State.CloseBrace => switch (c) {
                 '}' => {
                     state = State.Start;
-
-                    const byte = try ps.stream.readByte();
-                    if (byte != c)
-                        return error.InvalidCharacter;
+                    try expect(ps, c);
                 },
                 else => @compileError("Single '}' encountered in format string"),
             },
@@ -63,6 +55,12 @@ pub fn scan(ps: var, comptime fmt: []const u8, args: ...) !void {
             @compileError("Incomplete format string: " ++ fmt);
         }
     }
+}
+
+fn expect(ps: var, char: u8) !void {
+    const byte = try ps.stream.readByte();
+    if (byte != char)
+        return error.InvalidCharacter;
 }
 
 fn scanOne(ps: var, comptime T: type) !T {
@@ -99,11 +97,16 @@ fn scanIntRest(ps: var, op_first: ?u8, comptime Int: type) !Int {
     var res: Int = try math.cast(Int, try charToDigit(first, radix));
 
     while (true) {
-        const byte = try ps.stream.readByte();
+        const byte = ps.stream.readByte() catch |err| switch (err) {
+            error.EndOfStream => return res,
+            else => return err,
+        };
+
         const digit = charToDigit(byte, radix) catch {
             ps.putBackByte(byte);
             return res;
         };
+
         res = try math.mul(Int, res, try math.cast(Int, radix));
         res = try math.add(Int, res, try math.cast(Int, digit));
     }
@@ -123,27 +126,68 @@ pub fn charToDigit(c: u8, radix: u8) (error{InvalidCharacter}!u8) {
 }
 
 
-test "scan" {
-    {
-        var mem_stream = io.SliceInStream.init("ab123cd");
+test "scan.NoArgs" {
+    const string = "abcd";
+    inline for (string) |_, i| {
+        var mem_stream = io.SliceInStream.init(string);
         var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
-        var res: u64 = undefined;
 
-        try scan(&ps, "ab{}cd", &res);
-        debug.assert(res == 123);
+        try scan(&ps, string[0..i+1]);
     }
-    {
-        var mem_stream = io.SliceInStream.init("ab123cd");
-        var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
-        var res: u2 = undefined;
+}
 
-        debug.assertError(scan(&ps, "ab{}cd", &res), error.Overflow);
-    }
-    {
-        var mem_stream = io.SliceInStream.init("ab123cd");
-        var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
-        var res: u64 = undefined;
+fn testScanIntOk(comptime fmt: []const u8, str: []const u8, res: i64) !void {
+    var mem_stream = io.SliceInStream.init(str);
+    var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
 
-        debug.assertError(scan(&ps, "a{}cd", &res), error.InvalidCharacter);
-    }
+    var result: i64 = undefined;
+    try scan(&ps, fmt, &result);
+    debug.assert(result == res);
+}
+
+fn testScanIntError(comptime fmt: []const u8, str: []const u8, comptime Int: type, err: anyerror) void {
+    var mem_stream = io.SliceInStream.init(str);
+    var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
+
+    var result: Int = undefined;
+    debug.assertError(scan(&ps, fmt, &result), err);
+}
+
+test "scan.Int" {
+    try testScanIntOk("{}", "0", 0);
+    try testScanIntOk("{}", "-0", 0);
+    try testScanIntOk("{}", "+0", 0);
+    try testScanIntOk("{}", "1", 1);
+    try testScanIntOk("{}", "-1", -1);
+    try testScanIntOk("{}", "+1", 1);
+    try testScanIntOk("{}", "99", 99);
+    try testScanIntOk("{}", "-99", -99);
+    try testScanIntOk("{}", "+99", 99);
+    try testScanIntOk("{}a", "0a", 0);
+    try testScanIntOk("{}a", "-0a", 0);
+    try testScanIntOk("{}a", "+0a", 0);
+    try testScanIntOk("{}a", "1a", 1);
+    try testScanIntOk("{}a", "-1a", -1);
+    try testScanIntOk("{}a", "+1a", 1);
+    try testScanIntOk("{}a", "99a", 99);
+    try testScanIntOk("{}a", "-99a", -99);
+    try testScanIntOk("{}a", "+99a", 99);
+    try testScanIntOk("a{}a", "a0a", 0);
+    try testScanIntOk("a{}a", "a-0a", 0);
+    try testScanIntOk("a{}a", "a+0a", 0);
+    try testScanIntOk("a{}a", "a1a", 1);
+    try testScanIntOk("a{}a", "a-1a", -1);
+    try testScanIntOk("a{}a", "a+1a", 1);
+    try testScanIntOk("a{}a", "a99a", 99);
+    try testScanIntOk("a{}a", "a-99a", -99);
+    try testScanIntOk("a{}a", "a+99a", 99);
+
+
+    testScanIntError("{}", "-0", u8, error.InvalidCharacter);
+    testScanIntError("{}", "a", u8, error.InvalidCharacter);
+    testScanIntError("{}", "256", u8, error.Overflow);
+    testScanIntError("{}", "-a", i8, error.InvalidCharacter);
+    testScanIntError("{}", "a", i8, error.InvalidCharacter);
+    testScanIntError("{}", "128", i8, error.Overflow);
+    testScanIntError("{}", "-129", i8, error.Overflow);
 }
