@@ -119,16 +119,14 @@ fn matches(comptime T: type, comptime ignored_fields: []const []const []const u8
                 break :blk res;
             };
 
-            inline for (struct_info.fields) |field| {
-                ignore: {
-                    for (ignored_fields) |fields| {
-                        if (fields.len == 1 and mem.eql(u8, fields[0], field.name))
-                            break :ignore;
-                    }
-
-                    if (!matches(field.field_type, next_ignored, @field(a, field.name), @field(b, field.name)))
-                        return false;
+            ignore: inline for (struct_info.fields) |field| {
+                inline for (ignored_fields) |fields| {
+                    if (comptime fields.len == 1 and mem.eql(u8, fields[0], field.name))
+                        continue :ignore;
                 }
+
+                if (!matches(field.field_type, next_ignored, @field(a, field.name), @field(b, field.name)))
+                    return false;
             }
 
             return true;
@@ -136,7 +134,6 @@ fn matches(comptime T: type, comptime ignored_fields: []const []const []const u8
         else => return a == b,
     }
 }
-
 
 test "searcher.Searcher.find" {
     const S = packed struct {
