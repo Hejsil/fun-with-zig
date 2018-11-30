@@ -70,8 +70,8 @@ fn expect(ps: var, char: u8) !void {
 fn scanOne(ps: var, comptime T: type) !T {
     switch (@typeInfo(T)) {
         builtin.TypeId.Int => return try scanInt(ps, T),
-        builtin.TypeId.Float => @compileError("TODO"),
-        builtin.TypeId.Bool => @compileError("TODO"),
+        builtin.TypeId.Float => return try scanFloat(ps, T),
+        builtin.TypeId.Bool => return try scanBool(ps),
         builtin.TypeId.Enum => @compileError("TODO"),
         builtin.TypeId.Pointer => |ptr_info| switch (ptr_info.size) {
             builtin.TypeInfo.Pointer.Size.Slice => @compileError("TODO"),
@@ -115,6 +115,24 @@ fn scanIntRest(ps: var, op_first: ?u8, comptime Int: type) !Int {
     }
 }
 
+fn scanFloat(ps: var, comptime Float: type) !Float {
+    @compileError("TODO");
+}
+
+fn scanBool(ps: var) !bool {
+    const byte = try ps.stream.readByte();
+    const str = switch (byte) {
+        't' => "true",
+        'f' => "false",
+        else => return error.InvalidCharacter,
+    };
+
+    for (str[1..]) |c|
+        try expect(ps, c);
+
+    return str[0] == 't';
+}
+
 pub fn charToDigit(c: u8, radix: u8) (error{InvalidCharacter}!u8) {
     const value = switch (c) {
         '0'...'9' => c - '0',
@@ -138,59 +156,74 @@ test "scan.NoArgs" {
     }
 }
 
-fn testScanIntOk(comptime fmt: []const u8, str: []const u8, res: i64) !void {
+fn testScanOk(comptime fmt: []const u8, str: []const u8, comptime T: type, res: T) !void {
     var mem_stream = io.SliceInStream.init(str);
     var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
 
     const result = try scan(&ps, fmt, struct {
-        i: i64,
+        r: @typeOf(res),
     });
-    debug.assert(result.i == res);
+    debug.assert(result.r == res);
 }
 
-fn testScanIntError(comptime fmt: []const u8, str: []const u8, comptime Int: type, err: anyerror) void {
+fn testScanError(comptime fmt: []const u8, str: []const u8, comptime T: type, err: anyerror) void {
     var mem_stream = io.SliceInStream.init(str);
     var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
 
     debug.assertError(scan(&ps, fmt, struct {
-        i: Int,
+        i: T,
     }), err);
 }
 
-test "scan.Int" {
-    try testScanIntOk("{}", "0", 0);
-    try testScanIntOk("{}", "-0", 0);
-    try testScanIntOk("{}", "+0", 0);
-    try testScanIntOk("{}", "1", 1);
-    try testScanIntOk("{}", "-1", -1);
-    try testScanIntOk("{}", "+1", 1);
-    try testScanIntOk("{}", "99", 99);
-    try testScanIntOk("{}", "-99", -99);
-    try testScanIntOk("{}", "+99", 99);
-    try testScanIntOk("{}a", "0a", 0);
-    try testScanIntOk("{}a", "-0a", 0);
-    try testScanIntOk("{}a", "+0a", 0);
-    try testScanIntOk("{}a", "1a", 1);
-    try testScanIntOk("{}a", "-1a", -1);
-    try testScanIntOk("{}a", "+1a", 1);
-    try testScanIntOk("{}a", "99a", 99);
-    try testScanIntOk("{}a", "-99a", -99);
-    try testScanIntOk("{}a", "+99a", 99);
-    try testScanIntOk("a{}a", "a0a", 0);
-    try testScanIntOk("a{}a", "a-0a", 0);
-    try testScanIntOk("a{}a", "a+0a", 0);
-    try testScanIntOk("a{}a", "a1a", 1);
-    try testScanIntOk("a{}a", "a-1a", -1);
-    try testScanIntOk("a{}a", "a+1a", 1);
-    try testScanIntOk("a{}a", "a99a", 99);
-    try testScanIntOk("a{}a", "a-99a", -99);
-    try testScanIntOk("a{}a", "a+99a", 99);
+test "scanInt" {
+    try testScanOk("{}", "0", i64, 0);
+    try testScanOk("{}", "-0", i64, 0);
+    try testScanOk("{}", "+0", i64, 0);
+    try testScanOk("{}", "1", i64, 1);
+    try testScanOk("{}", "-1", i64, -1);
+    try testScanOk("{}", "+1", i64, 1);
+    try testScanOk("{}", "99", i64, 99);
+    try testScanOk("{}", "-99", i64, -99);
+    try testScanOk("{}", "+99", i64, 99);
+    try testScanOk("{}a", "0a", i64, 0);
+    try testScanOk("{}a", "-0a", i64, 0);
+    try testScanOk("{}a", "+0a", i64, 0);
+    try testScanOk("{}a", "1a", i64, 1);
+    try testScanOk("{}a", "-1a", i64, -1);
+    try testScanOk("{}a", "+1a", i64, 1);
+    try testScanOk("{}a", "99a", i64, 99);
+    try testScanOk("{}a", "-99a", i64, -99);
+    try testScanOk("{}a", "+99a", i64, 99);
+    try testScanOk("a{}a", "a0a", i64, 0);
+    try testScanOk("a{}a", "a-0a", i64, 0);
+    try testScanOk("a{}a", "a+0a", i64, 0);
+    try testScanOk("a{}a", "a1a", i64, 1);
+    try testScanOk("a{}a", "a-1a", i64, -1);
+    try testScanOk("a{}a", "a+1a", i64, 1);
+    try testScanOk("a{}a", "a99a", i64, 99);
+    try testScanOk("a{}a", "a-99a", i64, -99);
+    try testScanOk("a{}a", "a+99a", i64, 99);
 
-    testScanIntError("{}", "-0", u8, error.InvalidCharacter);
-    testScanIntError("{}", "a", u8, error.InvalidCharacter);
-    testScanIntError("{}", "256", u8, error.Overflow);
-    testScanIntError("{}", "-a", i8, error.InvalidCharacter);
-    testScanIntError("{}", "a", i8, error.InvalidCharacter);
-    testScanIntError("{}", "128", i8, error.Overflow);
-    testScanIntError("{}", "-129", i8, error.Overflow);
+    testScanError("{}", "-0", u8, error.InvalidCharacter);
+    testScanError("{}", "a", u8, error.InvalidCharacter);
+    testScanError("{}", "256", u8, error.Overflow);
+    testScanError("{}", "-a", i8, error.InvalidCharacter);
+    testScanError("{}", "a", i8, error.InvalidCharacter);
+    testScanError("{}", "128", i8, error.Overflow);
+    testScanError("{}", "-129", i8, error.Overflow);
+    testScanError(" {}", "1", i8, error.InvalidCharacter);
+}
+
+test "scanBool" {
+    try testScanOk("{}", "true", bool, true);
+    try testScanOk("{}", "false", bool, false);
+    try testScanOk("a{}", "atrue", bool, true);
+    try testScanOk("a{}", "afalse", bool, false);
+    try testScanOk("a{}a", "atruea", bool, true);
+    try testScanOk("a{}a", "afalsea", bool, false);
+
+    testScanError("{}", "qrue", bool, error.InvalidCharacter);
+    testScanError("{}", "qalse", bool, error.InvalidCharacter);
+    testScanError("{}", "frue", bool, error.InvalidCharacter);
+    testScanError("{}", "talse", bool, error.InvalidCharacter);
 }
