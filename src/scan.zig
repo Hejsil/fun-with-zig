@@ -72,12 +72,6 @@ fn scanOne(ps: var, comptime T: type) !T {
         builtin.TypeId.Int => return try scanInt(ps, T),
         builtin.TypeId.Float => return try scanFloat(ps, T),
         builtin.TypeId.Bool => return try scanBool(ps),
-        builtin.TypeId.Enum => @compileError("TODO"),
-        builtin.TypeId.Pointer => |ptr_info| switch (ptr_info.size) {
-            builtin.TypeInfo.Pointer.Size.Slice => @compileError("TODO"),
-            else => @compileError("Unable to format type '" ++ @typeName(T) ++ "'"),
-        },
-        builtin.TypeId.Array => |info| @compileError("TODO"),
         else => @compileError("Unable to format type '" ++ @typeName(T) ++ "'"),
     }
 }
@@ -141,7 +135,8 @@ pub fn charToDigit(c: u8, radix: u8) (error{InvalidCharacter}!u8) {
         else => return error.InvalidCharacter,
     };
 
-    if (value >= radix) return error.InvalidCharacter;
+    if (value >= radix)
+        return error.InvalidCharacter;
 
     return value;
 }
