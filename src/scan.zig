@@ -5,7 +5,7 @@ const debug = std.debug;
 const io = std.io;
 const math = std.math;
 
-pub fn scan(ps: var, comptime fmt: []const u8, args: ...) !void {
+pub fn scan(ps: var, comptime fmt: []const u8, comptime Res: type) !Res {
     comptime debug.assert(@typeOf(ps.*) == io.PeekStream(1, @typeOf(ps.stream).Error));
     const State = enum {
         Start,
@@ -13,9 +13,11 @@ pub fn scan(ps: var, comptime fmt: []const u8, args: ...) !void {
         CloseBrace,
     };
 
+    const fields = @typeInfo(Res).Struct.fields;
     comptime var start_index = 0;
     comptime var state = State.Start;
     comptime var next_arg = 0;
+    var res: Res = undefined;
 
     inline for (fmt) |c, i| {
         switch (state) {
@@ -32,7 +34,7 @@ pub fn scan(ps: var, comptime fmt: []const u8, args: ...) !void {
                     try expect(ps, c);
                 },
                 '}' => {
-                    args[next_arg].* = try scanOne(ps, @typeOf(args[next_arg].*));
+                    @field(res, fields[next_arg].name) = try scanOne(ps, fields[next_arg].field_type);
                     next_arg += 1;
                     state = State.Start;
                 },
@@ -48,13 +50,15 @@ pub fn scan(ps: var, comptime fmt: []const u8, args: ...) !void {
         }
     }
     comptime {
-        if (args.len != next_arg) {
+        if (fields.len != next_arg) {
             @compileError("Unused arguments");
         }
         if (state != State.Start) {
             @compileError("Incomplete format string: " ++ fmt);
         }
     }
+
+    return res;
 }
 
 fn expect(ps: var, char: u8) !void {
@@ -68,7 +72,6 @@ fn scanOne(ps: var, comptime T: type) !T {
         builtin.TypeId.Int => return try scanInt(ps, T),
         builtin.TypeId.Float => @compileError("TODO"),
         builtin.TypeId.Bool => @compileError("TODO"),
-        builtin.TypeId.Optional => @compileError("TODO"),
         builtin.TypeId.Enum => @compileError("TODO"),
         builtin.TypeId.Pointer => |ptr_info| switch (ptr_info.size) {
             builtin.TypeInfo.Pointer.Size.Slice => @compileError("TODO"),
@@ -125,14 +128,13 @@ pub fn charToDigit(c: u8, radix: u8) (error{InvalidCharacter}!u8) {
     return value;
 }
 
-
 test "scan.NoArgs" {
     const string = "abcd";
     inline for (string) |_, i| {
         var mem_stream = io.SliceInStream.init(string);
         var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
 
-        try scan(&ps, string[0..i+1]);
+        _ = try scan(&ps, string[0 .. i + 1], struct {});
     }
 }
 
@@ -140,17 +142,19 @@ fn testScanIntOk(comptime fmt: []const u8, str: []const u8, res: i64) !void {
     var mem_stream = io.SliceInStream.init(str);
     var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
 
-    var result: i64 = undefined;
-    try scan(&ps, fmt, &result);
-    debug.assert(result == res);
+    const result = try scan(&ps, fmt, struct {
+        i: i64,
+    });
+    debug.assert(result.i == res);
 }
 
 fn testScanIntError(comptime fmt: []const u8, str: []const u8, comptime Int: type, err: anyerror) void {
     var mem_stream = io.SliceInStream.init(str);
     var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
 
-    var result: Int = undefined;
-    debug.assertError(scan(&ps, fmt, &result), err);
+    debug.assertError(scan(&ps, fmt, struct {
+        i: Int,
+    }), err);
 }
 
 test "scan.Int" {
@@ -181,7 +185,6 @@ test "scan.Int" {
     try testScanIntOk("a{}a", "a99a", 99);
     try testScanIntOk("a{}a", "a-99a", -99);
     try testScanIntOk("a{}a", "a+99a", 99);
-
 
     testScanIntError("{}", "-0", u8, error.InvalidCharacter);
     testScanIntError("{}", "a", u8, error.InvalidCharacter);
