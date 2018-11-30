@@ -99,7 +99,7 @@ const IA = Interface(struct {
     const a = fn (*Self, u8) u8;
 });
 
-test "" {
+test "interface" {
     var sb = Sb{ .b = 3 };
     var sq = Sq{ .q = 3 };
     const ib = IA.init(Sb, &sb);
