@@ -7,6 +7,7 @@ pub const loop = @import("loop.zig");
 pub const match = @import("match.zig");
 pub const math = @import("math/index.zig");
 pub const platform = @import("platform.zig");
+pub const scan = @import("scan.zig");
 pub const searcher = @import("searcher.zig");
 
 test "" {
@@ -19,5 +20,6 @@ test "" {
     _ = match;
     _ = math;
     _ = platform;
+    _ = scan;
     _ = searcher;
 }
