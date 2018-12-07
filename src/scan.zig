@@ -388,15 +388,15 @@ test "scan.sscan.benchmark.switch" {
 
         fn sscanSwitch(str: []const u8) u128 {
             if (sscan(str, "foo={}", struct {
-                a: u32,
+                a: u64,
             })) |v| {
                 return v.a;
             } else |_| if (sscan(str, "foo.bar={}", struct {
-                a: u32,
+                a: u64,
             })) |v| {
                 return v.a;
             } else |_| if (sscan(str, "foo.bar.baz={}", struct {
-                a: u32,
+                a: u64,
             })) |v| {
                 return v.a;
             } else |_| if (sscanSlow(str, "foo[{}].bar[{}].baz[{}]={}", struct {
@@ -407,15 +407,15 @@ test "scan.sscan.benchmark.switch" {
             })) |v| {
                 return u128(v.a) + v.b + v.c + v.d;
             } else |_| if (sscan(str, "baz={}", struct {
-                a: u32,
+                a: u64,
             })) |v| {
                 return v.a;
             } else |_| if (sscan(str, "baz.bar={}", struct {
-                a: u32,
+                a: u64,
             })) |v| {
                 return v.a;
             } else |_| if (sscan(str, "baz.bar.foo={}", struct {
-                a: u32,
+                a: u64,
             })) |v| {
                 return v.a;
             } else |_| if (sscanSlow(str, "baz[{}].bar[{}].foo[{}]={}", struct {
