@@ -1,7 +1,10 @@
+const bench = @import("bench");
 const builtin = @import("builtin");
+const fun = @import("index.zig");
 const std = @import("std");
 
 const debug = std.debug;
+const fmath = fun.math;
 const heap = std.heap;
 const io = std.io;
 const math = std.math;
@@ -93,35 +96,37 @@ fn scanInt(ps: var, comptime fmt: []const u8, comptime Int: type) !Int {
         else => @compileError("Unknown format character: " ++ []u8{fmt[0]}),
     };
 
-    if (!Int.is_signed)
-        return scanIntRest(ps, null, Int, base);
-
     const first = try ps.stream.readByte();
     return switch (first) {
-        '+' => try scanIntRest(ps, null, Int, base),
-        '-' => math.negate(try scanIntRest(ps, null, Int, base)),
-        else => try scanIntRest(ps, first, Int, base),
+        '+' => try scanIntRest(ps, null, Int, false, base),
+        '-' => try scanIntRest(ps, null, Int, true, base),
+        else => try scanIntRest(ps, first, Int, false, base),
     };
 }
 
-fn scanIntRest(ps: var, op_first: ?u8, comptime Int: type, base: u8) !Int {
+fn scanIntRest(ps: var, op_first: ?u8, comptime Int: type, negative: bool, base: u8) !Int {
     const first = op_first orelse try ps.stream.readByte();
-    var res: Int = try math.cast(Int, try charToDigit(first, base));
+    const first_d: isize = try charToDigit(first, base);
+    const first_c = if (negative) -first_d else first_d;
+    var res = try math.cast(Int, first_c);
 
-    while (true) {
+    done: while (true) {
         const byte = ps.stream.readByte() catch |err| switch (err) {
-            error.EndOfStream => return res,
+            error.EndOfStream => break :done,
             else => return err,
         };
 
-        const digit = charToDigit(byte, base) catch {
+        const digit: isize = charToDigit(byte, base) catch {
             ps.putBackByte(byte);
-            return res;
+            break :done;
         };
+        const digit2 = if (negative) -digit else digit;
 
         res = try math.mul(Int, res, try math.cast(Int, base));
-        res = try math.add(Int, res, try math.cast(Int, digit));
+        res = try math.add(Int, res, try math.cast(Int, digit2));
     }
+
+    return res;
 }
 
 pub fn charToDigit(c: u8, base: u8) (error{InvalidCharacter}!u8) {
@@ -182,6 +187,10 @@ fn testScanError(comptime fmt: []const u8, str: []const u8, comptime T: type, er
 }
 
 test "scanInt" {
+    try testScanOk("{}", "0", u1, 0);
+    try testScanOk("{}", "1", u1, 1);
+    try testScanOk("{}", "0", i1, 0);
+    try testScanOk("{}", "-1", i1, -1);
     try testScanOk("{}", "0", i64, 0);
     try testScanOk("{}", "-0", i64, 0);
     try testScanOk("{}", "+0", i64, 0);
@@ -213,7 +222,6 @@ test "scanInt" {
     try testScanOk("a{}a", "a-99a", i64, -99);
     try testScanOk("a{}a", "a+99a", i64, 99);
 
-    testScanError("{}", "-0", u8, error.InvalidCharacter);
     testScanError("{}", "a", u8, error.InvalidCharacter);
     testScanError("{}", "256", u8, error.Overflow);
     testScanError("{}", "-a", i8, error.InvalidCharacter);
@@ -235,6 +243,11 @@ test "scanBool" {
     testScanError("{}", "qalse", bool, error.InvalidCharacter);
     testScanError("{}", "frue", bool, error.InvalidCharacter);
     testScanError("{}", "talse", bool, error.InvalidCharacter);
+}
+
+pub fn sscan(str: []const u8, comptime fmt: []const u8, comptime Res: type) !Res {
+    var s = FastStringPeekStream.init(str);
+    return try scan(&s, fmt, Res);
 }
 
 const FastStringPeekStream = struct {
@@ -268,79 +281,153 @@ const FastStringPeekStream = struct {
     }
 };
 
-pub fn sscan(str: []const u8, comptime fmt: []const u8, comptime Res: type) !Res {
-    var s = FastStringPeekStream.init(str);
-    return try scan(&s, fmt, Res);
+fn sscanSlow(str: []const u8, comptime fmt: []const u8, comptime Res: type) !Res {
+    var mem_stream = io.SliceInStream.init(str);
+    var ps = io.PeekStream(1, io.SliceInStream.Error).init(&mem_stream.stream);
+    return try scan(&ps, fmt, Res);
 }
 
-fn testSScanOk(comptime fmt: []const u8, str: []const u8, comptime T: type, res: T) !void {
-    const result = try sscan(str, fmt, struct {
-        r: @typeOf(res),
+test "scan.sscan.benchmark.single" {
+    try bench.benchmark(struct {
+        const args = [][]const u8{
+            "0=0",
+            "10=10",
+            "210=210",
+            "3210=3210",
+            "43210=43210",
+            "543210=543210",
+            "6543210=6543210",
+            "76543210=76543210",
+            "876543210=876543210",
+        };
+
+        fn scanSingle(str: []const u8) !u64 {
+            const res = try sscanSlow(str, "{}={}", struct {
+                a: u32,
+                b: u32,
+            });
+            return u64(res.a) + res.b;
+        }
+
+        fn sscanSingle(str: []const u8) !u64 {
+            const res = try sscan(str, "{}={}", struct {
+                a: u32,
+                b: u32,
+            });
+            return u64(res.a) + res.b;
+        }
     });
-    switch (T) {
-        []const u8, []u8 => debug.assert(mem.eql(u8, result.r, res)),
-        else => debug.assert(result.r == res),
-    }
 }
 
-fn testSScanError(comptime fmt: []const u8, str: []const u8, comptime T: type, err: anyerror) void {
-    debug.assertError(sscan(str, fmt, struct {
-        i: T,
-    }), err);
-}
+test "scan.sscan.benchmark.switch" {
+    try bench.benchmark(struct {
+        const args = [][]const u8{
+            "foo=0",
+            "foo.bar=0",
+            "foo.bar.baz=0",
+            "foo[0].bar[0].baz[0]=0",
+            "baz=0",
+            "baz.bar=0",
+            "baz.bar.baz=0",
+            "baz[0].bar[0].foo[0]=0",
+            "foo=9223372036854775807",
+            "foo.bar=9223372036854775807",
+            "foo.bar.baz=9223372036854775807",
+            "foo[9223372036854775807].bar[9223372036854775807].baz[9223372036854775807]=9223372036854775807",
+            "baz=9223372036854775807",
+            "baz.bar=9223372036854775807",
+            "baz.bar.baz=9223372036854775807",
+            "baz[9223372036854775807].bar[9223372036854775807].foo[9223372036854775807]=9223372036854775807",
+        };
 
-test "sscanInt" {
-    try testSScanOk("{}", "0", i64, 0);
-    try testSScanOk("{}", "-0", i64, 0);
-    try testSScanOk("{}", "+0", i64, 0);
-    try testSScanOk("{}", "1", i64, 1);
-    try testSScanOk("{}", "-1", i64, -1);
-    try testSScanOk("{}", "+1", i64, 1);
-    try testSScanOk("{}", "99", i64, 99);
-    try testSScanOk("{}", "-99", i64, -99);
-    try testSScanOk("{}", "+99", i64, 99);
-    try testSScanOk("{b}", "10", i64, 0b10);
-    try testSScanOk("{d}", "10", i64, 10);
-    try testSScanOk("{x}", "10", i64, 0x10);
-    try testSScanOk("{}a", "0a", i64, 0);
-    try testSScanOk("{}a", "-0a", i64, 0);
-    try testSScanOk("{}a", "+0a", i64, 0);
-    try testSScanOk("{}a", "1a", i64, 1);
-    try testSScanOk("{}a", "-1a", i64, -1);
-    try testSScanOk("{}a", "+1a", i64, 1);
-    try testSScanOk("{}a", "99a", i64, 99);
-    try testSScanOk("{}a", "-99a", i64, -99);
-    try testSScanOk("{}a", "+99a", i64, 99);
-    try testSScanOk("a{}a", "a0a", i64, 0);
-    try testSScanOk("a{}a", "a-0a", i64, 0);
-    try testSScanOk("a{}a", "a+0a", i64, 0);
-    try testSScanOk("a{}a", "a1a", i64, 1);
-    try testSScanOk("a{}a", "a-1a", i64, -1);
-    try testSScanOk("a{}a", "a+1a", i64, 1);
-    try testSScanOk("a{}a", "a99a", i64, 99);
-    try testSScanOk("a{}a", "a-99a", i64, -99);
-    try testSScanOk("a{}a", "a+99a", i64, 99);
+        const iterations = 1000000;
 
-    testSScanError("{}", "-0", u8, error.InvalidCharacter);
-    testSScanError("{}", "a", u8, error.InvalidCharacter);
-    testSScanError("{}", "256", u8, error.Overflow);
-    testSScanError("{}", "-a", i8, error.InvalidCharacter);
-    testSScanError("{}", "a", i8, error.InvalidCharacter);
-    testSScanError("{}", "128", i8, error.Overflow);
-    testSScanError("{}", "-129", i8, error.Overflow);
-    testSScanError(" {}", "1", i8, error.InvalidCharacter);
-}
+        fn scanSwitch(str: []const u8) u128 {
+            if (sscanSlow(str, "foo={}", struct {
+                a: u64,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscanSlow(str, "foo.bar={}", struct {
+                a: u64,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscanSlow(str, "foo.bar.baz={}", struct {
+                a: u64,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscanSlow(str, "foo[{}].bar[{}].baz[{}]={}", struct {
+                a: u64,
+                b: u64,
+                c: u64,
+                d: u64,
+            })) |v| {
+                return u128(v.a) + v.b + v.c + v.d;
+            } else |_| if (sscanSlow(str, "baz={}", struct {
+                a: u64,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscanSlow(str, "baz.bar={}", struct {
+                a: u64,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscanSlow(str, "baz.bar.foo={}", struct {
+                a: u64,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscanSlow(str, "baz[{}].bar[{}].foo[{}]={}", struct {
+                a: u64,
+                b: u64,
+                c: u64,
+                d: u64,
+            })) |v| {
+                return u128(v.a) + v.b + v.c + v.d;
+            } else |_| {
+                return 0;
+            }
+        }
 
-test "sscanBool" {
-    try testSScanOk("{}", "true", bool, true);
-    try testSScanOk("{}", "false", bool, false);
-    try testSScanOk("a{}", "atrue", bool, true);
-    try testSScanOk("a{}", "afalse", bool, false);
-    try testSScanOk("a{}a", "atruea", bool, true);
-    try testSScanOk("a{}a", "afalsea", bool, false);
-
-    testSScanError("{}", "qrue", bool, error.InvalidCharacter);
-    testSScanError("{}", "qalse", bool, error.InvalidCharacter);
-    testSScanError("{}", "frue", bool, error.InvalidCharacter);
-    testSScanError("{}", "talse", bool, error.InvalidCharacter);
+        fn sscanSwitch(str: []const u8) u128 {
+            if (sscan(str, "foo={}", struct {
+                a: u32,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscan(str, "foo.bar={}", struct {
+                a: u32,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscan(str, "foo.bar.baz={}", struct {
+                a: u32,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscanSlow(str, "foo[{}].bar[{}].baz[{}]={}", struct {
+                a: u64,
+                b: u64,
+                c: u64,
+                d: u64,
+            })) |v| {
+                return u128(v.a) + v.b + v.c + v.d;
+            } else |_| if (sscan(str, "baz={}", struct {
+                a: u32,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscan(str, "baz.bar={}", struct {
+                a: u32,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscan(str, "baz.bar.foo={}", struct {
+                a: u32,
+            })) |v| {
+                return v.a;
+            } else |_| if (sscanSlow(str, "baz[{}].bar[{}].foo[{}]={}", struct {
+                a: u64,
+                b: u64,
+                c: u64,
+                d: u64,
+            })) |v| {
+                return u128(v.a) + v.b + v.c + v.d;
+            } else |_| {
+                return 0;
+            }
+        }
+    });
 }
