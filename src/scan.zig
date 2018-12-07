@@ -328,7 +328,7 @@ test "scan.sscan.benchmark.switch" {
             "foo[0].bar[0].baz[0]=0",
             "baz=0",
             "baz.bar=0",
-            "baz.bar.baz=0",
+            "baz.bar.foo=0",
             "baz[0].bar[0].foo[0]=0",
             "foo=9223372036854775807",
             "foo.bar=9223372036854775807",
@@ -336,11 +336,11 @@ test "scan.sscan.benchmark.switch" {
             "foo[9223372036854775807].bar[9223372036854775807].baz[9223372036854775807]=9223372036854775807",
             "baz=9223372036854775807",
             "baz.bar=9223372036854775807",
-            "baz.bar.baz=9223372036854775807",
+            "baz.bar.foo=9223372036854775807",
             "baz[9223372036854775807].bar[9223372036854775807].foo[9223372036854775807]=9223372036854775807",
         };
 
-        const iterations = 1000000;
+        const iterations = 100000;
 
         fn scanSwitch(str: []const u8) u128 {
             if (sscanSlow(str, "foo={}", struct {
@@ -382,7 +382,7 @@ test "scan.sscan.benchmark.switch" {
             })) |v| {
                 return u128(v.a) + v.b + v.c + v.d;
             } else |_| {
-                return 0;
+                unreachable;
             }
         }
 
@@ -426,7 +426,7 @@ test "scan.sscan.benchmark.switch" {
             })) |v| {
                 return u128(v.a) + v.b + v.c + v.d;
             } else |_| {
-                return 0;
+                unreachable;
             }
         }
     });
