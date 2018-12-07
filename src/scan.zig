@@ -399,7 +399,7 @@ test "scan.sscan.benchmark.switch" {
                 a: u64,
             })) |v| {
                 return v.a;
-            } else |_| if (sscanSlow(str, "foo[{}].bar[{}].baz[{}]={}", struct {
+            } else |_| if (sscan(str, "foo[{}].bar[{}].baz[{}]={}", struct {
                 a: u64,
                 b: u64,
                 c: u64,
@@ -418,7 +418,7 @@ test "scan.sscan.benchmark.switch" {
                 a: u64,
             })) |v| {
                 return v.a;
-            } else |_| if (sscanSlow(str, "baz[{}].bar[{}].foo[{}]={}", struct {
+            } else |_| if (sscan(str, "baz[{}].bar[{}].foo[{}]={}", struct {
                 a: u64,
                 b: u64,
                 c: u64,
