@@ -35,13 +35,13 @@ pub fn Int(comptime Inner: type, comptime endian: builtin.Endian) type {
 
         pub fn init(v: Inner) Self {
             var res: Self = undefined;
-            mem.writeInt(res.bytes[0..], v, endian);
+            mem.writeInt(Inner, &res.bytes, v, endian);
 
             return res;
         }
 
         pub fn value(int: Self) Inner {
-            return mem.readInt(int.bytes[0..], Inner, endian);
+            return mem.readInt(Inner, &int.bytes, endian);
         }
     };
 }
