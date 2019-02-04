@@ -1,6 +1,5 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const utils = @import("utils.zig");
 
 const debug = std.debug;
 const mem = std.mem;
