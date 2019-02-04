@@ -37,7 +37,7 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
 
         TypeId.Null, TypeId.Void => return false,
 
-        TypeId.Undefined, TypeId.Type, TypeId.NoReturn, TypeId.Fn, TypeId.Namespace, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Struct, TypeId.Union, TypeId.Pointer => {
+        TypeId.Undefined, TypeId.Type, TypeId.NoReturn, TypeId.Fn, TypeId.Namespace, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Struct, TypeId.Union, TypeId.Pointer, TypeId.Vector, => {
             @compileError("Cannot get a default less than for " ++ @typeName(T));
             return false;
         },
@@ -194,7 +194,7 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
             return true;
         },
 
-        TypeId.Undefined, TypeId.NoReturn, TypeId.Namespace, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Union => {
+        TypeId.Undefined, TypeId.NoReturn, TypeId.Namespace, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Union, TypeId.Vector, => {
             @compileError("Cannot get a default equal for " ++ @typeName(T));
             return false;
         },
