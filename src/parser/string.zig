@@ -91,15 +91,15 @@ pub fn string(comptime s: []const u8) type {
 
 fn testSuccess(comptime P: type, str: []const u8, result: var) void {
     const res = P.parse(Input.init(str)) orelse unreachable;
-    debug.assert(res.input.str.len == 0);
-    comptime debug.assert(@sizeOf(P.Result) == @sizeOf(@typeOf(result)));
+    testing.expectEqual(res.input.str.len, 0);
+    comptime testing.expectEqual(@sizeOf(P.Result), @sizeOf(@typeOf(result)));
     if (@sizeOf(P.Result) != 0)
-        debug.assert(mem.eql(u8, mem.toBytes(res.result), mem.toBytes(result)));
+        testing.expectEqualSlices(u8, mem.toBytes(result), mem.toBytes(res.result));
 }
 
 fn testFail(comptime P: type, str: []const u8) void {
     if (P.parse(Input.init(str))) |res| {
-        debug.assert(res.input.str.len != 0);
+        testing.expect(res.input.str.len != 0);
     }
 }
 

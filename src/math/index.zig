@@ -4,6 +4,7 @@ pub const safe = @import("safe.zig");
 const std = @import("std");
 const math = std.math;
 const debug = std.debug;
+const testing = std.testing;
 
 test "math" {
     _ = interval;
@@ -26,16 +27,16 @@ fn digits(comptime N: type, comptime base: comptime_int, n: N) usize {
 }
 
 test "math.digits" {
-    debug.assert(digits(u1, 10, 0) == 1);
-    debug.assert(digits(u1, 10, 1) == 1);
-    debug.assert(digits(u2, 10, 3) == 1);
-    debug.assert(digits(u8, 10, 255) == 3);
-    debug.assert(digits(u1, 8, 0o0) == 1);
-    debug.assert(digits(u1, 8, 0o1) == 1);
-    debug.assert(digits(u2, 8, 0o3) == 1);
-    debug.assert(digits(u8, 8, 0o255) == 3);
-    debug.assert(digits(u1, 2, 0b0) == 1);
-    debug.assert(digits(u1, 2, 0b1) == 1);
-    debug.assert(digits(u2, 2, 0b11) == 2);
-    debug.assert(digits(u8, 2, 0b1111) == 4);
+    testing.expectEqual(digits(u1, 10, 0), 1);
+    testing.expectEqual(digits(u1, 10, 1), 1);
+    testing.expectEqual(digits(u2, 10, 3), 1);
+    testing.expectEqual(digits(u8, 10, 255), 3);
+    testing.expectEqual(digits(u1, 8, 0o0), 1);
+    testing.expectEqual(digits(u1, 8, 0o1), 1);
+    testing.expectEqual(digits(u2, 8, 0o3), 1);
+    testing.expectEqual(digits(u8, 8, 0o255), 3);
+    testing.expectEqual(digits(u1, 2, 0b0), 1);
+    testing.expectEqual(digits(u1, 2, 0b1), 1);
+    testing.expectEqual(digits(u2, 2, 0b11), 2);
+    testing.expectEqual(digits(u8, 2, 0b1111), 4);
 }

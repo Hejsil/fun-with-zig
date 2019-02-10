@@ -2,6 +2,7 @@ const builtin = @import("builtin");
 const std = @import("std");
 
 const debug = std.debug;
+const testing = std.testing;
 
 const TypeInfo = builtin.TypeInfo;
 const TypeId = builtin.TypeId;
@@ -77,22 +78,22 @@ pub fn Reify(comptime info: TypeInfo) type {
 
 test "reify: type" {
     const T = Reify(@typeInfo(type));
-    comptime debug.assert(T == type);
+    comptime testing.expectEqual(T, type);
 }
 
 test "reify: void" {
     const T = Reify(@typeInfo(void));
-    comptime debug.assert(T == void);
+    comptime testing.expectEqual(T, void);
 }
 
 test "reify: bool" {
     const T = Reify(@typeInfo(bool));
-    comptime debug.assert(T == bool);
+    comptime testing.expectEqual(T, bool);
 }
 
 test "reify: noreturn" {
     const T = Reify(@typeInfo(noreturn));
-    comptime debug.assert(T == noreturn);
+    comptime testing.expectEqual(T, noreturn);
 }
 
 test "reify: ix/ux" {
@@ -101,7 +102,7 @@ test "reify: ix/ux" {
         inline while (i < 256) : (i += 1) {
             const T1 = @IntType(signed, i);
             const T2 = Reify(@typeInfo(T1));
-            comptime debug.assert(T1 == T2);
+            comptime testing.expectEqual(T1, T2);
         }
     }
 }
@@ -109,7 +110,7 @@ test "reify: ix/ux" {
 test "reify: fx" {
     inline for ([]bool{ f16, f32, f64, f128 }) |F| {
         const T = Reify(@typeInfo(F));
-        comptime debug.assert(T == F);
+        comptime testing.expectEqual(T, F);
     }
 }
 
@@ -126,7 +127,7 @@ test "reify: *X" {
     };
     inline for (types) |P| {
         const T = Reify(@typeInfo(P));
-        comptime debug.assert(T == P);
+        comptime testing.expectEqual(T, P);
     }
 }
 
@@ -143,7 +144,7 @@ test "reify: [*]X" {
     };
     inline for (types) |P| {
         const T = Reify(@typeInfo(P));
-        comptime debug.assert(T == P);
+        comptime testing.expectEqual(T, P);
     }
 }
 
@@ -160,7 +161,7 @@ test "reify: []X" {
     };
     inline for (types) |P| {
         const T = Reify(@typeInfo(P));
-        comptime debug.assert(T == P);
+        comptime testing.expectEqual(T, P);
     }
 }
 
@@ -169,7 +170,7 @@ test "reify: [n]X" {
     while (i < 256) : (i += 1) {
         const T1 = [i]u8;
         const T2 = Reify(@typeInfo(T1));
-        comptime debug.assert(T1 == T2);
+        comptime testing.expectEqual(T1, T2);
     }
 }
 
@@ -179,13 +180,13 @@ test "reify: struct" {
 
 test "reify: ?X" {
     const T = Reify(@typeInfo(?u8));
-    comptime debug.assert(T == ?u8);
+    comptime testing.expectEqual(T, ?u8);
 }
 
 test "reify: X!Y" {
     const Set = error{};
     const T = Reify(@typeInfo(Set!u8));
-    comptime debug.assert(T == Set!u8);
+    comptime testing.expectEqual(T, Set!u8);
 }
 
 test "reify: error sets" {
@@ -207,7 +208,7 @@ test "reify: fn" {
 test "reify: namespace" {
     const T1 = @typeOf(@import("std").debug);
     const T2 = Reify(@typeInfo(T1));
-    comptime debug.assert(T1 == T2);
+    comptime testing.expectEqual(T1, T2);
 }
 
 test "reify: boundfn" {
@@ -220,12 +221,12 @@ test "reify: ..." {
 
 test "reify: @OpagueType()" {
     const T = Reify(@typeInfo(@OpagueType()));
-    comptime debug.assert(@typeInfo(T) == TypeId.Opague);
+    comptime testing.expectEqual(@typeInfo(T), TypeId.Opague);
 }
 
 test "reify: promise" {
     inline for ([]type{ promise, promise->u8 }) |P| {
         const T = Reify(@typeInfo(P));
-        comptime debug.assert(T == P);
+        comptime testing.expectEqual(T, P);
     }
 }

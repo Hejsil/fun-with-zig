@@ -1,4 +1,5 @@
-const assert = @import("std").debug.assert;
+const std = @import("std");
+const testing = std.testing;
 
 /// Composes two functions at compile time.
 pub fn compose(
@@ -31,10 +32,10 @@ test "functional.Example: functional.compose" {
     const thirdOneForth = compose([]const u8, []const u8, []const u8, secondHalf, firstHalf);
     const forthOneForth = compose([]const u8, []const u8, []const u8, secondHalf, secondHalf);
 
-    assert(mem.eql(u8, firstOneForth(str), "12"));
-    assert(mem.eql(u8, secondOneForth(str), "34"));
-    assert(mem.eql(u8, thirdOneForth(str), "56"));
-    assert(mem.eql(u8, forthOneForth(str), "78"));
+    testing.expectEqualSlices(u8, "12", firstOneForth(str));
+    testing.expectEqualSlices(u8, "34", secondOneForth(str));
+    testing.expectEqualSlices(u8, "56", thirdOneForth(str));
+    testing.expectEqualSlices(u8, "78", forthOneForth(str));
 }
 
 pub fn reverse(comptime X: type, comptime Y: type, comptime f: fn (X, X) Y) fn (X, X) Y {
@@ -60,5 +61,5 @@ test "functional.Example: functional.reverse" {
     var iarr = []i32{ 5, 3, 1, 2, 4 };
     sort.sort(i32, iarr[0..], comptime reverse(i32, bool, lt));
 
-    assert(mem.eql(i32, iarr, []i32{ 5, 4, 3, 2, 1 }));
+    testing.expectEqualSlices(i32, []i32{ 5, 4, 3, 2, 1 }, iarr);
 }

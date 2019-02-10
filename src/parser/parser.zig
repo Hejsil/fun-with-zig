@@ -113,7 +113,7 @@ fn OptParserResult(comptime parsers: []const type) type {
     debug.assert(parsers.len != 0);
     const Res = parsers[0].Result;
     for (parsers[1..]) |Par| {
-        debug.assert(Par.Result == Res);
+        testing.expectEqual(Par.Result, Res);
     }
 
     return Res;
@@ -143,15 +143,15 @@ fn isPred(comptime c: u8) fn (u8) bool {
 
 fn testSuccess(comptime P: type, str: []const u8, result: var) void {
     const res = P.parse(string.Input.init(str)) orelse unreachable;
-    debug.assert(res.input.str.len == 0);
-    comptime debug.assert(@sizeOf(P.Result) == @sizeOf(@typeOf(result)));
+    testing.expectEqual(res.input.str.len, 0);
+    comptime testing.expectEqual(@sizeOf(P.Result), @sizeOf(@typeOf(result)));
     if (@sizeOf(P.Result) != 0)
-        debug.assert(mem.eql(u8, mem.toBytes(res.result), mem.toBytes(result)));
+        testing.expectEqualSlices(u8, mem.toBytes(result), mem.toBytes(res.result));
 }
 
 fn testFail(comptime P: type, str: []const u8) void {
     if (P.parse(string.Input.init(str))) |res| {
-        debug.assert(res.input.str.len != 0);
+        testing.expect(res.input.str.len != 0);
     }
 }
 

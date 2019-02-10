@@ -1,5 +1,5 @@
 const std = @import("std");
-const debug = std.debug;
+const testing = std.testing;
 
 const Opaque = @OpaqueType();
 
@@ -49,17 +49,17 @@ test "Dynamic.value" {
         const dyn_string = Dynamic.init([]const u8, &([]const u8)("Hello World!"));
 
         // They are all the same static type, just like in dynamic typed languages
-        debug.assert(@typeOf(dyn_int) == @typeOf(dyn_float));
-        debug.assert(@typeOf(dyn_int) == @typeOf(dyn_string));
-        debug.assert(@typeOf(dyn_float) == @typeOf(dyn_string));
+        testing.expectEqual(@typeOf(dyn_int), @typeOf(dyn_float));
+        testing.expectEqual(@typeOf(dyn_int), @typeOf(dyn_string));
+        testing.expectEqual(@typeOf(dyn_float), @typeOf(dyn_string));
 
         // Their values, are not the same dynamic type though.
-        debug.assert(@typeOf(dyn_int.value()) != @typeOf(dyn_float.value()));
-        debug.assert(@typeOf(dyn_int.value()) != @typeOf(dyn_string.value()));
-        debug.assert(@typeOf(dyn_float.value()) != @typeOf(dyn_string.value()));
+        testing.expect(@typeOf(dyn_int.value()) != @typeOf(dyn_float.value()));
+        testing.expect(@typeOf(dyn_int.value()) != @typeOf(dyn_string.value()));
+        testing.expect(@typeOf(dyn_float.value()) != @typeOf(dyn_string.value()));
 
-        debug.assert(dyn_int.value() == 0);
-        debug.assert(dyn_float.value() == 1.0);
-        debug.assert(std.mem.eql(u8, dyn_string.value(), "Hello World!"));
+        testing.expectEqual(dyn_int.value(), 0);
+        testing.expectEqual(dyn_float.value(), 1.0);
+        testing.expectEqualSlices(u8, "Hello World!", dyn_string.value());
     }
 }

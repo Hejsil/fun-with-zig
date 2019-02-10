@@ -1,6 +1,7 @@
 const std = @import("std");
 const debug = std.debug;
 const mem = std.mem;
+const testing = std.testing;
 
 /// Determin the runtime size requirement of N types continues in memory (in bytes).
 fn runtimeSize(comptime fields: var) comptime_int {
@@ -86,7 +87,7 @@ test "struct" {
         res.ptr(2).* = 33;
         break :blk res;
     };
-    debug.assert(s.field(0) == 11);
-    debug.assert(s.field(1) == 22);
-    debug.assert(s.field(2) == 33);
+    testing.expectEqual(s.field(0), 11);
+    testing.expectEqual(s.field(1), 22);
+    testing.expectEqual(s.field(2), 33);
 }

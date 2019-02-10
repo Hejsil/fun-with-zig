@@ -1,5 +1,5 @@
 const std = @import("std");
-const debug = std.debug;
+const testing = std.testing;
 
 pub fn OpaqueHandle(comptime T: type, comptime hack_around_comptime_cache: type) type {
     return packed struct {
@@ -21,8 +21,8 @@ pub fn OpaqueHandle(comptime T: type, comptime hack_around_comptime_cache: type)
 test "OpaqueHandle" {
     const A = OpaqueHandle(u64, @OpaqueType());
     const B = OpaqueHandle(u64, @OpaqueType());
-    debug.assert(A != B);
+    testing.expect(A != B);
     const a = A.init(10);
     const b = B.init(10);
-    debug.assert(a.cast() == b.cast());
+    testing.expectEqual(a.cast(), b.cast());
 }

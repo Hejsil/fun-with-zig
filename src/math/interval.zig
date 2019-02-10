@@ -4,6 +4,7 @@ const builtin = @import("builtin");
 const math = std.math;
 const mem = std.mem;
 const debug = std.debug;
+const testing = std.testing;
 
 const min = @import("index.zig").min;
 const max = @import("index.zig").max;

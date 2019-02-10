@@ -2,24 +2,25 @@ const std = @import("std");
 const debug = std.debug;
 const math = std.math;
 const mem = std.mem;
+const testing = std.testing;
 
 pub fn isAlphanumeric(c: u7) bool {
     return isAlpha(c) or isDigit(c);
 }
 
 test "ascii.isAlphanumeric" {
-    debug.assert(!isAlphanumeric('.'));
-    debug.assert(isAlphanumeric('a'));
-    debug.assert(isAlphanumeric('z'));
-    debug.assert(isAlphanumeric('A'));
-    debug.assert(isAlphanumeric('Z'));
-    debug.assert(isAlphanumeric('0'));
-    debug.assert(isAlphanumeric('9'));
-    debug.assert(!isAlphanumeric(' '));
-    debug.assert(!isAlphanumeric('\t'));
-    debug.assert(!isAlphanumeric('\x00'));
-    debug.assert(!isAlphanumeric('\x1f'));
-    debug.assert(!isAlphanumeric('\x7f'));
+    testing.expect(!isAlphanumeric('.'));
+    testing.expect(isAlphanumeric('a'));
+    testing.expect(isAlphanumeric('z'));
+    testing.expect(isAlphanumeric('A'));
+    testing.expect(isAlphanumeric('Z'));
+    testing.expect(isAlphanumeric('0'));
+    testing.expect(isAlphanumeric('9'));
+    testing.expect(!isAlphanumeric(' '));
+    testing.expect(!isAlphanumeric('\t'));
+    testing.expect(!isAlphanumeric('\x00'));
+    testing.expect(!isAlphanumeric('\x1f'));
+    testing.expect(!isAlphanumeric('\x7f'));
 }
 
 pub fn isAlpha(c: u7) bool {
@@ -28,18 +29,18 @@ pub fn isAlpha(c: u7) bool {
 }
 
 test "ascii.isAlpha" {
-    debug.assert(!isAlpha('.'));
-    debug.assert(isAlpha('a'));
-    debug.assert(isAlpha('z'));
-    debug.assert(isAlpha('A'));
-    debug.assert(isAlpha('Z'));
-    debug.assert(!isAlpha('0'));
-    debug.assert(!isAlpha('9'));
-    debug.assert(!isAlpha(' '));
-    debug.assert(!isAlpha('\t'));
-    debug.assert(!isAlpha('\x00'));
-    debug.assert(!isAlpha('\x1f'));
-    debug.assert(!isAlpha('\x7f'));
+    testing.expect(!isAlpha('.'));
+    testing.expect(isAlpha('a'));
+    testing.expect(isAlpha('z'));
+    testing.expect(isAlpha('A'));
+    testing.expect(isAlpha('Z'));
+    testing.expect(!isAlpha('0'));
+    testing.expect(!isAlpha('9'));
+    testing.expect(!isAlpha(' '));
+    testing.expect(!isAlpha('\t'));
+    testing.expect(!isAlpha('\x00'));
+    testing.expect(!isAlpha('\x1f'));
+    testing.expect(!isAlpha('\x7f'));
 }
 
 pub fn isAscii(str: []const u8) bool {
@@ -50,9 +51,9 @@ pub fn isAscii(str: []const u8) bool {
 }
 
 test "ascii.isAscii" {
-    debug.assert(isAscii("\x00abc\x7f"));
-    debug.assert(!isAscii("\x80"));
-    debug.assert(!isAscii("\xFF"));
+    testing.expect(isAscii("\x00abc\x7f"));
+    testing.expect(!isAscii("\x80"));
+    testing.expect(!isAscii("\xFF"));
 }
 
 pub fn asAsciiConst(str: []const u8) ![]const u7 {
@@ -63,8 +64,10 @@ pub fn asAsciiConst(str: []const u8) ![]const u7 {
 }
 
 test "ascii.asAsciiConst" {
-    debug.assert(mem.eql(u7, try asAsciiConst("abc"), @bytesToSlice(u7, "abc")));
-    debug.assertError(asAsciiConst("\xFF"), error.IsNotAsciiString);
+    var str = "abc";
+    var invalid_str = "\xFF";
+    testing.expectEqualSlices(u7, @bytesToSlice(u7, str), try asAsciiConst(str[0..]));
+    testing.expectError(error.IsNotAsciiString, if (asAsciiConst(invalid_str[0..])) invalid_str else |err| err);
 }
 
 pub fn asAscii(str: []u8) ![]u7 {
@@ -77,8 +80,8 @@ pub fn asAscii(str: []u8) ![]u7 {
 test "ascii.asAscii" {
     var str = "abc";
     var invalid_str = "\xFF";
-    debug.assert(mem.eql(u7, try asAscii(str[0..]), @bytesToSlice(u7, str)));
-    debug.assertError(asAscii(invalid_str[0..]), error.IsNotAsciiString);
+    testing.expectEqualSlices(u7, @bytesToSlice(u7, str), try asAscii(str[0..]));
+    testing.expectError(error.IsNotAsciiString, if (asAscii(invalid_str[0..])) invalid_str else |err| err);
 }
 
 pub fn isControl(c: u7) bool {
@@ -86,18 +89,18 @@ pub fn isControl(c: u7) bool {
 }
 
 test "ascii.isControl" {
-    debug.assert(!isControl('.'));
-    debug.assert(!isControl('a'));
-    debug.assert(!isControl('z'));
-    debug.assert(!isControl('A'));
-    debug.assert(!isControl('Z'));
-    debug.assert(!isControl('0'));
-    debug.assert(!isControl('9'));
-    debug.assert(!isControl(' '));
-    debug.assert(isControl('\t'));
-    debug.assert(isControl('\x00'));
-    debug.assert(isControl('\x1f'));
-    debug.assert(isControl('\x7f'));
+    testing.expect(!isControl('.'));
+    testing.expect(!isControl('a'));
+    testing.expect(!isControl('z'));
+    testing.expect(!isControl('A'));
+    testing.expect(!isControl('Z'));
+    testing.expect(!isControl('0'));
+    testing.expect(!isControl('9'));
+    testing.expect(!isControl(' '));
+    testing.expect(isControl('\t'));
+    testing.expect(isControl('\x00'));
+    testing.expect(isControl('\x1f'));
+    testing.expect(isControl('\x7f'));
 }
 
 pub fn isDigit(c: u7) bool {
@@ -105,18 +108,18 @@ pub fn isDigit(c: u7) bool {
 }
 
 test "ascii.isDigit" {
-    debug.assert(!isDigit('.'));
-    debug.assert(!isDigit('a'));
-    debug.assert(!isDigit('z'));
-    debug.assert(!isDigit('A'));
-    debug.assert(!isDigit('Z'));
-    debug.assert(isDigit('0'));
-    debug.assert(isDigit('9'));
-    debug.assert(!isDigit(' '));
-    debug.assert(!isDigit('\t'));
-    debug.assert(!isDigit('\x00'));
-    debug.assert(!isDigit('\x1f'));
-    debug.assert(!isDigit('\x7f'));
+    testing.expect(!isDigit('.'));
+    testing.expect(!isDigit('a'));
+    testing.expect(!isDigit('z'));
+    testing.expect(!isDigit('A'));
+    testing.expect(!isDigit('Z'));
+    testing.expect(isDigit('0'));
+    testing.expect(isDigit('9'));
+    testing.expect(!isDigit(' '));
+    testing.expect(!isDigit('\t'));
+    testing.expect(!isDigit('\x00'));
+    testing.expect(!isDigit('\x1f'));
+    testing.expect(!isDigit('\x7f'));
 }
 
 pub fn isGraph(c: u7) bool {
@@ -124,18 +127,18 @@ pub fn isGraph(c: u7) bool {
 }
 
 test "ascii.isGraph" {
-    debug.assert(isGraph('.'));
-    debug.assert(isGraph('a'));
-    debug.assert(isGraph('z'));
-    debug.assert(isGraph('A'));
-    debug.assert(isGraph('Z'));
-    debug.assert(isGraph('0'));
-    debug.assert(isGraph('9'));
-    debug.assert(!isGraph(' '));
-    debug.assert(!isGraph('\t'));
-    debug.assert(!isGraph('\x00'));
-    debug.assert(!isGraph('\x1f'));
-    debug.assert(!isGraph('\x7f'));
+    testing.expect(isGraph('.'));
+    testing.expect(isGraph('a'));
+    testing.expect(isGraph('z'));
+    testing.expect(isGraph('A'));
+    testing.expect(isGraph('Z'));
+    testing.expect(isGraph('0'));
+    testing.expect(isGraph('9'));
+    testing.expect(!isGraph(' '));
+    testing.expect(!isGraph('\t'));
+    testing.expect(!isGraph('\x00'));
+    testing.expect(!isGraph('\x1f'));
+    testing.expect(!isGraph('\x7f'));
 }
 
 pub fn isLower(c: u7) bool {
@@ -143,18 +146,18 @@ pub fn isLower(c: u7) bool {
 }
 
 test "ascii.isLower" {
-    debug.assert(!isLower('.'));
-    debug.assert(isLower('a'));
-    debug.assert(isLower('z'));
-    debug.assert(!isLower('A'));
-    debug.assert(!isLower('Z'));
-    debug.assert(!isLower('0'));
-    debug.assert(!isLower('9'));
-    debug.assert(!isLower(' '));
-    debug.assert(!isLower('\t'));
-    debug.assert(!isLower('\x00'));
-    debug.assert(!isLower('\x1f'));
-    debug.assert(!isLower('\x7f'));
+    testing.expect(!isLower('.'));
+    testing.expect(isLower('a'));
+    testing.expect(isLower('z'));
+    testing.expect(!isLower('A'));
+    testing.expect(!isLower('Z'));
+    testing.expect(!isLower('0'));
+    testing.expect(!isLower('9'));
+    testing.expect(!isLower(' '));
+    testing.expect(!isLower('\t'));
+    testing.expect(!isLower('\x00'));
+    testing.expect(!isLower('\x1f'));
+    testing.expect(!isLower('\x7f'));
 }
 
 pub fn isPrintable(c: u7) bool {
@@ -162,18 +165,18 @@ pub fn isPrintable(c: u7) bool {
 }
 
 test "ascii.isPrintable" {
-    debug.assert(isPrintable('-'));
-    debug.assert(isPrintable('a'));
-    debug.assert(isPrintable('z'));
-    debug.assert(isPrintable('A'));
-    debug.assert(isPrintable('Z'));
-    debug.assert(isPrintable('0'));
-    debug.assert(isPrintable('9'));
-    debug.assert(isPrintable(' '));
-    debug.assert(!isPrintable('\t'));
-    debug.assert(!isPrintable('\x00'));
-    debug.assert(!isPrintable('\x1f'));
-    debug.assert(!isPrintable('\x7f'));
+    testing.expect(isPrintable('-'));
+    testing.expect(isPrintable('a'));
+    testing.expect(isPrintable('z'));
+    testing.expect(isPrintable('A'));
+    testing.expect(isPrintable('Z'));
+    testing.expect(isPrintable('0'));
+    testing.expect(isPrintable('9'));
+    testing.expect(isPrintable(' '));
+    testing.expect(!isPrintable('\t'));
+    testing.expect(!isPrintable('\x00'));
+    testing.expect(!isPrintable('\x1f'));
+    testing.expect(!isPrintable('\x7f'));
 }
 
 pub fn isPunctuation(c: u7) bool {
@@ -181,18 +184,18 @@ pub fn isPunctuation(c: u7) bool {
 }
 
 test "ascii.isPunctuation" {
-    debug.assert(isPunctuation('.'));
-    debug.assert(!isPunctuation('a'));
-    debug.assert(!isPunctuation('z'));
-    debug.assert(!isPunctuation('A'));
-    debug.assert(!isPunctuation('Z'));
-    debug.assert(!isPunctuation('0'));
-    debug.assert(!isPunctuation('9'));
-    debug.assert(!isPunctuation(' '));
-    debug.assert(!isPunctuation('\t'));
-    debug.assert(!isPunctuation('\x00'));
-    debug.assert(!isPunctuation('\x1f'));
-    debug.assert(!isPunctuation('\x7f'));
+    testing.expect(isPunctuation('.'));
+    testing.expect(!isPunctuation('a'));
+    testing.expect(!isPunctuation('z'));
+    testing.expect(!isPunctuation('A'));
+    testing.expect(!isPunctuation('Z'));
+    testing.expect(!isPunctuation('0'));
+    testing.expect(!isPunctuation('9'));
+    testing.expect(!isPunctuation(' '));
+    testing.expect(!isPunctuation('\t'));
+    testing.expect(!isPunctuation('\x00'));
+    testing.expect(!isPunctuation('\x1f'));
+    testing.expect(!isPunctuation('\x7f'));
 }
 
 pub fn isSpace(c: u7) bool {
@@ -200,18 +203,18 @@ pub fn isSpace(c: u7) bool {
 }
 
 test "ascii.isSpace" {
-    debug.assert(!isSpace('.'));
-    debug.assert(!isSpace('a'));
-    debug.assert(!isSpace('z'));
-    debug.assert(!isSpace('A'));
-    debug.assert(!isSpace('Z'));
-    debug.assert(!isSpace('0'));
-    debug.assert(!isSpace('9'));
-    debug.assert(isSpace(' '));
-    debug.assert(isSpace('\t'));
-    debug.assert(!isSpace('\x00'));
-    debug.assert(!isSpace('\x1f'));
-    debug.assert(!isSpace('\x7f'));
+    testing.expect(!isSpace('.'));
+    testing.expect(!isSpace('a'));
+    testing.expect(!isSpace('z'));
+    testing.expect(!isSpace('A'));
+    testing.expect(!isSpace('Z'));
+    testing.expect(!isSpace('0'));
+    testing.expect(!isSpace('9'));
+    testing.expect(isSpace(' '));
+    testing.expect(isSpace('\t'));
+    testing.expect(!isSpace('\x00'));
+    testing.expect(!isSpace('\x1f'));
+    testing.expect(!isSpace('\x7f'));
 }
 
 pub fn isUpper(c: u7) bool {
@@ -219,18 +222,18 @@ pub fn isUpper(c: u7) bool {
 }
 
 test "ascii.isUpper" {
-    debug.assert(!isUpper('.'));
-    debug.assert(!isUpper('a'));
-    debug.assert(!isUpper('z'));
-    debug.assert(isUpper('A'));
-    debug.assert(isUpper('Z'));
-    debug.assert(!isUpper('0'));
-    debug.assert(!isUpper('9'));
-    debug.assert(!isUpper(' '));
-    debug.assert(!isUpper('\t'));
-    debug.assert(!isUpper('\x00'));
-    debug.assert(!isUpper('\x1f'));
-    debug.assert(!isUpper('\x7f'));
+    testing.expect(!isUpper('.'));
+    testing.expect(!isUpper('a'));
+    testing.expect(!isUpper('z'));
+    testing.expect(isUpper('A'));
+    testing.expect(isUpper('Z'));
+    testing.expect(!isUpper('0'));
+    testing.expect(!isUpper('9'));
+    testing.expect(!isUpper(' '));
+    testing.expect(!isUpper('\t'));
+    testing.expect(!isUpper('\x00'));
+    testing.expect(!isUpper('\x1f'));
+    testing.expect(!isUpper('\x7f'));
 }
 
 pub fn isHex(c: u7) bool {
@@ -240,16 +243,16 @@ pub fn isHex(c: u7) bool {
 }
 
 test "ascii.isHex" {
-    debug.assert(!isHex('.'));
-    debug.assert(isHex('a'));
-    debug.assert(!isHex('z'));
-    debug.assert(isHex('A'));
-    debug.assert(!isHex('Z'));
-    debug.assert(isHex('0'));
-    debug.assert(isHex('9'));
-    debug.assert(!isHex(' '));
-    debug.assert(!isHex('\t'));
-    debug.assert(!isHex('\x00'));
-    debug.assert(!isHex('\x1f'));
-    debug.assert(!isHex('\x7f'));
+    testing.expect(!isHex('.'));
+    testing.expect(isHex('a'));
+    testing.expect(!isHex('z'));
+    testing.expect(isHex('A'));
+    testing.expect(!isHex('Z'));
+    testing.expect(isHex('0'));
+    testing.expect(isHex('9'));
+    testing.expect(!isHex(' '));
+    testing.expect(!isHex('\t'));
+    testing.expect(!isHex('\x00'));
+    testing.expect(!isHex('\x1f'));
+    testing.expect(!isHex('\x7f'));
 }

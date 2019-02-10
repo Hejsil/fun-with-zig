@@ -1,7 +1,11 @@
-const mem = @import("std").mem;
-const assert = @import("std").debug.assert;
-const TypeId = @import("builtin").TypeId;
-const TypeInfo = @import("builtin").TypeInfo;
+const std = @import("std");
+const builtin = @import("builtin");
+
+const mem = std.mem;
+const testing = std.testing;
+
+const TypeId = builtin.TypeId;
+const TypeInfo = builtin.TypeInfo;
 
 pub fn lessThan(comptime T: type, a: T, b: T) bool {
     const info = @typeInfo(T);
@@ -37,7 +41,20 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
 
         TypeId.Null, TypeId.Void => return false,
 
-        TypeId.Undefined, TypeId.Type, TypeId.NoReturn, TypeId.Fn, TypeId.Namespace, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Struct, TypeId.Union, TypeId.Pointer => {
+        TypeId.Vector,
+        TypeId.Undefined,
+        TypeId.Type,
+        TypeId.NoReturn,
+        TypeId.Fn,
+        TypeId.Namespace,
+        TypeId.BoundFn,
+        TypeId.ArgTuple,
+        TypeId.Opaque,
+        TypeId.Promise,
+        TypeId.Struct,
+        TypeId.Union,
+        TypeId.Pointer,
+        => {
             @compileError("Cannot get a default less than for " ++ @typeName(T));
             return false;
         },
@@ -45,66 +62,66 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
 }
 
 test "generic.compare.lessThan(u64)" {
-    assert(lessThan(u64, 1, 2));
-    assert(!lessThan(u64, 1, 1));
-    assert(!lessThan(u64, 1, 0));
+    testing.expect(lessThan(u64, 1, 2));
+    testing.expect(!lessThan(u64, 1, 1));
+    testing.expect(!lessThan(u64, 1, 0));
 }
 
 test "generic.compare.lessThan(i64)" {
-    assert(lessThan(i64, 0, 1));
-    assert(!lessThan(i64, 0, 0));
-    assert(!lessThan(i64, 0, -1));
+    testing.expect(lessThan(i64, 0, 1));
+    testing.expect(!lessThan(i64, 0, 0));
+    testing.expect(!lessThan(i64, 0, -1));
 }
 
 test "generic.compare.lessThan(comptime_int)" {
-    assert(lessThan(comptime_int, 0, 1));
-    assert(!lessThan(comptime_int, 0, 0));
-    assert(!lessThan(comptime_int, 0, -1));
+    testing.expect(lessThan(comptime_int, 0, 1));
+    testing.expect(!lessThan(comptime_int, 0, 0));
+    testing.expect(!lessThan(comptime_int, 0, -1));
 }
 
 test "generic.compare.lessThan(f64)" {
-    assert(lessThan(f64, 0, 1));
-    assert(!lessThan(f64, 0, 0));
-    assert(!lessThan(f64, 0, -1));
+    testing.expect(lessThan(f64, 0, 1));
+    testing.expect(!lessThan(f64, 0, 0));
+    testing.expect(!lessThan(f64, 0, -1));
 }
 
 test "generic.compare.lessThan(comptime_float)" {
-    assert(lessThan(comptime_float, 0.0, 1.0));
-    assert(!lessThan(comptime_float, 0.0, 0.0));
-    assert(!lessThan(comptime_float, 0.0, -1.0));
+    testing.expect(lessThan(comptime_float, 0.0, 1.0));
+    testing.expect(!lessThan(comptime_float, 0.0, 0.0));
+    testing.expect(!lessThan(comptime_float, 0.0, -1.0));
 }
 
 test "generic.compare.lessThan(bool)" {
-    assert(lessThan(bool, false, true));
-    assert(!lessThan(bool, true, true));
-    assert(!lessThan(bool, true, false));
+    testing.expect(lessThan(bool, false, true));
+    testing.expect(!lessThan(bool, true, true));
+    testing.expect(!lessThan(bool, true, false));
 }
 
 test "generic.compare.lessThan(?i64)" {
     const nul: ?i64 = null;
-    assert(lessThan(?i64, 0, 1));
-    assert(!lessThan(?i64, 0, 0));
-    assert(!lessThan(?i64, 0, -1));
-    assert(lessThan(?i64, nul, 0));
-    assert(!lessThan(?i64, nul, nul));
-    assert(!lessThan(?i64, 0, nul));
+    testing.expect(lessThan(?i64, 0, 1));
+    testing.expect(!lessThan(?i64, 0, 0));
+    testing.expect(!lessThan(?i64, 0, -1));
+    testing.expect(lessThan(?i64, nul, 0));
+    testing.expect(!lessThan(?i64, nul, nul));
+    testing.expect(!lessThan(?i64, 0, nul));
 }
 
 //TODO implement @typeInfo for global error set
 //test "generic.compare.lessThan(error!i64)" {
 //    const err : error!i64 = error.No;
-//    assert( lessThan(error!i64, 0,  1));
-//    assert(!lessThan(error!i64, 0,  0));
-//    assert(!lessThan(error!i64, 0, -1));
-//    assert( lessThan(error!i64, err, 0  ));
-//    assert(!lessThan(error!i64, err, err));
-//    assert(!lessThan(error!i64, 0  , err));
+//    testing.expect( lessThan(error!i64, 0,  1));
+//    testing.expect(!lessThan(error!i64, 0,  0));
+//    testing.expect(!lessThan(error!i64, 0, -1));
+//    testing.expect( lessThan(error!i64, err, 0  ));
+//    testing.expect(!lessThan(error!i64, err, err));
+//    testing.expect(!lessThan(error!i64, 0  , err));
 //}
 
 test "generic.compare.lessThan([1]u8)" {
-    assert(lessThan([1]u8, "1", "2"));
-    assert(!lessThan([1]u8, "1", "1"));
-    assert(!lessThan([1]u8, "1", "0"));
+    testing.expect(lessThan([1]u8, "1", "2"));
+    testing.expect(!lessThan([1]u8, "1", "1"));
+    testing.expect(!lessThan([1]u8, "1", "0"));
 }
 
 test "generic.compare.lessThan(enum)" {
@@ -112,24 +129,24 @@ test "generic.compare.lessThan(enum)" {
         A = 0,
         B = 1,
     };
-    assert(lessThan(E, E.A, E.B));
-    assert(!lessThan(E, E.B, E.B));
-    assert(!lessThan(E, E.B, E.A));
+    testing.expect(lessThan(E, E.A, E.B));
+    testing.expect(!lessThan(E, E.B, E.B));
+    testing.expect(!lessThan(E, E.B, E.A));
 }
 
 //TODO implement @typeInfo for global error set
 //test "generic.compare.lessThan(error)" {
-//    assert( lessThan(error, error.A, error.B));
-//    assert(!lessThan(error, error.B, error.B));
-//    assert(!lessThan(error, error.B, error.A));
+//    testing.expect( lessThan(error, error.A, error.B));
+//    testing.expect(!lessThan(error, error.B, error.B));
+//    testing.expect(!lessThan(error, error.B, error.A));
 //}
 
 //test "generic.compare.lessThan(null)" {
-//    comptime assert(!lessThan(@typeOf(null), null, null));
+//    comptime testing.expect(!lessThan(@typeOf(null), null, null));
 //}
 
 test "generic.compare.lessThan(void)" {
-    assert(!lessThan(void, void{}, void{}));
+    testing.expect(!lessThan(void, void{}, void{}));
 }
 
 pub fn equal(comptime T: type, a: T, b: T) bool {
@@ -194,7 +211,16 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
             return true;
         },
 
-        TypeId.Undefined, TypeId.NoReturn, TypeId.Namespace, TypeId.BoundFn, TypeId.ArgTuple, TypeId.Opaque, TypeId.Promise, TypeId.Union => {
+        TypeId.Vector,
+        TypeId.Undefined,
+        TypeId.NoReturn,
+        TypeId.Namespace,
+        TypeId.BoundFn,
+        TypeId.ArgTuple,
+        TypeId.Opaque,
+        TypeId.Promise,
+        TypeId.Union,
+        => {
             @compileError("Cannot get a default equal for " ++ @typeName(T));
             return false;
         },
@@ -208,34 +234,34 @@ fn fieldsEql(comptime T: type, comptime field: []const u8, a: T, b: T) bool {
 }
 
 test "generic.compare.equal(i32)" {
-    assert(equal(i32, 1, 1));
-    assert(!equal(i32, 0, 1));
+    testing.expect(equal(i32, 1, 1));
+    testing.expect(!equal(i32, 0, 1));
 }
 
 test "generic.compare.equal(comptime_int)" {
-    assert(equal(comptime_int, 1, 1));
-    assert(!equal(comptime_int, 0, 1));
+    testing.expect(equal(comptime_int, 1, 1));
+    testing.expect(!equal(comptime_int, 0, 1));
 }
 
 test "generic.compare.equal(f32)" {
-    assert(equal(f32, 1, 1));
-    assert(!equal(f32, 0, 1));
+    testing.expect(equal(f32, 1, 1));
+    testing.expect(!equal(f32, 0, 1));
 }
 
 test "generic.compare.equal(comptime_float)" {
-    assert(equal(comptime_float, 1.1, 1.1));
-    assert(!equal(comptime_float, 0.0, 1.1));
+    testing.expect(equal(comptime_float, 1.1, 1.1));
+    testing.expect(!equal(comptime_float, 0.0, 1.1));
 }
 
 test "generic.compare.equal(bool)" {
-    assert(equal(bool, true, true));
-    assert(!equal(bool, true, false));
+    testing.expect(equal(bool, true, true));
+    testing.expect(!equal(bool, true, false));
 }
 
 test "generic.compare.equal(type)" {
     comptime {
-        assert(equal(type, u8, u8));
-        assert(!equal(type, u16, u8));
+        testing.expect(equal(type, u8, u8));
+        testing.expect(!equal(type, u16, u8));
     }
 }
 
@@ -244,29 +270,29 @@ test "generic.compare.equal(enum)" {
         A,
         B,
     };
-    assert(equal(E, E.A, E.A));
-    assert(!equal(E, E.A, E.B));
+    testing.expect(equal(E, E.A, E.A));
+    testing.expect(!equal(E, E.A, E.B));
 }
 
 //TODO implement @typeInfo for global error set
 //test "generic.compare.equal(error)" {
-//    assert( equal(error, error.A, error.A));
-//    assert(!equal(error, error.A, error.B));
+//    testing.expect( equal(error, error.A, error.A));
+//    testing.expect(!equal(error, error.A, error.B));
 //}
 
 test "generic.compare.equal(&i64)" {
     var a: i64 = undefined;
     var b: i64 = undefined;
-    assert(equal(*i64, &a, &a));
-    assert(!equal(*i64, &a, &b));
+    testing.expect(equal(*i64, &a, &a));
+    testing.expect(!equal(*i64, &a, &b));
 }
 
 test "generic.compare.equal(?i64)" {
     var nul: ?i64 = null;
-    assert(equal(?i64, 1, 1));
-    assert(equal(?i64, nul, nul));
-    assert(!equal(?i64, 1, 0));
-    assert(!equal(?i64, 1, nul));
+    testing.expect(equal(?i64, 1, 1));
+    testing.expect(equal(?i64, nul, nul));
+    testing.expect(!equal(?i64, 1, 0));
+    testing.expect(!equal(?i64, 1, nul));
 }
 
 //TODO implement @typeInfo for global error set
@@ -274,25 +300,25 @@ test "generic.compare.equal(?i64)" {
 //    const a : error!i32 = 1;
 //    const b : error!i32 = error.TestError1;
 //    const errorEqual = equal(error!i32);
-//    assert( errorEqual(a, (error!i32)(1)));
-//    assert(!errorEqual(a, (error!i32)(0)));
-//    assert(!errorEqual(a, (error!i32)(error.TestError1)));
-//    assert( errorEqual(b, (error!i32)(error.TestError1)));
-//    assert(!errorEqual(b, (error!i32)(error.TestError2)));
-//    assert(!errorEqual(b, (error!i32)(0)));
+//    testing.expect( errorEqual(a, (error!i32)(1)));
+//    testing.expect(!errorEqual(a, (error!i32)(0)));
+//    testing.expect(!errorEqual(a, (error!i32)(error.TestError1)));
+//    testing.expect( errorEqual(b, (error!i32)(error.TestError1)));
+//    testing.expect(!errorEqual(b, (error!i32)(error.TestError2)));
+//    testing.expect(!errorEqual(b, (error!i32)(0)));
 //}
 
 test "generic.compare.equal([1]u8)" {
-    assert(equal([1]u8, "1", "1"));
-    assert(!equal([1]u8, "1", "0"));
+    testing.expect(equal([1]u8, "1", "1"));
+    testing.expect(!equal([1]u8, "1", "0"));
 }
 
 test "generic.compare.equal(null)" {
-    comptime assert(equal(@typeOf(null), null, null));
+    comptime testing.expect(equal(@typeOf(null), null, null));
 }
 
 test "generic.compare.equal(void)" {
-    assert(equal(void, void{}, void{}));
+    testing.expect(equal(void, void{}, void{}));
 }
 
 test "generic.compare.equal(struct)" {
@@ -300,15 +326,15 @@ test "generic.compare.equal(struct)" {
         a: u3,
         b: u3,
     };
-    assert(equal(Struct, Struct{ .a = 1, .b = 1 }, Struct{ .a = 1, .b = 1 }));
-    assert(!equal(Struct, Struct{ .a = 0, .b = 0 }, Struct{ .a = 1, .b = 1 }));
+    testing.expect(equal(Struct, Struct{ .a = 1, .b = 1 }, Struct{ .a = 1, .b = 1 }));
+    testing.expect(!equal(Struct, Struct{ .a = 0, .b = 0 }, Struct{ .a = 1, .b = 1 }));
 }
 
 test "generic.compare.equal([]const u8)" {
     const a = "1";
     const b = "0";
-    assert(equal([]const u8, a, a));
-    assert(!equal([]const u8, a, b));
+    testing.expect(equal([]const u8, a, a));
+    testing.expect(!equal([]const u8, a, b));
 }
 
 //unreachable
@@ -319,6 +345,6 @@ test "generic.compare.equal([]const u8)" {
 //        fn b() void {}
 //    };
 //
-//    assert( equal(fn()void, T.a, T.a));
-//    assert(!equal(fn()void, T.a, T.b));
+//    testing.expect( equal(fn()void, T.a, T.a));
+//    testing.expect(!equal(fn()void, T.a, T.b));
 //}

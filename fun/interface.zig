@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const debug = std.debug;
 const mem = std.mem;
-const assert = debug.assert;
+const testing = std.testing;
 
 pub const Self = @OpaqueType();
 
@@ -16,10 +16,10 @@ pub fn Interface(comptime T: type) type {
 
             inline for (info.defs) |def, i| {
                 const DefType = @field(T, def.name);
-                comptime assert(@typeOf(DefType) == type);
+                comptime debug.assert(@typeOf(DefType) == type);
 
                 const func_info = @typeInfo(DefType).Fn;
-                comptime assert(func_info.args[0].arg_type.? == *Self);
+                comptime debug.assert(func_info.args[0].arg_type.? == *Self);
 
                 const Type = FnType(State, func_info.args[1..], func_info.return_type.?);
                 const func: Type = @field(Funcs, def.name);
@@ -104,6 +104,6 @@ test "interface" {
     var sq = Sq{ .q = 3 };
     const ib = IA.init(Sb, &sb);
     const iq = IA.init(Sq, &sq);
-    assert(ib.call("a", u8(2)) == 5);
-    assert(iq.call("a", u8(2)) == 6);
+    testing.expectEqual(u8(5), ib.call("a", u8(2)));
+    testing.expectEqual(u8(6), iq.call("a", u8(2)));
 }

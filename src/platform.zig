@@ -3,8 +3,7 @@ const builtin = @import("builtin");
 
 const debug = std.debug;
 const mem = std.mem;
-
-const assert = debug.assert;
+const testing = std.testing;
 
 pub const lu16 = Int(u16, builtin.Endian.Little);
 pub const lu32 = Int(u32, builtin.Endian.Little);
@@ -46,11 +45,11 @@ pub fn Int(comptime Inner: type, comptime endian: builtin.Endian) type {
 }
 
 test "platform.Int" {
-    const value = 0x12345678;
+    const value: u32 = 0x12345678;
     const numLittle = Int(u32, builtin.Endian.Little).init(value);
     const numBig = Int(u32, builtin.Endian.Big).init(value);
-    assert(numLittle.value() == value);
-    assert(numBig.value() == value);
-    assert(mem.eql(u8, []u8{ 0x78, 0x56, 0x34, 0x12 }, numLittle.bytes));
-    assert(mem.eql(u8, []u8{ 0x12, 0x34, 0x56, 0x78 }, numBig.bytes));
+    testing.expectEqual(value, numLittle.value());
+    testing.expectEqual(value, numBig.value());
+    testing.expectEqualSlices(u8, []u8{ 0x78, 0x56, 0x34, 0x12 }, numLittle.bytes);
+    testing.expectEqualSlices(u8, []u8{ 0x12, 0x34, 0x56, 0x78 }, numBig.bytes);
 }

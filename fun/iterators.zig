@@ -1,7 +1,7 @@
 const std = @import("std");
 const debug = std.debug;
 const mem = std.mem;
-const assert = debug.assert;
+const testing = std.testing;
 
 // TODO: If we get functions with capture one day, then "comptime nextFn fn (&Context) ?Result" wont work, because then those
 //       can't be used. We could store the function in the iterator. The iterator will then just grow a little in size every
@@ -276,10 +276,10 @@ test "iterators.SliceIterator" {
 
     var i = usize(0);
     while (it.next()) |item| : (i += 1) {
-        assert(item == data[i]);
+        testing.expectEqual(data[i], item);
     }
 
-    assert(i == data.len);
+    testing.expectEqual(data.len, i);
 }
 
 test "iterators.SliceMutableIterator" {
@@ -291,7 +291,7 @@ test "iterators.SliceMutableIterator" {
         item.* += 1;
     }
 
-    assert(mem.eql(u8, data, res));
+    testing.expectEqualSlices(u8, data, res);
 }
 
 test "iterators.range" {
@@ -300,10 +300,10 @@ test "iterators.range" {
 
     var i = usize(0);
     while (it.next()) |item| : (i += 1) {
-        assert(item == res[i]);
+        testing.expectEqual(res[i], item);
     }
 
-    assert(i == res.len);
+    testing.expectEqual(res.len, i);
 }
 
 test "iterators.repeat" {
@@ -311,7 +311,7 @@ test "iterators.repeat" {
 
     var i = usize(0);
     while (it.next()) |item| : (i += 1) {
-        assert(item == 3);
+        testing.expectEqual(u64(3), item);
         if (i == 10) break;
     }
 }
@@ -320,10 +320,10 @@ test "iterators.empty" {
     var it = empty(u8);
     var i = usize(0);
     while (it.next()) |item| : (i += 1) {
-        assert(false);
+        testing.expect(false);
     }
 
-    assert(i == 0);
+    testing.expectEqual(usize(0), i);
 }
 
 test "iterators.aggregateAcc" {
@@ -334,7 +334,7 @@ test "iterators.aggregateAcc" {
         }
     }.f;
 
-    assert(aggregateAcc(SliceIterator(u8).init(data), u64(0), countA).? == 3);
+    testing.expectEqual(u64(3), aggregateAcc(SliceIterator(u8).init(data), u64(0), countA).?);
 }
 
 test "iterators.all" {
@@ -346,8 +346,8 @@ test "iterators.all" {
         }
     }.f;
 
-    assert(all(SliceIterator(u8).init(data1), isA));
-    assert(!all(SliceIterator(u8).init(data2), isA));
+    testing.expect(all(SliceIterator(u8).init(data1), isA));
+    testing.expect(!all(SliceIterator(u8).init(data2), isA));
 }
 
 test "iterators.any" {
@@ -359,8 +359,8 @@ test "iterators.any" {
         }
     }.f;
 
-    assert(!any(SliceIterator(u8).init(data1), isA));
-    assert(any(SliceIterator(u8).init(data2), isA));
+    testing.expect(!any(SliceIterator(u8).init(data1), isA));
+    testing.expect(any(SliceIterator(u8).init(data2), isA));
 }
 
 test "iterators.countIf" {
@@ -371,7 +371,7 @@ test "iterators.countIf" {
         }
     }.f;
 
-    assert(countIf(SliceIterator(u8).init(data), isA) == 2);
+    testing.expectEqual(usize(2), countIf(SliceIterator(u8).init(data), isA));
 }
 
 test "iterators.SliceIterator" {
@@ -380,10 +380,10 @@ test "iterators.SliceIterator" {
     var it = SliceIterator(u8).init(data);
     var i: usize = 0;
     while (it.next()) |item| : (i += 1) {
-        assert(item == data[i]);
+        testing.expectEqual(data[i], item);
     }
 
-    assert(i == data.len);
+    testing.expectEqual(data.len, i);
 }
 
 test "iterators.append: TODO" {}
@@ -399,12 +399,12 @@ test "iterators.concat" {
     var i: usize = 0;
     while (concatted.next()) |item| : (i += 1) {
         if (i < data1.len)
-            assert(item == data1[i])
+            testing.expectEqual(data1[i], item)
         else
-            assert(item == data2[i - data1.len]);
+            testing.expectEqual(data2[i - data1.len], item);
     }
 
-    assert(i == data1.len + data2.len);
+    testing.expectEqual(data1.len + data2.len, i);
 }
 
 test "iterators.except: TODO" {}
@@ -425,10 +425,10 @@ test "iterators.select" {
 
     var i: usize = 0;
     while (it.next()) |item| : (i += 1) {
-        assert(item == @floatToInt(i64, data[i]));
+        testing.expectEqual(@floatToInt(i64, data[i]), item);
     }
 
-    assert(i == data.len);
+    testing.expectEqual(data.len, i);
 }
 
 test "iterators.skip" {
@@ -439,10 +439,10 @@ test "iterators.skip" {
 
     var i: usize = 0;
     while (it.next()) |item| : (i += 1) {
-        assert(item == res[i]);
+        testing.expectEqual(res[i], item);
     }
 
-    assert(i == res.len);
+    testing.expectEqual(res.len, i);
 }
 
 test "iterators.skipWhile: TODO" {}
@@ -455,10 +455,10 @@ test "iterators.take" {
 
     var i: usize = 0;
     while (it.next()) |item| : (i += 1) {
-        assert(item == res[i]);
+        testing.expectEqual(res[i], item);
     }
 
-    assert(i == res.len);
+    testing.expectEqual(res.len, i);
 }
 
 test "iterators.takeWhile: TODO" {}
@@ -476,10 +476,10 @@ test "iterators.where" {
 
     var i: usize = 0;
     while (it.next()) |item| : (i += 1) {
-        assert(item == res[i]);
+        testing.expectEqual(res[i], item);
     }
 
-    assert(i == res.len);
+    testing.expectEqual(res.len, i);
 }
 
 test "iterators.zip" {
@@ -492,9 +492,9 @@ test "iterators.zip" {
 
     var i: usize = 0;
     while (zipped.next()) |item| : (i += 1) {
-        assert(item.first == data1[i]);
-        assert(item.second == data2[i]);
+        testing.expectEqual(data1[i], item.first);
+        testing.expectEqual(data2[i], item.second);
     }
 
-    assert(i == data1.len);
+    testing.expectEqual(data1.len, i);
 }

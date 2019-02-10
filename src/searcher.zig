@@ -6,6 +6,7 @@ const std = @import("std");
 const compare = generic.compare;
 const debug = std.debug;
 const mem = std.mem;
+const testing = std.testing;
 
 const TypeId = builtin.TypeId;
 const TypeInfo = builtin.TypeInfo;
@@ -153,8 +154,8 @@ test "searcher.Searcher.find" {
     const s_searcher2 = Searcher(S, [][]const []const u8{[][]const u8{"b"}}).init(s_byte_array);
 
     const search_for = S{ .a = 0, .b = 3 };
-    debug.assert(s_searcher1.find(search_for).? == &s_array[1]);
-    debug.assert(s_searcher2.find(search_for).? == &s_array[0]);
+    testing.expectEqual(s_searcher1.find(search_for).?, &s_array[1]);
+    testing.expectEqual(s_searcher2.find(search_for).?, &s_array[0]);
 }
 
 test "searcher.Searcher.findSlice" {
@@ -178,8 +179,8 @@ test "searcher.Searcher.findSlice" {
         S{ .a = 4, .b = 3 },
         S{ .a = 0, .b = 1 },
     };
-    debug.assert(compare.equal([]const S, s_searcher1.findSlice(search_for).?, s_array[1..3]));
-    debug.assert(compare.equal([]const S, s_searcher2.findSlice(search_for).?, s_array[0..2]));
+    testing.expect(compare.equal([]const S, s_searcher1.findSlice(search_for).?, s_array[1..3]));
+    testing.expect(compare.equal([]const S, s_searcher2.findSlice(search_for).?, s_array[0..2]));
 }
 
 test "searcher.Searcher.findSlice2" {
@@ -202,8 +203,8 @@ test "searcher.Searcher.findSlice2" {
 
     const a = S{ .a = 4, .b = 3 };
     const b = S{ .a = 4, .b = 3 };
-    debug.assert(compare.equal([]const S, s_searcher1.findSlice2(a, b).?, s_array[1..4]));
-    debug.assert(compare.equal([]const S, s_searcher2.findSlice2(a, b).?, s_array[0..3]));
+    testing.expect(compare.equal([]const S, s_searcher1.findSlice2(a, b).?, s_array[1..4]));
+    testing.expect(compare.equal([]const S, s_searcher2.findSlice2(a, b).?, s_array[0..3]));
 }
 
 test "searcher.Searcher.findSlice3" {
@@ -234,8 +235,8 @@ test "searcher.Searcher.findSlice3" {
         S{ .a = 0, .b = 1 },
         S{ .a = 4, .b = 3 },
     };
-    debug.assert(compare.equal([]const S, s_searcher1.findSlice3(a, b).?, s_array[1..6]));
-    debug.assert(compare.equal([]const S, s_searcher2.findSlice3(a, b).?, s_array[0..5]));
+    testing.expect(compare.equal([]const S, s_searcher1.findSlice3(a, b).?, s_array[1..6]));
+    testing.expect(compare.equal([]const S, s_searcher2.findSlice3(a, b).?, s_array[0..5]));
 }
 
 test "searcher.Searcher.benchmark" {

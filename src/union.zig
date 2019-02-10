@@ -3,6 +3,7 @@ const compare = @import("../src/generic");
 const debug = std.debug;
 const mem = std.mem;
 const math = std.math;
+const testing = std.testing;
 
 /// Determin the max runtime size requirement to a union of N types.
 fn runtimeSize(comptime fields: var) comptime_int {
@@ -100,13 +101,13 @@ test "union" {
     const a = T.init(0, 11);
     const b = T.init(1, 22);
     const c = T.init(2, 33);
-    debug.assert(a.field(0).? == 11);
-    debug.assert(b.field(0) == null);
-    debug.assert(c.field(0) == null);
-    debug.assert(a.field(1) == null);
-    debug.assert(b.field(1).? == 22);
-    debug.assert(c.field(1) == null);
-    debug.assert(a.field(2) == null);
-    debug.assert(b.field(2) == null);
-    debug.assert(c.field(2).? == 33);
+    testing.expectEqual(a.field(0).?, 11);
+    testing.expectEqual(b.field(0), null);
+    testing.expectEqual(c.field(0), null);
+    testing.expectEqual(a.field(1), null);
+    testing.expectEqual(b.field(1).?, 22);
+    testing.expectEqual(c.field(1), null);
+    testing.expectEqual(a.field(2), null);
+    testing.expectEqual(b.field(2), null);
+    testing.expectEqual(c.field(2).?, 33);
 }

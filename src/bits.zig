@@ -1,9 +1,7 @@
 const std = @import("std");
 
 const math = std.math;
-const debug = std.debug;
-
-const assert = debug.assert;
+const testing = std.testing;
 
 pub fn set(comptime Int: type, num: Int, bit: math.Log2Int(Int)) Int {
     return num | (Int(1) << bit);
@@ -11,8 +9,8 @@ pub fn set(comptime Int: type, num: Int, bit: math.Log2Int(Int)) Int {
 
 test "bits.set" {
     const v = u8(0b10);
-    assert(set(u8, v, 0) == 0b11);
-    assert(set(u8, v, 1) == 0b10);
+    testing.expectEqual(u8(0b11), set(u8, v, 0));
+    testing.expectEqual(u8(0b10), set(u8, v, 1));
 }
 
 pub fn clear(comptime Int: type, num: Int, bit: math.Log2Int(Int)) Int {
@@ -21,8 +19,8 @@ pub fn clear(comptime Int: type, num: Int, bit: math.Log2Int(Int)) Int {
 
 test "bits.clear" {
     const v = u8(0b10);
-    assert(clear(u8, v, 0) == 0b10);
-    assert(clear(u8, v, 1) == 0b00);
+    testing.expectEqual(u8(0b10), clear(u8, v, 0));
+    testing.expectEqual(u8(0b00), clear(u8, v, 1));
 }
 
 pub fn isSet(comptime Int: type, num: Int, bit: math.Log2Int(Int)) bool {
@@ -31,8 +29,8 @@ pub fn isSet(comptime Int: type, num: Int, bit: math.Log2Int(Int)) bool {
 
 test "bits.isSet" {
     const v = u8(0b10);
-    assert(isSet(u8, v, 0) == false);
-    assert(isSet(u8, v, 1) == true);
+    testing.expect(!isSet(u8, v, 0));
+    testing.expect(isSet(u8, v, 1));
 }
 
 pub fn toggle(comptime Int: type, num: Int, bit: math.Log2Int(Int)) Int {
@@ -41,8 +39,8 @@ pub fn toggle(comptime Int: type, num: Int, bit: math.Log2Int(Int)) Int {
 
 test "bits.toggle" {
     const v = u8(0b10);
-    assert(toggle(u8, v, 0) == 0b11);
-    assert(toggle(u8, v, 1) == 0b00);
+    testing.expectEqual(u8(0b11), toggle(u8, v, 0));
+    testing.expectEqual(u8(0b00), toggle(u8, v, 1));
 }
 
 pub fn count(comptime Int: type, num: Int) usize {
@@ -55,8 +53,8 @@ pub fn count(comptime Int: type, num: Int) usize {
 }
 
 test "bits.count" {
-    assert(count(u8, 0b0) == 0);
-    assert(count(u8, 0b1) == 1);
-    assert(count(u8, 0b101) == 2);
-    assert(count(u8, 0b11011) == 4);
+    testing.expectEqual(usize(0), count(u8, 0b0));
+    testing.expectEqual(usize(1), count(u8, 0b1));
+    testing.expectEqual(usize(2), count(u8, 0b101));
+    testing.expectEqual(usize(4), count(u8, 0b11011));
 }
