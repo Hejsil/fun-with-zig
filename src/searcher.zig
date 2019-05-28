@@ -1,6 +1,6 @@
 const bench = @import("bench");
 const builtin = @import("builtin");
-const generic = @import("generic/index.zig");
+const generic = @import("generic.zig");
 const std = @import("std");
 
 const compare = generic.compare;

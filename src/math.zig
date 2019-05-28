@@ -1,5 +1,5 @@
-pub const interval = @import("interval.zig");
-pub const safe = @import("safe.zig");
+pub const interval = @import("math/interval.zig");
+pub const safe = @import("math/safe.zig");
 
 const std = @import("std");
 const math = std.math;

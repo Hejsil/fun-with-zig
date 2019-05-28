@@ -46,7 +46,6 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
         TypeId.Type,
         TypeId.NoReturn,
         TypeId.Fn,
-        TypeId.Namespace,
         TypeId.BoundFn,
         TypeId.ArgTuple,
         TypeId.Opaque,
@@ -54,6 +53,7 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
         TypeId.Struct,
         TypeId.Union,
         TypeId.Pointer,
+        TypeId.EnumLiteral,
         => {
             @compileError("Cannot get a default less than for " ++ @typeName(T));
             return false;
@@ -163,6 +163,7 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
         TypeId.Fn,
         TypeId.Null,
         TypeId.Bool,
+        TypeId.EnumLiteral,
         => return a == b,
         // We don't follow pointers, as this would `lessThan` recursive on recursive types (like LinkedList
         TypeId.Pointer => |ptr| switch (ptr.size) {
@@ -214,7 +215,6 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
         TypeId.Vector,
         TypeId.Undefined,
         TypeId.NoReturn,
-        TypeId.Namespace,
         TypeId.BoundFn,
         TypeId.ArgTuple,
         TypeId.Opaque,

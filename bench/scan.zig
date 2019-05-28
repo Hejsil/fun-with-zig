@@ -15,7 +15,7 @@ fn sscanSlow(str: []const u8, comptime fmt: []const u8, comptime Res: type) !Res
 
 test "scan.sscan.benchmark.single" {
     try bench.benchmark(struct {
-        const args = [][]const u8{
+        pub const args = [][]const u8{
             "0=0",
             "10=10",
             "210=210",
@@ -27,7 +27,7 @@ test "scan.sscan.benchmark.single" {
             "876543210=876543210",
         };
 
-        fn scanSingle(str: []const u8) !u64 {
+        pub fn scanSingle(str: []const u8) !u64 {
             const res = try sscanSlow(str, "{}={}", struct {
                 a: u32,
                 b: u32,
@@ -35,7 +35,7 @@ test "scan.sscan.benchmark.single" {
             return u64(res.a) + res.b;
         }
 
-        fn sscanSingle(str: []const u8) !u64 {
+        pub fn sscanSingle(str: []const u8) !u64 {
             const res = try sscan(str, "{}={}", struct {
                 a: u32,
                 b: u32,
@@ -47,7 +47,7 @@ test "scan.sscan.benchmark.single" {
 
 test "scan.sscan.benchmark.switch" {
     try bench.benchmark(struct {
-        const args = [][]const u8{
+        pub const args = [][]const u8{
             "foo=0",
             "foo.bar=0",
             "foo.bar.baz=0",
@@ -66,9 +66,9 @@ test "scan.sscan.benchmark.switch" {
             "baz[9223372036854775807].bar[9223372036854775807].foo[9223372036854775807]=9223372036854775807",
         };
 
-        const iterations = 100000;
+        pub const iterations = 100000;
 
-        fn scanSwitch(str: []const u8) u128 {
+        pub fn scanSwitch(str: []const u8) u128 {
             if (sscanSlow(str, "foo={}", struct {
                 a: u64,
             })) |v| {
@@ -112,7 +112,7 @@ test "scan.sscan.benchmark.switch" {
             }
         }
 
-        fn sscanSwitch(str: []const u8) u128 {
+        pub fn sscanSwitch(str: []const u8) u128 {
             if (sscan(str, "foo={}", struct {
                 a: u64,
             })) |v| {

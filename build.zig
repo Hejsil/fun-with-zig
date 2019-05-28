@@ -10,7 +10,7 @@ pub fn build(b: *Builder) void {
     inline for ([]Mode{ Mode.Debug, Mode.ReleaseFast, Mode.ReleaseSafe, Mode.ReleaseSmall }) |test_mode| {
         const mode_str = comptime modeToString(test_mode);
 
-        const t = b.addTest("index.zig");
+        const t = b.addTest("fun.zig");
         t.setBuildMode(test_mode);
         t.setNamePrefix(mode_str ++ " ");
 
@@ -19,9 +19,9 @@ pub fn build(b: *Builder) void {
         test_all_step.dependOn(test_step);
 
 
-        const bench = b.addTest("bench/index.zig");        
-        bench.addPackagePath("bench", "lib/zig-bench/src/index.zig");
-        bench.addPackagePath("fun-with-zig", "index.zig");
+        const bench = b.addTest("bench.zig");        
+        bench.addPackagePath("bench", "lib/zig-bench/bench.zig");
+        bench.addPackagePath("fun-with-zig", "fun.zig");
         bench.setBuildMode(test_mode);
         bench.setNamePrefix(mode_str ++ " ");
 

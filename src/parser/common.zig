@@ -1,5 +1,6 @@
-const std = @import("std");
 const string = @import("string.zig");
+
+const std = @import("std");
 const @"struct" = @import("../struct.zig");
 const @"union" = @import("../union.zig");
 
@@ -10,6 +11,7 @@ const Union = @"union".Union;
 
 const debug = std.debug;
 const mem = std.mem;
+const testing = std.testing;
 
 pub fn ParseResult(comptime Input: type, comptime Result: type) type {
     return struct {
@@ -113,11 +115,48 @@ fn OptParserResult(comptime parsers: []const type) type {
     debug.assert(parsers.len != 0);
     const Res = parsers[0].Result;
     for (parsers[1..]) |Par| {
-        testing.expectEqual(Par.Result, Res);
+        //@compileLog(Par.Result, Res);
+        debug.assert(Par.Result == Res);
     }
 
     return Res;
 }
+
+pub fn then(
+    comptime Parser: type,
+    comptime Res: type,
+    comptime func: fn(Parser.Result) Res,
+) type {
+    return struct {
+        pub const Result = Res;
+
+        pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+            const parsed = Parser.parse(input) orelse return null;
+            const res = func(parsed.result);
+            return ParseResult(@typeOf(input), Result){
+                .input = parsed.input,
+                .result = res,
+            };
+        }
+    };
+}
+
+pub fn toVoid(comptime T: type) fn (T) void {
+    return struct {
+        fn toVoid(arg: T) void {}
+    }.toVoid;
+}
+
+pub const nothing = struct {
+    pub const Result = void;
+
+    pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+        return ParseResult(@typeOf(input), Result){
+            .input = input,
+            .result = {},
+        };
+    }
+};
 
 fn refFunc() type {
     unreachable;
@@ -143,7 +182,6 @@ fn isPred(comptime c: u8) fn (u8) bool {
 
 fn testSuccess(comptime P: type, str: []const u8, result: var) void {
     const res = P.parse(string.Input.init(str)) orelse unreachable;
-    testing.expectEqual(res.input.str.len, 0);
     comptime testing.expectEqual(@sizeOf(P.Result), @sizeOf(@typeOf(result)));
     if (@sizeOf(P.Result) != 0)
         testing.expectEqualSlices(u8, mem.toBytes(result), mem.toBytes(res.result));
@@ -189,4 +227,39 @@ test "parser.options" {
     testSuccess(P, "b", u8('b'));
     testSuccess(P, "c", u8('c'));
     testFail(P, "d");
+}
+
+test "parser.options" {
+    const A = eatIf(u8, comptime isPred('a'));
+    const B = eatIf(u8, comptime isPred('b'));
+    const C = eatIf(u8, comptime isPred('c'));
+    const P = options([]type{ A, B, C });
+
+    testSuccess(P, "a", u8('a'));
+    testSuccess(P, "b", u8('b'));
+    testSuccess(P, "c", u8('c'));
+    testFail(P, "d");
+}
+
+test "parser.then" {
+    const A = eatIf(u8, comptime isPred('a'));
+    const B = eatIf(u8, comptime isPred('b'));
+    const S = sequence([]type{ A, B });
+    const P = options([]type{
+        then(S, void, comptime toVoid(S.Result)),
+        then(A, void, comptime toVoid(A.Result)),
+    });
+
+    testSuccess(P, "a", {});
+    testSuccess(P, "ab", {});
+    testFail(P, "ba");
+}
+
+test "parser.nothing" {
+    testSuccess(nothing, "a", {});
+    testSuccess(nothing, "aaa", {});
+    testSuccess(nothing, "qqq", {});
+    testSuccess(nothing, "", {});
+    testSuccess(nothing, "2", {});
+    testSuccess(nothing, "10", {});
 }

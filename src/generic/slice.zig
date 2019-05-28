@@ -1,14 +1,42 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const mem = std.mem;
+const meta = std.meta;
 const debug = std.debug;
 const testing = std.testing;
 
-pub const BytesToSliceError = error{SizeMismatch};
+const TypeInfo = builtin.TypeInfo;
+const TypeId = builtin.TypeId;
 
-pub fn bytesToSlice(comptime Element: type, bytes: var) BytesToSliceError!@typeOf(@bytesToSlice(Element, bytes)) {
+fn ByteToSliceResult(comptime Elem: type, comptime SliceOrArray: type) type {
+    if (!meta.is(TypeId.Pointer)(SliceOrArray))
+        @compileError("EWRRWRESEDR");
+
+    const ptr = @typeInfo(SliceOrArray).Pointer;
+    const Child = switch (ptr.size) {
+        TypeInfo.Pointer.Size.One => blk: {
+            if (!meta.is(TypeId.Array)(ptr.child))
+                @compileError("ASDFSADF");
+
+            break :blk meta.Child(ptr.child);
+        },
+        TypeInfo.Pointer.Size.Slice => ptr.child,
+        else => @compileError("ASDFSDF"),
+    };
+
+    if (ptr.is_const and ptr.is_volatile)
+        return []align(ptr.alignment) const volatile Child;
+    if (ptr.is_const)
+        return []align(ptr.alignment) const Child;
+    if (ptr.is_volatile)
+        return []align(ptr.alignment) volatile Child;
+
+    return []align(ptr.alignment) Child;
+}
+
+pub fn bytesToSlice(comptime Element: type, bytes: var) !ByteToSliceResult(Element, @typeOf(bytes)) {
     if (bytes.len % @sizeOf(Element) != 0)
-        return BytesToSliceError.SizeMismatch;
+        return error.SizeMismatch;
 
     return @bytesToSlice(Element, bytes);
 }
@@ -56,7 +84,7 @@ test "generic.slice.bytesToSlice" {
     }
 }
 
-pub fn bytesToSliceTrim(comptime Element: type, bytes: var) @typeOf(@bytesToSlice(Element, bytes)) {
+pub fn bytesToSliceTrim(comptime Element: type, bytes: var) ByteToSliceResult(Element, @typeOf(bytes)) {
     const rem = bytes.len % @sizeOf(Element);
     return @bytesToSlice(Element, bytes[0 .. bytes.len - rem]);
 }

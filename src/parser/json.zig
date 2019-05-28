@@ -1,5 +1,5 @@
 const std = @import("std");
-use @import("parser.zig");
+use @import("common.zig");
 use @import("string.zig");
 
 const debug = std.debug;
@@ -119,12 +119,17 @@ fn wsRef() type {
     return ws;
 }
 
+const ws0x09 = sequence([]type{ char(0x09), ref(u8, wsRef) });
+const ws0x0a = sequence([]type{ char(0x0a), ref(u8, wsRef) });
+const ws0x0d = sequence([]type{ char(0x0d), ref(u8, wsRef) });
+const ws0x20 = sequence([]type{ char(0x20), ref(u8, wsRef) });
+
 const ws = options([]type{
-    sequence([]type{ char(0x09), ref(u8, wsRef) }),
-    sequence([]type{ char(0x0a), ref(u8, wsRef) }),
-    sequence([]type{ char(0x0d), ref(u8, wsRef) }),
-    sequence([]type{ char(0x20), ref(u8, wsRef) }),
-    string(""),
+    then(ws0x09, void, toVoid(ws0x09.Result)),
+    then(ws0x0a, void, toVoid(ws0x0a.Result)),
+    then(ws0x0d, void, toVoid(ws0x0d.Result)),
+    then(ws0x20, void, toVoid(ws0x20.Result)),
+    nothing,
 });
 
 //test "parser.json" {

@@ -8,20 +8,6 @@ const testing = std.testing;
 // TODO: We can't use comptime_int, because then all the methods on Interval don't compile
 const Interval = interval.Interval(i128);
 
-fn MakeInt(int: Interval) type {
-    comptime var i = 1;
-
-    // TODO: Naive loop to find the type that can contain the interval.
-    //       We can probably use log2 somehow to get the bitcount but meh.
-    while (true) : (i += 1) {
-        inline for ([]bool{ false, true }) |is_signed| {
-            const Int = @IntType(is_signed, i);
-            if (math.minInt(Int) <= int.min and int.max <= math.maxInt(Int))
-                return Int;
-        }
-    }
-}
-
 fn toInterval(comptime T: type) Interval {
     return Interval{
         .min = math.minInt(T),
@@ -32,7 +18,8 @@ fn toInterval(comptime T: type) Interval {
 fn Result(comptime A: type, comptime B: type, comptime operation: @typeOf(Interval.add)) type {
     const a = toInterval(A);
     const b = toInterval(B);
-    return MakeInt(operation(a, b));
+    const res = operation(a, b);
+    return math.IntFittingRange(res.min, res.max);
 }
 
 pub fn add(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.add) {

@@ -32,23 +32,23 @@ test "searcher.Searcher.benchmark" {
             .e = 5,
         }};
 
-        const args = [][]const A{
+        pub const args = [][]const A{
             (fill ** 256) ++ find,
             find ++ (fill ** 256),
             (fill ** 128) ++ find ++ (fill ** 128),
         };
 
-        fn @"Searcher (Skip 0)"(a: []const A) *const A {
+        pub fn @"Searcher (Skip 0)"(a: []const A) *const A {
             const s = Searcher(A, [][]const []const u8{}).init(@sliceToBytes(a));
             return s.find(find[0]).?;
         }
 
-        fn @"Searcher (Skip 1)"(a: []const A) *const A {
+        pub fn @"Searcher (Skip 1)"(a: []const A) *const A {
             const s = Searcher(A, [][]const []const u8{[][]const u8{"a"}}).init(@sliceToBytes(a));
             return s.find(find[0]).?;
         }
 
-        fn @"Searcher (Skip 2)"(a: []const A) *const A {
+        pub fn @"Searcher (Skip 2)"(a: []const A) *const A {
             const s = Searcher(A, [][]const []const u8{
                 [][]const u8{"a"},
                 [][]const u8{"b"},
@@ -56,7 +56,7 @@ test "searcher.Searcher.benchmark" {
             return s.find(find[0]).?;
         }
 
-        fn @"Searcher (Skip 3)"(a: []const A) *const A {
+        pub fn @"Searcher (Skip 3)"(a: []const A) *const A {
             const s = Searcher(A, [][]const []const u8{
                 [][]const u8{"a"},
                 [][]const u8{"b"},
@@ -65,7 +65,7 @@ test "searcher.Searcher.benchmark" {
             return s.find(find[0]).?;
         }
 
-        fn @"Searcher (Skip 4)"(a: []const A) *const A {
+        pub fn @"Searcher (Skip 4)"(a: []const A) *const A {
             const s = Searcher(A, [][]const []const u8{
                 [][]const u8{"a"},
                 [][]const u8{"b"},
@@ -75,7 +75,7 @@ test "searcher.Searcher.benchmark" {
             return s.find(find[0]).?;
         }
 
-        fn @"Searcher (Skip 5)"(a: []const A) *const A {
+        pub fn @"Searcher (Skip 5)"(a: []const A) *const A {
             const s = Searcher(A, [][]const []const u8{
                 [][]const u8{"a"},
                 [][]const u8{"b"},
@@ -86,7 +86,7 @@ test "searcher.Searcher.benchmark" {
             return s.find(find[0]).?;
         }
 
-        fn @"mem.indexOf"(a: []const A) *const A {
+        pub fn @"mem.indexOf"(a: []const A) *const A {
             const i = mem.indexOf(u8, @sliceToBytes(a), @sliceToBytes(find[0..])).?;
             return &a[i / @sizeOf(A)];
         }

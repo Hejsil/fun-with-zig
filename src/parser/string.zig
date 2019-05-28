@@ -1,10 +1,11 @@
 const std = @import("std");
-const parser = @import("parser.zig");
+const parser = @import("common.zig");
 
 const debug = std.debug;
 const math = std.math;
 const mem = std.mem;
 const fmt = std.fmt;
+const testing = std.testing;
 
 const ParseResult = parser.ParseResult;
 

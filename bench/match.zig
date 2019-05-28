@@ -267,7 +267,7 @@ const StringSwitch = fun.match.StringSwitch;
 // OK
 test "match.StringSwitch.benchmark" {
     try bench.benchmark(struct {
-        const args = [][]const u8{
+        pub const args = [][]const u8{
             "A" ** 1,
             "A" ** 2,
             "A" ** 4,
@@ -289,7 +289,7 @@ test "match.StringSwitch.benchmark" {
             "abcd" ** 1024,
         };
 
-        fn switch_StringSwitch(str: []const u8) usize {
+        pub fn switch_StringSwitch(str: []const u8) usize {
             @setEvalBranchQuota(100000);
             const sw = StringSwitch(args);
             switch (sw.match(str)) {
@@ -316,7 +316,7 @@ test "match.StringSwitch.benchmark" {
             }
         }
 
-        fn switch_hash_mem_eql(str: []const u8) usize {
+        pub fn switch_hash_mem_eql(str: []const u8) usize {
             @setEvalBranchQuota(100000);
             const hash = mem.hash_slice_u8;
             const eql = mem.eql_slice_u8;
@@ -401,7 +401,7 @@ test "match.StringSwitch.benchmark" {
             }
         }
 
-        fn switch_mem_eql(str: []const u8) usize {
+        pub fn switch_mem_eql(str: []const u8) usize {
             if (mem.eql(u8, "A" ** 1, str)) {
                 return 21;
             } else if (mem.eql(u8, "A" ** 2, str)) {
