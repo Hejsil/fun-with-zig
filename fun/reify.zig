@@ -12,7 +12,11 @@ pub fn Reify(comptime info: TypeInfo) type {
         TypeId.Type => type,
         TypeId.Void => void,
         TypeId.Bool => bool,
+        TypeId.Null => null,
+        TypeId.Undefined => @typeOf(undefined),
         TypeId.NoReturn => noreturn,
+        TypeId.ComptimeInt => comptime_int,
+        TypeId.ComptimeFloat => comptime_float,
         TypeId.Int => |int| @IntType(int.is_signed, int.bits),
         TypeId.Float => |float| switch (float.bits) {
             16 => f16,
@@ -21,7 +25,7 @@ pub fn Reify(comptime info: TypeInfo) type {
             128 => f128,
             else => @compileError("Float cannot be Reified with {TODO bits in error} bits"),
         },
-        TypeId.Pointer => |ptr| switch (ptr.Size) {
+        TypeId.Pointer => |ptr| switch (ptr.size) {
             TypeInfo.Pointer.Size.One => blk: {
                 if (ptr.is_const and ptr.is_volatile)
                     break :blk *align(ptr.alignment) const volatile ptr.child;
@@ -50,7 +54,17 @@ pub fn Reify(comptime info: TypeInfo) type {
                 if (ptr.is_volatile)
                     break :blk []align(ptr.alignment) volatile ptr.child;
 
-                break :blk [*]align(ptr.alignment) ptr.child;
+                break :blk []align(ptr.alignment) ptr.child;
+            },
+            TypeInfo.Pointer.Size.C => blk: {
+                if (ptr.is_const and ptr.is_volatile)
+                    break :blk [*c]align(ptr.alignment) const volatile ptr.child;
+                if (ptr.is_const)
+                    break :blk [*c]align(ptr.alignment) const ptr.child;
+                if (ptr.is_volatile)
+                    break :blk [*c]align(ptr.alignment) volatile ptr.child;
+
+                break :blk [*c]align(ptr.alignment) ptr.child;
             },
         },
         TypeId.Array => |arr| [arr.len]arr.child,
@@ -68,11 +82,11 @@ pub fn Reify(comptime info: TypeInfo) type {
         TypeId.Enum => |enu| @compileError("TODO"),
         TypeId.Union => |unio| @compileError("TODO"),
         TypeId.Fn => |func| @compileError("TODO"),
-        TypeId.Namespace => @typeOf(@import("std")),
         TypeId.BoundFn => |func| @compileError("TODO"),
         TypeId.ArgTuple => @compileError("TODO"),
         TypeId.Opaque => @OpaqueType(),
-        TypeId.Promis => |prom| if (prom.child) |child| promise->child else promise,
+        TypeId.Promise => |prom| if (prom.child) |child| promise->child else promise,
+        TypeId.Vector => @compileError("TODO"),
     };
 }
 
@@ -97,6 +111,7 @@ test "reify: noreturn" {
 }
 
 test "reify: ix/ux" {
+    @setEvalBranchQuota(10000);
     inline for ([]bool{ true, false }) |signed| {
         comptime var i = 0;
         inline while (i < 256) : (i += 1) {
@@ -108,14 +123,14 @@ test "reify: ix/ux" {
 }
 
 test "reify: fx" {
-    inline for ([]bool{ f16, f32, f64, f128 }) |F| {
+    inline for ([]type{ f16, f32, f64, f128 }) |F| {
         const T = Reify(@typeInfo(F));
         comptime testing.expectEqual(T, F);
     }
 }
 
 test "reify: *X" {
-    const types = []bool{
+    const types = []type{
         *u8,
         *const u8,
         *volatile u8,
@@ -132,7 +147,7 @@ test "reify: *X" {
 }
 
 test "reify: [*]X" {
-    const types = []bool{
+    const types = []type{
         [*]u8,
         [*]const u8,
         [*]volatile u8,
@@ -149,7 +164,7 @@ test "reify: [*]X" {
 }
 
 test "reify: []X" {
-    const types = []bool{
+    const types = []type{
         []u8,
         []const u8,
         []volatile u8,
@@ -166,8 +181,9 @@ test "reify: []X" {
 }
 
 test "reify: [n]X" {
+    @setEvalBranchQuota(10000);
     comptime var i = 0;
-    while (i < 256) : (i += 1) {
+    inline while (i < 256) : (i += 1) {
         const T1 = [i]u8;
         const T2 = Reify(@typeInfo(T1));
         comptime testing.expectEqual(T1, T2);
@@ -205,11 +221,11 @@ test "reify: fn" {
     return error.SkipZigTest;
 }
 
-test "reify: namespace" {
-    const T1 = @typeOf(@import("std").debug);
-    const T2 = Reify(@typeInfo(T1));
-    comptime testing.expectEqual(T1, T2);
-}
+//test "reify: namespace" {
+//    const T1 = @typeOf(@import("std").debug);
+//    const T2 = Reify(@typeInfo(T1));
+//    comptime testing.expectEqual(T1, T2);
+//}
 
 test "reify: boundfn" {
     return error.SkipZigTest;
@@ -219,9 +235,9 @@ test "reify: ..." {
     return error.SkipZigTest;
 }
 
-test "reify: @OpagueType()" {
-    const T = Reify(@typeInfo(@OpagueType()));
-    comptime testing.expectEqual(@typeInfo(T), TypeId.Opague);
+test "reify: @OpaqueType()" {
+    const T = Reify(@typeInfo(@OpaqueType()));
+    comptime testing.expectEqual(TypeId(@typeInfo(T)), TypeId.Opaque);
 }
 
 test "reify: promise" {
