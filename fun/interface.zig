@@ -9,12 +9,12 @@ pub const Self = @OpaqueType();
 pub fn Interface(comptime T: type) type {
     const info = @typeInfo(T).Struct;
     const VTable = struct {
-        funcs: [info.defs.len]fn () void,
+        funcs: [info.decls.len]fn () void,
 
         fn init(comptime Funcs: type, comptime State: type) @This() {
             var res: @This() = undefined;
 
-            inline for (info.defs) |def, i| {
+            inline for (info.decls) |def, i| {
                 const DefType = @field(T, def.name);
                 comptime debug.assert(@typeOf(DefType) == type);
 
@@ -30,11 +30,11 @@ pub fn Interface(comptime T: type) type {
         }
 
         fn dispatch(vtable: @This(), comptime fn_name: []const u8, self: *Self, args: ...) @field(T, fn_name).ReturnType {
-            inline for (info.defs) |def, i| {
-                if (comptime !mem.eql(u8, def.name, fn_name))
+            inline for (info.decls) |decl, i| {
+                if (comptime !mem.eql(u8, decl.name, fn_name))
                     continue;
 
-                const func = @ptrCast(@field(T, def.name), vtable.funcs[i]);
+                const func = @ptrCast(@field(T, decl.name), vtable.funcs[i]);
                 return switch (args.len) {
                     0 => func(self),
                     1 => func(self, args[0]),
