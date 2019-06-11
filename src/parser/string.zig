@@ -109,11 +109,11 @@ test "parser.string.char" {
 
     comptime var i = 0;
     inline while (i < 'a') : (i += 1)
-        testFail(P, []u8{i});
+        testFail(P, [_]u8{i});
     inline while (i <= 'a') : (i += 1)
-        testSuccess(P, []u8{i}, u8(i));
+        testSuccess(P, [_]u8{i}, u8(i));
     inline while (i <= math.maxInt(u8)) : (i += 1)
-        testFail(P, []u8{i});
+        testFail(P, [_]u8{i});
 }
 
 test "parser.string.range" {
@@ -121,15 +121,15 @@ test "parser.string.range" {
 
     comptime var i = 0;
     inline while (i < 'a') : (i += 1)
-        testFail(P, []u8{i});
+        testFail(P, [_]u8{i});
     inline while (i <= 'z') : (i += 1)
-        testSuccess(P, []u8{i}, u8(i));
+        testSuccess(P, [_]u8{i}, u8(i));
     inline while (i <= math.maxInt(u8)) : (i += 1)
-        testFail(P, []u8{i});
+        testFail(P, [_]u8{i});
 }
 
 test "parser.string.uint" {
-    for ([][]const u8{
+    for ([_][]const u8{
         "0000", "1111", "7777", "9999",
         "aaaa", "AAAA", "ffff", "FFFF",
         "zzzz", "ZZZZ", "0123", "4567",

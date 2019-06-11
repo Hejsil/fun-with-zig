@@ -50,6 +50,6 @@ test "platform.Int" {
     const numBig = Int(u32, builtin.Endian.Big).init(value);
     testing.expectEqual(value, numLittle.value());
     testing.expectEqual(value, numBig.value());
-    testing.expectEqualSlices(u8, []u8{ 0x78, 0x56, 0x34, 0x12 }, numLittle.bytes);
-    testing.expectEqualSlices(u8, []u8{ 0x12, 0x34, 0x56, 0x78 }, numBig.bytes);
+    testing.expectEqualSlices(u8, [_]u8{ 0x78, 0x56, 0x34, 0x12 }, numLittle.bytes);
+    testing.expectEqualSlices(u8, [_]u8{ 0x12, 0x34, 0x56, 0x78 }, numBig.bytes);
 }

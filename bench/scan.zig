@@ -15,7 +15,7 @@ fn sscanSlow(str: []const u8, comptime fmt: []const u8, comptime Res: type) !Res
 
 test "scan.sscan.benchmark.single" {
     try bench.benchmark(struct {
-        pub const args = [][]const u8{
+        pub const args = [_][]const u8{
             "0=0",
             "10=10",
             "210=210",
@@ -47,7 +47,7 @@ test "scan.sscan.benchmark.single" {
 
 test "scan.sscan.benchmark.switch" {
     try bench.benchmark(struct {
-        pub const args = [][]const u8{
+        pub const args = [_][]const u8{
             "foo=0",
             "foo.bar=0",
             "foo.bar.baz=0",

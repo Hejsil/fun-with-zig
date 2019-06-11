@@ -74,7 +74,7 @@ pub fn Struct(comptime Key: type, comptime field_array: var) type {
 }
 
 test "struct" {
-    const T = Struct(u8, []Field(u8){
+    const T = Struct(u8, [_]Field(u8){
         Field(u8).init(0, u8),
         Field(u8).init(1, u16),
         Field(u8).init(2, f32),

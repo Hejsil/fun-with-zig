@@ -414,7 +414,7 @@ test "iterators.intersect: TODO" {}
 test "iterators.prepend: TODO" {}
 
 test "iterators.select" {
-    const data = []f64{ 1.5, 2.5, 3.5 };
+    const data = [_]f64{ 1.5, 2.5, 3.5 };
     const toI64 = struct {
         fn f(i: f64) i64 {
             return @floatToInt(i64, i);

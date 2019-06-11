@@ -41,7 +41,7 @@ pub fn StringSwitch(comptime strings: []const []const u8) type {
 
 test "match.StringSwitch" {
     @setEvalBranchQuota(1000000);
-    const strings = [][]const u8{
+    const strings = [_][]const u8{
         "A",
         "AA",
         "AAA",

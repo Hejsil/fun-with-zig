@@ -22,16 +22,16 @@ pub fn Searcher(comptime T: type, comptime ignored_fields: []const []const []con
         }
 
         pub fn find(searcher: @This(), item: T) ?*const T {
-            const slice = searcher.findSlice([]T{item}) orelse return null;
+            const slice = searcher.findSlice([_]T{item}) orelse return null;
             return &slice[0];
         }
 
         pub fn findSlice(searcher: @This(), items: []const T) ?[]const T {
-            return searcher.findSlice3(items, []T{});
+            return searcher.findSlice3(items, [_]T{});
         }
 
         pub fn findSlice2(searcher: @This(), start: T, end: T) ?[]const T {
-            return searcher.findSlice3([]T{start}, []T{end}) orelse return null;
+            return searcher.findSlice3([_]T{start}, [_]T{end}) orelse return null;
         }
 
         pub fn findSlice3(searcher: @This(), start: []const T, end: []const T) ?[]const T {
@@ -112,7 +112,7 @@ fn matches(comptime T: type, comptime ignored_fields: []const []const []const u8
         },
         TypeId.Struct => |struct_info| {
             const next_ignored = comptime blk: {
-                var res: []const []const []const u8 = [][]const []const u8{};
+                var res: []const []const []const u8 = [_][]const []const u8{};
                 for (ignored_fields) |fields| {
                     if (fields.len > 1)
                         res = res ++ fields[1..];
@@ -142,16 +142,16 @@ test "searcher.Searcher.find" {
         a: u16,
         b: u32,
     };
-    const s_array = []S{
+    const s_array = [_]S{
         S{ .a = 0, .b = 1 },
         S{ .a = 2, .b = 3 },
     };
     const s_byte_array = @sliceToBytes(s_array[0..]);
-    const s_searcher1 = Searcher(S, [][]const []const u8{
-        [][]const u8{"a"},
-        [][]const u8{"hack"}, // TODO: https://github.com/ziglang/zig/issues/1608
+    const s_searcher1 = Searcher(S, [_][]const []const u8{
+        [_][]const u8{"a"},
+        [_][]const u8{"hack"}, // TODO: https://github.com/ziglang/zig/issues/1608
     }).init(s_byte_array);
-    const s_searcher2 = Searcher(S, [][]const []const u8{[][]const u8{"b"}}).init(s_byte_array);
+    const s_searcher2 = Searcher(S, [_][]const []const u8{[_][]const u8{"b"}}).init(s_byte_array);
 
     const search_for = S{ .a = 0, .b = 3 };
     testing.expectEqual(s_searcher1.find(search_for).?, &s_array[1]);
@@ -163,19 +163,19 @@ test "searcher.Searcher.findSlice" {
         a: u16,
         b: u32,
     };
-    const s_array = []S{
+    const s_array = [_]S{
         S{ .a = 4, .b = 1 },
         S{ .a = 0, .b = 3 },
         S{ .a = 4, .b = 1 },
     };
     const s_byte_array = @sliceToBytes(s_array[0..]);
-    const s_searcher1 = Searcher(S, [][]const []const u8{
-        [][]const u8{"a"},
-        [][]const u8{"hack"}, // TODO: https://github.com/ziglang/zig/issues/1608
+    const s_searcher1 = Searcher(S, [_][]const []const u8{
+        [_][]const u8{"a"},
+        [_][]const u8{"hack"}, // TODO: https://github.com/ziglang/zig/issues/1608
     }).init(s_byte_array);
-    const s_searcher2 = Searcher(S, [][]const []const u8{[][]const u8{"b"}}).init(s_byte_array);
+    const s_searcher2 = Searcher(S, [_][]const []const u8{[_][]const u8{"b"}}).init(s_byte_array);
 
-    const search_for = []S{
+    const search_for = [_]S{
         S{ .a = 4, .b = 3 },
         S{ .a = 0, .b = 1 },
     };
@@ -188,18 +188,18 @@ test "searcher.Searcher.findSlice2" {
         a: u16,
         b: u32,
     };
-    const s_array = []S{
+    const s_array = [_]S{
         S{ .a = 4, .b = 1 },
         S{ .a = 0, .b = 3 },
         S{ .a = 4, .b = 1 },
         S{ .a = 0, .b = 3 },
     };
     const s_byte_array = @sliceToBytes(s_array[0..]);
-    const s_searcher1 = Searcher(S, [][]const []const u8{
-        [][]const u8{"a"},
-        [][]const u8{"hack"}, // TODO: https://github.com/ziglang/zig/issues/1608
+    const s_searcher1 = Searcher(S, [_][]const []const u8{
+        [_][]const u8{"a"},
+        [_][]const u8{"hack"}, // TODO: https://github.com/ziglang/zig/issues/1608
     }).init(s_byte_array);
-    const s_searcher2 = Searcher(S, [][]const []const u8{[][]const u8{"b"}}).init(s_byte_array);
+    const s_searcher2 = Searcher(S, [_][]const []const u8{[_][]const u8{"b"}}).init(s_byte_array);
 
     const a = S{ .a = 4, .b = 3 };
     const b = S{ .a = 4, .b = 3 };
@@ -212,7 +212,7 @@ test "searcher.Searcher.findSlice3" {
         a: u16,
         b: u32,
     };
-    const s_array = []S{
+    const s_array = [_]S{
         S{ .a = 4, .b = 1 },
         S{ .a = 0, .b = 3 },
         S{ .a = 4, .b = 1 },
@@ -221,17 +221,17 @@ test "searcher.Searcher.findSlice3" {
         S{ .a = 0, .b = 3 },
     };
     const s_byte_array = @sliceToBytes(s_array[0..]);
-    const s_searcher1 = Searcher(S, [][]const []const u8{
-        [][]const u8{"a"},
-        [][]const u8{"hack"}, // TODO: https://github.com/ziglang/zig/issues/1608
+    const s_searcher1 = Searcher(S, [_][]const []const u8{
+        [_][]const u8{"a"},
+        [_][]const u8{"hack"}, // TODO: https://github.com/ziglang/zig/issues/1608
     }).init(s_byte_array);
-    const s_searcher2 = Searcher(S, [][]const []const u8{[][]const u8{"b"}}).init(s_byte_array);
+    const s_searcher2 = Searcher(S, [_][]const []const u8{[_][]const u8{"b"}}).init(s_byte_array);
 
-    const a = []S{
+    const a = [_]S{
         S{ .a = 4, .b = 3 },
         S{ .a = 0, .b = 1 },
     };
-    const b = []S{
+    const b = [_]S{
         S{ .a = 0, .b = 1 },
         S{ .a = 4, .b = 3 },
     };

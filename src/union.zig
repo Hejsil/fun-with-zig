@@ -93,7 +93,7 @@ pub fn Union(comptime Key: type, comptime field_array: var) type {
 }
 
 test "union" {
-    const T = Union(u8, []Field(u8){
+    const T = Union(u8, [_]Field(u8){
         Field(u8).init(0, u8),
         Field(u8).init(1, u16),
         Field(u8).init(2, f32),

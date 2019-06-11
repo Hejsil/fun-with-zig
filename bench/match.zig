@@ -267,7 +267,7 @@ const StringSwitch = fun.match.StringSwitch;
 // OK
 test "match.StringSwitch.benchmark" {
     try bench.benchmark(struct {
-        pub const args = [][]const u8{
+        pub const args = [_][]const u8{
             "A" ** 1,
             "A" ** 2,
             "A" ** 4,

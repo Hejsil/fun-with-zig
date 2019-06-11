@@ -16,7 +16,7 @@ test "searcher.Searcher.benchmark" {
             e: u64,
         };
 
-        const fill = []A{A{
+        const fill = [_]A{A{
             .a = 1,
             .b = 2,
             .c = 3,
@@ -24,7 +24,7 @@ test "searcher.Searcher.benchmark" {
             .e = 5,
         }};
 
-        const find = []A{A{
+        const find = [_]A{A{
             .a = 5,
             .b = 5,
             .c = 5,
@@ -32,56 +32,56 @@ test "searcher.Searcher.benchmark" {
             .e = 5,
         }};
 
-        pub const args = [][]const A{
+        pub const args = [_][]const A{
             (fill ** 256) ++ find,
             find ++ (fill ** 256),
             (fill ** 128) ++ find ++ (fill ** 128),
         };
 
         pub fn @"Searcher (Skip 0)"(a: []const A) *const A {
-            const s = Searcher(A, [][]const []const u8{}).init(@sliceToBytes(a));
+            const s = Searcher(A, [_][]const []const u8{}).init(@sliceToBytes(a));
             return s.find(find[0]).?;
         }
 
         pub fn @"Searcher (Skip 1)"(a: []const A) *const A {
-            const s = Searcher(A, [][]const []const u8{[][]const u8{"a"}}).init(@sliceToBytes(a));
+            const s = Searcher(A, [_][]const []const u8{[_][]const u8{"a"}}).init(@sliceToBytes(a));
             return s.find(find[0]).?;
         }
 
         pub fn @"Searcher (Skip 2)"(a: []const A) *const A {
-            const s = Searcher(A, [][]const []const u8{
-                [][]const u8{"a"},
-                [][]const u8{"b"},
+            const s = Searcher(A, [_][]const []const u8{
+                [_][]const u8{"a"},
+                [_][]const u8{"b"},
             }).init(@sliceToBytes(a));
             return s.find(find[0]).?;
         }
 
         pub fn @"Searcher (Skip 3)"(a: []const A) *const A {
-            const s = Searcher(A, [][]const []const u8{
-                [][]const u8{"a"},
-                [][]const u8{"b"},
-                [][]const u8{"c"},
+            const s = Searcher(A, [_][]const []const u8{
+                [_][]const u8{"a"},
+                [_][]const u8{"b"},
+                [_][]const u8{"c"},
             }).init(@sliceToBytes(a));
             return s.find(find[0]).?;
         }
 
         pub fn @"Searcher (Skip 4)"(a: []const A) *const A {
-            const s = Searcher(A, [][]const []const u8{
-                [][]const u8{"a"},
-                [][]const u8{"b"},
-                [][]const u8{"c"},
-                [][]const u8{"d"},
+            const s = Searcher(A, [_][]const []const u8{
+                [_][]const u8{"a"},
+                [_][]const u8{"b"},
+                [_][]const u8{"c"},
+                [_][]const u8{"d"},
             }).init(@sliceToBytes(a));
             return s.find(find[0]).?;
         }
 
         pub fn @"Searcher (Skip 5)"(a: []const A) *const A {
-            const s = Searcher(A, [][]const []const u8{
-                [][]const u8{"a"},
-                [][]const u8{"b"},
-                [][]const u8{"c"},
-                [][]const u8{"d"},
-                [][]const u8{"e"},
+            const s = Searcher(A, [_][]const []const u8{
+                [_][]const u8{"a"},
+                [_][]const u8{"b"},
+                [_][]const u8{"c"},
+                [_][]const u8{"d"},
+                [_][]const u8{"e"},
             }).init(@sliceToBytes(a));
             return s.find(find[0]).?;
         }

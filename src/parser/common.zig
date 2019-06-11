@@ -211,7 +211,7 @@ test "parser.sequence" {
     const A = eatIf(u8, comptime isPred('a'));
     const B = eatIf(u8, comptime isPred('b'));
     const C = eatIf(u8, comptime isPred('c'));
-    const P = sequence([]type{ A, B, C });
+    const P = sequence([_]type{ A, B, C });
 
     testSuccess(P, "abc", "abc");
     testFail(P, "cba");
@@ -221,7 +221,7 @@ test "parser.options" {
     const A = eatIf(u8, comptime isPred('a'));
     const B = eatIf(u8, comptime isPred('b'));
     const C = eatIf(u8, comptime isPred('c'));
-    const P = options([]type{ A, B, C });
+    const P = options([_]type{ A, B, C });
 
     testSuccess(P, "a", u8('a'));
     testSuccess(P, "b", u8('b'));
@@ -233,7 +233,7 @@ test "parser.options" {
     const A = eatIf(u8, comptime isPred('a'));
     const B = eatIf(u8, comptime isPred('b'));
     const C = eatIf(u8, comptime isPred('c'));
-    const P = options([]type{ A, B, C });
+    const P = options([_]type{ A, B, C });
 
     testSuccess(P, "a", u8('a'));
     testSuccess(P, "b", u8('b'));
@@ -244,8 +244,8 @@ test "parser.options" {
 test "parser.then" {
     const A = eatIf(u8, comptime isPred('a'));
     const B = eatIf(u8, comptime isPred('b'));
-    const S = sequence([]type{ A, B });
-    const P = options([]type{
+    const S = sequence([_]type{ A, B });
+    const P = options([_]type{
         then(S, void, comptime toVoid(S.Result)),
         then(A, void, comptime toVoid(A.Result)),
     });
