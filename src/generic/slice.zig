@@ -9,32 +9,21 @@ const TypeInfo = builtin.TypeInfo;
 const TypeId = builtin.TypeId;
 
 fn ByteToSliceResult(comptime Elem: type, comptime SliceOrArray: type) type {
-    if (!meta.is(TypeId.Pointer)(SliceOrArray))
+    if (@typeInfo(SliceOrArray) != TypeId.Pointer)
         @compileError("EWRRWRESEDR");
 
     const ptr = @typeInfo(SliceOrArray).Pointer;
-    const Child = switch (ptr.size) {
-        TypeInfo.Pointer.Size.One => blk: {
-            if (!meta.is(TypeId.Array)(ptr.child))
-                @compileError("ASDFSADF");
-
-            break :blk meta.Child(ptr.child);
-        },
-        TypeInfo.Pointer.Size.Slice => ptr.child,
-        else => @compileError("ASDFSDF"),
-    };
-
     if (ptr.is_const and ptr.is_volatile)
-        return []align(ptr.alignment) const volatile Child;
+        return []align(ptr.alignment) const volatile Elem;
     if (ptr.is_const)
-        return []align(ptr.alignment) const Child;
+        return []align(ptr.alignment) const Elem;
     if (ptr.is_volatile)
-        return []align(ptr.alignment) volatile Child;
+        return []align(ptr.alignment) volatile Elem;
 
-    return []align(ptr.alignment) Child;
+    return []align(ptr.alignment) Elem;
 }
 
-pub fn bytesToSlice(comptime Element: type, bytes: var) !ByteToSliceResult(Element, @typeOf(bytes)) {
+pub fn bytesToSlice(comptime Element: type, bytes: var) error{SizeMismatch}!ByteToSliceResult(Element, @typeOf(bytes)) {
     if (bytes.len % @sizeOf(Element) != 0)
         return error.SizeMismatch;
 
@@ -48,8 +37,8 @@ test "generic.slice.bytesToSlice" {
     };
 
     {
-        const a = []u8{1};
-        const b = []u8{ 1, 2 };
+        const a = [_]u8{1};
+        const b = [_]u8{ 1, 2 };
 
         if (bytesToSlice(S, a[0..])) |_| unreachable else |_| {}
         const v = bytesToSlice(S, b[0..]) catch unreachable;
@@ -66,8 +55,8 @@ test "generic.slice.bytesToSlice" {
     }
 
     {
-        var a = []u8{1};
-        var b = []u8{ 1, 2 };
+        var a = [_]u8{1};
+        var b = [_]u8{ 1, 2 };
 
         if (bytesToSlice(S, a[0..])) |_| unreachable else |_| {}
         const v = bytesToSlice(S, b[0..]) catch unreachable;
@@ -96,8 +85,8 @@ test "generic.slice.bytesToSliceTrim" {
     };
 
     {
-        const a = []u8{1};
-        const b = []u8{ 1, 2 };
+        const a = [_]u8{1};
+        const b = [_]u8{ 1, 2 };
         const v1 = bytesToSliceTrim(S, a[0..]);
         const v2 = bytesToSliceTrim(S, b[0..]);
         const v3 = bytesToSliceTrim(S, &a);
@@ -118,8 +107,8 @@ test "generic.slice.bytesToSliceTrim" {
     }
 
     {
-        var a = []u8{1};
-        var b = []u8{ 1, 2 };
+        var a = [_]u8{1};
+        var b = [_]u8{ 1, 2 };
         const v1 = bytesToSliceTrim(S, a[0..]);
         const v2 = bytesToSliceTrim(S, b[0..]);
         const v3 = bytesToSliceTrim(S, &a);
@@ -153,25 +142,25 @@ pub fn slice(s: var, start: usize, end: usize) !@typeOf(s[0..]) {
 }
 
 test "generic.slice.slice" {
-    const a = []u8{ 1, 2 };
+    const a = [_]u8{ 1, 2 };
     const b = slice(a[0..], 0, 1) catch unreachable;
     const c = slice(a[0..], 1, 2) catch unreachable;
     const d = slice(a[0..], 0, 2) catch unreachable;
     const e = slice(a[0..], 2, 2) catch unreachable;
     const f = slice(&a, 1, 2) catch unreachable;
 
-    testing.expectEqualSlices(u8, []u8{1}, b);
-    testing.expectEqualSlices(u8, []u8{2}, c);
-    testing.expectEqualSlices(u8, []u8{ 1, 2 }, d);
-    testing.expectEqualSlices(u8, []u8{}, e);
-    testing.expectEqualSlices(u8, []u8{2}, f);
+    testing.expectEqualSlices(u8, [_]u8{1}, b);
+    testing.expectEqualSlices(u8, [_]u8{2}, c);
+    testing.expectEqualSlices(u8, [_]u8{ 1, 2 }, d);
+    testing.expectEqualSlices(u8, [_]u8{}, e);
+    testing.expectEqualSlices(u8, [_]u8{2}, f);
 
     testing.expectError(error.OutOfBound, slice(a[0..], 0, 3));
     testing.expectError(error.OutOfBound, slice(a[0..], 3, 3));
     testing.expectError(error.EndLessThanStart, slice(a[0..], 1, 0));
 
-    const q1 = []u8{ 1, 2 };
-    var q2 = []u8{ 1, 2 };
+    const q1 = [_]u8{ 1, 2 };
+    var q2 = [_]u8{ 1, 2 };
 
     const q11 = slice(q1[0..], 0, 2) catch unreachable;
     const q21 = slice(q2[0..], 0, 2) catch unreachable;
@@ -194,7 +183,7 @@ pub fn at(s: var, index: usize) !@typeOf(&s[0]) {
 }
 
 test "generic.slice.at" {
-    const a = []u8{ 1, 2 };
+    const a = [_]u8{ 1, 2 };
     const b = at(a[0..], 0) catch unreachable;
     const c = at(a[0..], 1) catch unreachable;
     const d = at(a[0..], 1) catch unreachable;
@@ -204,8 +193,8 @@ test "generic.slice.at" {
     testing.expectEqual(u8(2), d.*);
     testing.expectError(error.OutOfBound, at(a[0..], 2));
 
-    const q1 = []u8{ 1, 2 };
-    var q2 = []u8{ 1, 2 };
+    const q1 = [_]u8{ 1, 2 };
+    var q2 = [_]u8{ 1, 2 };
 
     const q11 = at(q1[0..], 0) catch unreachable;
     const q21 = at(q2[0..], 0) catch unreachable;
