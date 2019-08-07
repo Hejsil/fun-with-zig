@@ -1,6 +1,6 @@
 const std = @import("std");
-use @import("common.zig");
-use @import("string.zig");
+usingnamespace @import("common.zig");
+usingnamespace @import("string.zig");
 
 const debug = std.debug;
 const math = std.math;

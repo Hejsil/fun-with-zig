@@ -18,8 +18,7 @@ pub fn build(b: *Builder) void {
         test_step.dependOn(&t.step);
         test_all_step.dependOn(test_step);
 
-
-        const bench = b.addTest("bench.zig");        
+        const bench = b.addTest("bench.zig");
         bench.addPackagePath("bench", "lib/zig-bench/bench.zig");
         bench.addPackagePath("fun-with-zig", "fun.zig");
         bench.setBuildMode(test_mode);
@@ -30,6 +29,16 @@ pub fn build(b: *Builder) void {
         bench_all_step.dependOn(bench_step);
     }
 
+    const fmt_step = b.addFmt([_][]const u8{
+        "bench",
+        "bench.zig",
+        "build.zig",
+        "fun",
+        "fun.zig",
+        "src",
+    });
+
+    b.default_step.dependOn(&fmt_step.step);
     b.default_step.dependOn(test_all_step);
     b.default_step.dependOn(bench_all_step);
 }

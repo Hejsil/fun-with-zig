@@ -55,7 +55,7 @@ test "match.StringSwitch" {
 
     inline for (strings) |str|
         switch (sw.match(str)) {
-        sw.case(str) => {},
-        else => unreachable,
-    };
+            sw.case(str) => {},
+            else => unreachable,
+        };
 }

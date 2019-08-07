@@ -125,7 +125,7 @@ fn OptParserResult(comptime parsers: []const type) type {
 pub fn then(
     comptime Parser: type,
     comptime Res: type,
-    comptime func: fn(Parser.Result) Res,
+    comptime func: fn (Parser.Result) Res,
 ) type {
     return struct {
         pub const Result = Res;
