@@ -10,7 +10,7 @@ const TypeId = builtin.TypeId;
 
 fn ByteToSliceResult(comptime Elem: type, comptime SliceOrArray: type) type {
     if (@typeInfo(SliceOrArray) != TypeId.Pointer)
-        @compileError("EWRRWRESEDR");
+        @compileError("Cannot bytesToSlice " ++ @typeName(SliceOrArray));
 
     const ptr = @typeInfo(SliceOrArray).Pointer;
     if (ptr.is_const and ptr.is_volatile)
@@ -129,10 +129,30 @@ test "generic.slice.bytesToSliceTrim" {
     }
 }
 
+fn SliceResult(comptime SliceOrArray: type) type {
+    if (@typeInfo(SliceOrArray) != TypeId.Pointer)
+        @compileError("Cannot slice " ++ @typeName(SliceOrArray));
+
+    const ptr = @typeInfo(SliceOrArray).Pointer;
+    const Child = switch (ptr.size) {
+        .One => @typeInfo(ptr.child).Array.child,
+        else => ptr.child,
+    };
+
+    if (ptr.is_const and ptr.is_volatile)
+        return []align(ptr.alignment) const volatile Child;
+    if (ptr.is_const)
+        return []align(ptr.alignment) const Child;
+    if (ptr.is_volatile)
+        return []align(ptr.alignment) volatile Child;
+
+    return []align(ptr.alignment) Child;
+}
+
 /// Slices ::s from ::start to ::end.
 /// Returns errors instead of doing runtime asserts when ::start or ::end are out of bounds,
 /// or when ::end is less that ::start.
-pub fn slice(s: var, start: usize, end: usize) !@typeOf(s[0..]) {
+pub fn slice(s: var, start: usize, end: usize) !SliceResult(@typeOf(s)) {
     if (end < start)
         return error.EndLessThanStart;
     if (s.len < start or s.len < end)
