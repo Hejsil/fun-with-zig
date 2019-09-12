@@ -73,13 +73,13 @@ pub fn Searcher(comptime T: type, comptime ignored_fields: []const []const []con
 fn matches(comptime T: type, comptime ignored_fields: []const []const []const u8, a: T, b: T) bool {
     const info = @typeInfo(T);
     switch (info) {
-        TypeId.Pointer => |ptr| switch (ptr.size) {
-            TypeInfo.Pointer.Size.Slice => {
+        .Pointer => |ptr| switch (ptr.size) {
+            .Slice => {
                 return a.ptr == b.ptr and a.len == b.len;
             },
             else => return a == b,
         },
-        TypeId.Array => {
+        .Array => {
             if (a.len != b.len)
                 return false;
 
@@ -90,7 +90,7 @@ fn matches(comptime T: type, comptime ignored_fields: []const []const []const u8
 
             return true;
         },
-        TypeId.Optional => |optional| {
+        .Optional => |optional| {
             const a_value = a orelse {
                 return if (b) |_| false else true;
             };
@@ -98,7 +98,7 @@ fn matches(comptime T: type, comptime ignored_fields: []const []const []const u8
 
             return matches(optional.child, ignored_fields, a_value, b_value);
         },
-        TypeId.ErrorUnion => |err_union| {
+        .ErrorUnion => |err_union| {
             const a_value = a catch |a_err| {
                 if (b) |_| {
                     return false;
@@ -110,7 +110,7 @@ fn matches(comptime T: type, comptime ignored_fields: []const []const []const u8
 
             return matches(err_union.payload, ignored_fields, a_value, b_value);
         },
-        TypeId.Struct => |struct_info| {
+        .Struct => |struct_info| {
             const next_ignored = comptime blk: {
                 var res: []const []const []const u8 = [_][]const []const u8{};
                 for (ignored_fields) |fields| {

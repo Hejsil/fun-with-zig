@@ -80,9 +80,9 @@ fn expect(ps: var, char: u8) !void {
 
 fn scanOne(ps: var, comptime fmt: []const u8, comptime T: type) !T {
     switch (@typeInfo(T)) {
-        builtin.TypeId.Int => return try scanInt(ps, fmt, T),
-        builtin.TypeId.Float => return try scanFloat(ps, fmt, T),
-        builtin.TypeId.Bool => return try scanBool(ps, fmt),
+        .Int => return try scanInt(ps, fmt, T),
+        .Float => return try scanFloat(ps, fmt, T),
+        .Bool => return try scanBool(ps, fmt),
         else => @compileError("Unable to format type '" ++ @typeName(T) ++ "'"),
     }
 }

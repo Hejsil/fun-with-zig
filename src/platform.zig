@@ -24,7 +24,7 @@ pub const bi128 = Int(i128, builtin.Endian.Big);
 
 /// A data structure representing an integer of a specific endianess
 pub fn Int(comptime Inner: type, comptime endian: builtin.Endian) type {
-    comptime debug.assert(@typeId(Inner) == builtin.TypeId.Int);
+    comptime debug.assert(@typeId(Inner) == .Int);
 
     return packed struct {
         const Self = @This();

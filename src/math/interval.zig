@@ -11,10 +11,10 @@ const max = @import("index.zig").max;
 
 pub fn Interval(comptime T: type) type {
     const info = @typeInfo(T);
-    debug.assert(info == builtin.TypeId.Int or
-        info == builtin.TypeId.Float or
-        info == builtin.TypeId.ComptimeInt or
-        info == builtin.TypeId.ComptimeFloat);
+    debug.assert(info == .Int or
+        info == .Float or
+        info == .ComptimeInt or
+        info == .ComptimeFloat);
 
     return struct {
         const Self = @This();

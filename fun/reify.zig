@@ -9,24 +9,24 @@ const TypeId = builtin.TypeId;
 
 pub fn Reify(comptime info: TypeInfo) type {
     return switch (info) {
-        TypeId.Type => type,
-        TypeId.Void => void,
-        TypeId.Bool => bool,
-        TypeId.Null => null,
-        TypeId.Undefined => @typeOf(undefined),
-        TypeId.NoReturn => noreturn,
-        TypeId.ComptimeInt => comptime_int,
-        TypeId.ComptimeFloat => comptime_float,
-        TypeId.Int => |int| @IntType(int.is_signed, int.bits),
-        TypeId.Float => |float| switch (float.bits) {
+        .Type => type,
+        .Void => void,
+        .Bool => bool,
+        .Null => null,
+        .Undefined => @typeOf(undefined),
+        .NoReturn => noreturn,
+        .ComptimeInt => comptime_int,
+        .ComptimeFloat => comptime_float,
+        .Int => |int| @IntType(int.is_signed, int.bits),
+        .Float => |float| switch (float.bits) {
             16 => f16,
             32 => f32,
             64 => f64,
             128 => f128,
             else => @compileError("Float cannot be Reified with {TODO bits in error} bits"),
         },
-        TypeId.Pointer => |ptr| switch (ptr.size) {
-            TypeInfo.Pointer.Size.One => blk: {
+        .Pointer => |ptr| switch (ptr.size) {
+            .One => blk: {
                 if (ptr.is_const and ptr.is_volatile)
                     break :blk *align(ptr.alignment) const volatile ptr.child;
                 if (ptr.is_const)
@@ -36,7 +36,7 @@ pub fn Reify(comptime info: TypeInfo) type {
 
                 break :blk *align(ptr.alignment) ptr.child;
             },
-            TypeInfo.Pointer.Size.Many => blk: {
+            .Many => blk: {
                 if (ptr.is_const and ptr.is_volatile)
                     break :blk [*]align(ptr.alignment) const volatile ptr.child;
                 if (ptr.is_const)
@@ -46,7 +46,7 @@ pub fn Reify(comptime info: TypeInfo) type {
 
                 break :blk [*]align(ptr.alignment) ptr.child;
             },
-            TypeInfo.Pointer.Size.Slice => blk: {
+            .Slice => blk: {
                 if (ptr.is_const and ptr.is_volatile)
                     break :blk []align(ptr.alignment) const volatile ptr.child;
                 if (ptr.is_const)
@@ -56,7 +56,7 @@ pub fn Reify(comptime info: TypeInfo) type {
 
                 break :blk []align(ptr.alignment) ptr.child;
             },
-            TypeInfo.Pointer.Size.C => blk: {
+            .C => blk: {
                 if (ptr.is_const and ptr.is_volatile)
                     break :blk [*c]align(ptr.alignment) const volatile ptr.child;
                 if (ptr.is_const)
@@ -67,11 +67,11 @@ pub fn Reify(comptime info: TypeInfo) type {
                 break :blk [*c]align(ptr.alignment) ptr.child;
             },
         },
-        TypeId.Array => |arr| [arr.len]arr.child,
-        TypeId.Struct => |str| @compileError("TODO"),
-        TypeId.Optional => |opt| ?opt.child,
-        TypeId.ErrorUnion => |err_union| err_union.error_set!err_union.payload,
-        TypeId.ErrorSet => |err_set| blk: {
+        .Array => |arr| [arr.len]arr.child,
+        .Struct => |str| @compileError("TODO"),
+        .Optional => |opt| ?opt.child,
+        .ErrorUnion => |err_union| err_union.error_set!err_union.payload,
+        .ErrorSet => |err_set| blk: {
             var Res = error{};
             inline for (err_set.errors) |err| {
                 Res = Res || @field(anyerror, err.name);
@@ -79,14 +79,15 @@ pub fn Reify(comptime info: TypeInfo) type {
 
             break :blk Res;
         },
-        TypeId.Enum => |enu| @compileError("TODO"),
-        TypeId.Union => |unio| @compileError("TODO"),
-        TypeId.Fn => |func| @compileError("TODO"),
-        TypeId.BoundFn => |func| @compileError("TODO"),
-        TypeId.ArgTuple => @compileError("TODO"),
-        TypeId.Opaque => @OpaqueType(),
-        TypeId.Promise => |prom| if (prom.child) |child| promise->child else promise,
-        TypeId.Vector => @compileError("TODO"),
+        .Opaque => @OpaqueType(),
+        .AnyFrame => anyframe,
+        .Enum => |enu| @compileError("TODO"),
+        .Union => |unio| @compileError("TODO"),
+        .Fn => |func| @compileError("TODO"),
+        .BoundFn => |func| @compileError("TODO"),
+        .ArgTuple => @compileError("TODO"),
+        .Frame => @compileError("TODO"),
+        .Vector => @compileError("TODO"),
     };
 }
 
@@ -221,12 +222,6 @@ test "reify: fn" {
     return error.SkipZigTest;
 }
 
-//test "reify: namespace" {
-//    const T1 = @typeOf(@import("std").debug);
-//    const T2 = Reify(@typeInfo(T1));
-//    comptime testing.expectEqual(T1, T2);
-//}
-
 test "reify: boundfn" {
     return error.SkipZigTest;
 }
@@ -237,12 +232,14 @@ test "reify: ..." {
 
 test "reify: @OpaqueType()" {
     const T = Reify(@typeInfo(@OpaqueType()));
-    comptime testing.expectEqual(TypeId(@typeInfo(T)), TypeId.Opaque);
+    comptime testing.expectEqual(TypeId(@typeInfo(T)), .Opaque);
 }
 
-test "reify: promise" {
-    inline for ([]type{ promise, promise->u8 }) |P| {
-        const T = Reify(@typeInfo(P));
-        comptime testing.expectEqual(T, P);
-    }
+test "reify: anyframe" {
+    const T = Reify(@typeInfo(anyframe));
+    comptime testing.expectEqual(T, anyframe);
+}
+
+test "reify: @Frame" {
+    return error.SkipZigTest;
 }

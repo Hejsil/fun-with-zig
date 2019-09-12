@@ -10,10 +10,10 @@ const TypeInfo = builtin.TypeInfo;
 pub fn lessThan(comptime T: type, a: T, b: T) bool {
     const info = @typeInfo(T);
     switch (info) {
-        TypeId.Int, TypeId.Float, TypeId.ComptimeFloat, TypeId.ComptimeInt => return a < b,
-        TypeId.Bool => return @boolToInt(a) < @boolToInt(b),
+        .Int, .Float, .ComptimeFloat, .ComptimeInt => return a < b,
+        .Bool => return @boolToInt(a) < @boolToInt(b),
 
-        TypeId.Optional => |optional| {
+        .Optional => |optional| {
             const a_value = a orelse {
                 return if (b) |_| true else false;
             };
@@ -21,7 +21,7 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
 
             return lessThan(optional.child, a_value, b_value);
         },
-        TypeId.ErrorUnion => |err_union| {
+        .ErrorUnion => |err_union| {
             const a_value = a catch |a_err| {
                 if (b) |_| {
                     return true;
@@ -35,25 +35,26 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
         },
 
         // TODO: mem.lessThan is wrong
-        TypeId.Array => |arr| return mem.lessThan(arr.child, a, b),
-        TypeId.Enum => |e| return @enumToInt(a) < @enumToInt(b),
-        TypeId.ErrorSet => return @errorToInt(a) < @errorToInt(b),
+        .Array => |arr| return mem.lessThan(arr.child, a, b),
+        .Enum => |e| return @enumToInt(a) < @enumToInt(b),
+        .ErrorSet => return @errorToInt(a) < @errorToInt(b),
 
-        TypeId.Null, TypeId.Void => return false,
+        .Null, .Void => return false,
 
-        TypeId.Vector,
-        TypeId.Undefined,
-        TypeId.Type,
-        TypeId.NoReturn,
-        TypeId.Fn,
-        TypeId.BoundFn,
-        TypeId.ArgTuple,
-        TypeId.Opaque,
-        TypeId.Promise,
-        TypeId.Struct,
-        TypeId.Union,
-        TypeId.Pointer,
-        TypeId.EnumLiteral,
+        .Vector,
+        .Undefined,
+        .Type,
+        .NoReturn,
+        .Fn,
+        .BoundFn,
+        .ArgTuple,
+        .Opaque,
+        .AnyFrame,
+        .Frame,
+        .Struct,
+        .Union,
+        .Pointer,
+        .EnumLiteral,
         => {
             @compileError("Cannot get a default less than for " ++ @typeName(T));
             return false;
@@ -152,27 +153,28 @@ test "generic.compare.lessThan(void)" {
 pub fn equal(comptime T: type, a: T, b: T) bool {
     const info = @typeInfo(T);
     switch (info) {
-        TypeId.Int,
-        TypeId.Float,
-        TypeId.ComptimeInt,
-        TypeId.ComptimeFloat,
-        TypeId.Enum,
-        TypeId.ErrorSet,
-        TypeId.Type,
-        TypeId.Void,
-        TypeId.Fn,
-        TypeId.Null,
-        TypeId.Bool,
-        TypeId.EnumLiteral,
+        .Int,
+        .Float,
+        .ComptimeInt,
+        .ComptimeFloat,
+        .Enum,
+        .ErrorSet,
+        .Type,
+        .Void,
+        .Fn,
+        .Null,
+        .Bool,
+        .EnumLiteral,
+        .AnyFrame,
         => return a == b,
         // We don't follow pointers, as this would `lessThan` recursive on recursive types (like LinkedList
-        TypeId.Pointer => |ptr| switch (ptr.size) {
-            TypeInfo.Pointer.Size.Slice => {
+        .Pointer => |ptr| switch (ptr.size) {
+            .Slice => {
                 return a.ptr == b.ptr and a.len == b.len;
             },
             else => return a == b,
         },
-        TypeId.Array => {
+        .Array => {
             if (a.len != b.len)
                 return false;
 
@@ -183,7 +185,7 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
 
             return true;
         },
-        TypeId.Optional => |optional| {
+        .Optional => |optional| {
             const a_value = a orelse {
                 return if (b) |_| false else true;
             };
@@ -191,7 +193,7 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
 
             return equal(optional.child, a_value, b_value);
         },
-        TypeId.ErrorUnion => |err_union| {
+        .ErrorUnion => |err_union| {
             const a_value = a catch |a_err| {
                 if (b) |_| {
                     return false;
@@ -203,7 +205,7 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
 
             return equal(err_union.payload, a_value, b_value);
         },
-        TypeId.Struct => |struct_info| {
+        .Struct => |struct_info| {
             inline for (struct_info.fields) |field| {
                 if (!fieldsEql(T, field.name, a, b))
                     return false;
@@ -212,14 +214,14 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
             return true;
         },
 
-        TypeId.Vector,
-        TypeId.Undefined,
-        TypeId.NoReturn,
-        TypeId.BoundFn,
-        TypeId.ArgTuple,
-        TypeId.Opaque,
-        TypeId.Promise,
-        TypeId.Union,
+        .Vector,
+        .Undefined,
+        .NoReturn,
+        .BoundFn,
+        .ArgTuple,
+        .Opaque,
+        .Frame,
+        .Union,
         => {
             @compileError("Cannot get a default equal for " ++ @typeName(T));
             return false;

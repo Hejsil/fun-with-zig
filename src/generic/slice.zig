@@ -9,7 +9,7 @@ const TypeInfo = builtin.TypeInfo;
 const TypeId = builtin.TypeId;
 
 fn ByteToSliceResult(comptime Elem: type, comptime SliceOrArray: type) type {
-    if (@typeInfo(SliceOrArray) != TypeId.Pointer)
+    if (@typeInfo(SliceOrArray) != .Pointer)
         @compileError("Cannot bytesToSlice " ++ @typeName(SliceOrArray));
 
     const ptr = @typeInfo(SliceOrArray).Pointer;
@@ -130,7 +130,7 @@ test "generic.slice.bytesToSliceTrim" {
 }
 
 fn SliceResult(comptime SliceOrArray: type) type {
-    if (@typeInfo(SliceOrArray) != TypeId.Pointer)
+    if (@typeInfo(SliceOrArray) != .Pointer)
         @compileError("Cannot slice " ++ @typeName(SliceOrArray));
 
     const ptr = @typeInfo(SliceOrArray).Pointer;

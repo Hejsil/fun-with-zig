@@ -318,8 +318,8 @@ test "match.StringSwitch.benchmark" {
 
         pub fn switch_hash_mem_eql(str: []const u8) usize {
             @setEvalBranchQuota(100000);
-            const hash = mem.hash_slice_u8;
-            const eql = mem.eql_slice_u8;
+            const hash = std.hash_map.hashString;
+            const eql = std.hash_map.eqlString;
             switch (hash(str)) {
                 hash("A" ** 1) => {
                     if (!eql("A", str)) return 2241255;
