@@ -30,8 +30,8 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
             comptime @panic("TODO: Implement append!");
         }
 
-        pub fn concat(it: Self, other: var) ConcatIterator(@typeOf(other)) {
-            const OtherIterator = @typeOf(other);
+        pub fn concat(it: Self, other: var) ConcatIterator(@TypeOf(other)) {
+            const OtherIterator = @TypeOf(other);
             return ConcatIterator(OtherIterator).init(IteratorPair(OtherIterator){ .it1 = it, .it2 = other });
         }
 
@@ -51,7 +51,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
 
         pub fn skip(it: Self, count: u64) Self {
             var res = it;
-            var i = u64(0);
+            var i = @as(u64, 0);
             while (i < count) : (i += 1) {
                 _ = res.next() orelse return res;
             }
@@ -67,8 +67,8 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
             return WhereIterator(predicate).init(it.context);
         }
 
-        pub fn zip(it: Self, other: var) ZipIterator(@typeOf(other)) {
-            const OtherIterator = @typeOf(other);
+        pub fn zip(it: Self, other: var) ZipIterator(@TypeOf(other)) {
+            const OtherIterator = @TypeOf(other);
             return ZipIterator(OtherIterator).init(IteratorPair(OtherIterator){ .it1 = it, .it2 = other });
         }
 
@@ -80,7 +80,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
         }
 
         fn ConcatIterator(comptime OtherIterator: type) type {
-            const OtherResult = @typeOf(OtherIterator.next).ReturnType.Child;
+            const OtherResult = @TypeOf(OtherIterator.next).ReturnType.Child;
 
             return Iterator(IteratorPair(OtherIterator), Result, struct {
                 fn whereNext(context: *IteratorPair(OtherIterator)) ?Result {
@@ -129,7 +129,7 @@ pub fn Iterator(comptime TContext: type, comptime TResult: type, comptime nextFn
         }
 
         fn ZipIterator(comptime OtherIterator: type) type {
-            const OtherResult = @typeOf(OtherIterator.next).ReturnType.Child;
+            const OtherResult = @TypeOf(OtherIterator.next).ReturnType.Child;
             const ZipPair = struct {
                 first: Result,
                 second: OtherResult,
@@ -228,11 +228,11 @@ pub fn empty(comptime T: type) EmptyIterator(T) {
     return EmptyIterator(T).init(0);
 }
 
-pub fn aggregate(it: var, func: fn (@typeOf(it).Result, @typeOf(it).Result) @typeOf(it).Result) ?@typeOf(it).Result {
-    return aggregateAcc(it, it.next() orelse return null, @typeOf(it.*).Result, func);
+pub fn aggregate(it: var, func: fn (@TypeOf(it).Result, @TypeOf(it).Result) @TypeOf(it).Result) ?@TypeOf(it).Result {
+    return aggregateAcc(it, it.next() orelse return null, @TypeOf(it.*).Result, func);
 }
 
-pub fn aggregateAcc(it: var, acc: var, func: fn (@typeOf(acc), @typeOf(it).Result) @typeOf(acc)) ?@typeOf(acc) {
+pub fn aggregateAcc(it: var, acc: var, func: fn (@TypeOf(acc), @TypeOf(it).Result) @TypeOf(acc)) ?@TypeOf(acc) {
     var _it = it;
     var result = acc;
     while (_it.next()) |item| {
@@ -242,7 +242,7 @@ pub fn aggregateAcc(it: var, acc: var, func: fn (@typeOf(acc), @typeOf(it).Resul
     return result;
 }
 
-pub fn all(it: var, predicate: fn (@typeOf(it).Result) bool) bool {
+pub fn all(it: var, predicate: fn (@TypeOf(it).Result) bool) bool {
     var _it = it;
     while (_it.next()) |item| {
         if (!predicate(item)) return false;
@@ -251,7 +251,7 @@ pub fn all(it: var, predicate: fn (@typeOf(it).Result) bool) bool {
     return true;
 }
 
-pub fn any(it: var, predicate: fn (@typeOf(it).Result) bool) bool {
+pub fn any(it: var, predicate: fn (@TypeOf(it).Result) bool) bool {
     var _it = it;
     while (_it.next()) |item| {
         if (predicate(item)) return true;
@@ -260,9 +260,9 @@ pub fn any(it: var, predicate: fn (@typeOf(it).Result) bool) bool {
     return false;
 }
 
-pub fn countIf(it: var, predicate: fn (@typeOf(it).Result) bool) u64 {
+pub fn countIf(it: var, predicate: fn (@TypeOf(it).Result) bool) u64 {
     var _it = it;
-    var res = u64(0);
+    var res = @as(u64, 0);
     while (_it.next()) |item| {
         if (predicate(item)) res += 1;
     }
@@ -274,7 +274,7 @@ test "iterators.SliceIterator" {
     const data = "abacad";
     var it = SliceIterator(u8).init(data);
 
-    var i = usize(0);
+    var i = @as(usize, 0);
     while (it.next()) |item| : (i += 1) {
         testing.expectEqual(data[i], item);
     }
@@ -283,7 +283,7 @@ test "iterators.SliceIterator" {
 }
 
 test "iterators.SliceMutableIterator" {
-    var data = "abacac";
+    var data = "abacac".*;
     const res = "bcbdbd";
     var it = SliceMutableIterator(u8).init(data[0..]);
 
@@ -291,14 +291,14 @@ test "iterators.SliceMutableIterator" {
         item.* += 1;
     }
 
-    testing.expectEqualSlices(u8, data, res);
+    testing.expectEqualSlices(u8, &data, res);
 }
 
 test "iterators.range" {
     const res = "abcd";
     var it = range(u8, 'a', 4, 1);
 
-    var i = usize(0);
+    var i = @as(usize, 0);
     while (it.next()) |item| : (i += 1) {
         testing.expectEqual(res[i], item);
     }
@@ -309,21 +309,21 @@ test "iterators.range" {
 test "iterators.repeat" {
     var it = repeat(u64, 3);
 
-    var i = usize(0);
+    var i = @as(usize, 0);
     while (it.next()) |item| : (i += 1) {
-        testing.expectEqual(u64(3), item);
+        testing.expectEqual(@as(u64, 3), item);
         if (i == 10) break;
     }
 }
 
 test "iterators.empty" {
     var it = empty(u8);
-    var i = usize(0);
+    var i = @as(usize, 0);
     while (it.next()) |item| : (i += 1) {
         testing.expect(false);
     }
 
-    testing.expectEqual(usize(0), i);
+    testing.expectEqual(@as(usize, 0), i);
 }
 
 test "iterators.aggregateAcc" {
@@ -334,7 +334,7 @@ test "iterators.aggregateAcc" {
         }
     }.f;
 
-    testing.expectEqual(u64(3), aggregateAcc(SliceIterator(u8).init(data), u64(0), countA).?);
+    testing.expectEqual(@as(u64, 3), aggregateAcc(SliceIterator(u8).init(data), @as(u64, 0), countA).?);
 }
 
 test "iterators.all" {
@@ -371,7 +371,7 @@ test "iterators.countIf" {
         }
     }.f;
 
-    testing.expectEqual(usize(2), countIf(SliceIterator(u8).init(data), isA));
+    testing.expectEqual(@as(usize, 2), countIf(SliceIterator(u8).init(data), isA));
 }
 
 test "iterators.SliceIterator" {
@@ -421,7 +421,7 @@ test "iterators.select" {
         }
     }.f;
 
-    var it = SliceIterator(f64).init(data).select(i64, toI64);
+    var it = SliceIterator(f64).init(&data).select(i64, toI64);
 
     var i: usize = 0;
     while (it.next()) |item| : (i += 1) {

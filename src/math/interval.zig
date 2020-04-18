@@ -44,7 +44,7 @@ pub fn Interval(comptime T: type) type {
         }
 
         pub fn mul(a: Self, b: Self) Self {
-            return fromSlice([_]T{
+            return fromSlice(&[_]T{
                 a.min * b.min,
                 a.min * b.max,
                 a.max * b.min,
@@ -54,7 +54,7 @@ pub fn Interval(comptime T: type) type {
 
         pub fn div(a: Self, b: Self) Self {
             debug.assert(b.min != 0 and b.max != 0);
-            return fromSlice([_]T{
+            return fromSlice(&[_]T{
                 a.min / b.min,
                 a.min / b.max,
                 a.max / b.min,

@@ -51,7 +51,7 @@ test "match.StringSwitch" {
         "AAAAAAA",
         "AAAAAAAA",
     };
-    const sw = comptime StringSwitch(strings);
+    const sw = comptime StringSwitch(&strings);
 
     inline for (strings) |str|
         switch (sw.match(str)) {

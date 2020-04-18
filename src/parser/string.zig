@@ -48,7 +48,7 @@ pub fn uint(comptime Int: type, comptime base: u8) type {
     return struct {
         pub const Result = Int;
 
-        pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+        pub fn parse(input: var) ?ParseResult(@TypeOf(input), Result) {
             const first = input.curr() orelse return null;
             const first_digit = fmt.charToDigit(first, base) catch return null;
             var res = math.cast(Result, first_digit) catch return null;
@@ -60,7 +60,7 @@ pub fn uint(comptime Int: type, comptime base: u8) type {
                 res = math.add(Result, res, digit) catch return null;
             }
 
-            return ParseResult(@typeOf(input), Result){
+            return ParseResult(@TypeOf(input), Result){
                 .input = next,
                 .result = res,
             };
@@ -72,7 +72,7 @@ pub fn string(comptime s: []const u8) type {
     return struct {
         pub const Result = []const u8;
 
-        pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+        pub fn parse(input: var) ?ParseResult(@TypeOf(input), Result) {
             var next = input;
             for (s) |c| {
                 const curr = next.curr() orelse return null;
@@ -82,7 +82,7 @@ pub fn string(comptime s: []const u8) type {
                 next = next.next();
             }
 
-            return ParseResult(@typeOf(input), Result){
+            return ParseResult(@TypeOf(input), Result){
                 .input = next,
                 .result = s,
             };
@@ -93,9 +93,9 @@ pub fn string(comptime s: []const u8) type {
 fn testSuccess(comptime P: type, str: []const u8, result: var) void {
     const res = P.parse(Input.init(str)) orelse unreachable;
     testing.expectEqual(res.input.str.len, 0);
-    comptime testing.expectEqual(@sizeOf(P.Result), @sizeOf(@typeOf(result)));
+    comptime testing.expectEqual(@sizeOf(P.Result), @sizeOf(@TypeOf(result)));
     if (@sizeOf(P.Result) != 0)
-        testing.expectEqualSlices(u8, mem.toBytes(result), mem.toBytes(res.result));
+        testing.expectEqualSlices(u8, &mem.toBytes(result), &mem.toBytes(res.result));
 }
 
 fn testFail(comptime P: type, str: []const u8) void {
@@ -109,11 +109,11 @@ test "parser.string.char" {
 
     comptime var i = 0;
     inline while (i < 'a') : (i += 1)
-        testFail(P, [_]u8{i});
+        testFail(P, &[_]u8{i});
     inline while (i <= 'a') : (i += 1)
-        testSuccess(P, [_]u8{i}, u8(i));
+        testSuccess(P, &[_]u8{i}, @as(u8, i));
     inline while (i <= math.maxInt(u8)) : (i += 1)
-        testFail(P, [_]u8{i});
+        testFail(P, &[_]u8{i});
 }
 
 test "parser.string.range" {
@@ -121,11 +121,11 @@ test "parser.string.range" {
 
     comptime var i = 0;
     inline while (i < 'a') : (i += 1)
-        testFail(P, [_]u8{i});
+        testFail(P, &[_]u8{i});
     inline while (i <= 'z') : (i += 1)
-        testSuccess(P, [_]u8{i}, u8(i));
+        testSuccess(P, &[_]u8{i}, @as(u8, i));
     inline while (i <= math.maxInt(u8)) : (i += 1)
-        testFail(P, [_]u8{i});
+        testFail(P, &[_]u8{i});
 }
 
 test "parser.string.uint" {

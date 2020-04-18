@@ -16,7 +16,7 @@ pub fn Interface(comptime T: type) type {
 
             inline for (info.decls) |def, i| {
                 const DefType = @field(T, def.name);
-                comptime debug.assert(@typeOf(DefType) == type);
+                comptime debug.assert(@TypeOf(DefType) == type);
 
                 const func_info = @typeInfo(DefType).Fn;
                 comptime debug.assert(func_info.args[0].arg_type.? == *Self);
@@ -29,7 +29,7 @@ pub fn Interface(comptime T: type) type {
             return res;
         }
 
-        fn dispatch(vtable: @This(), comptime fn_name: []const u8, self: *Self, args: ...) @field(T, fn_name).ReturnType {
+        fn dispatch(vtable: @This(), comptime fn_name: []const u8, self: *Self, args: var) @field(T, fn_name).ReturnType {
             inline for (info.decls) |decl, i| {
                 if (comptime !mem.eql(u8, decl.name, fn_name))
                     continue;
@@ -73,7 +73,7 @@ pub fn Interface(comptime T: type) type {
             };
         }
 
-        fn call(self: @This(), comptime fn_name: []const u8, args: ...) @field(T, fn_name).ReturnType {
+        fn call(self: @This(), comptime fn_name: []const u8, args: var) @field(T, fn_name).ReturnType {
             return self.vtable.dispatch(fn_name, self.state, args);
         }
     };
@@ -104,6 +104,6 @@ test "interface" {
     var sq = Sq{ .q = 3 };
     const ib = IA.init(Sb, &sb);
     const iq = IA.init(Sq, &sq);
-    testing.expectEqual(u8(5), ib.call("a", u8(2)));
-    testing.expectEqual(u8(6), iq.call("a", u8(2)));
+    testing.expectEqual(@as(u8, 5), ib.call("a", .{@as(u8, 2)}));
+    testing.expectEqual(@as(u8, 6), iq.call("a", .{@as(u8, 2)}));
 }

@@ -49,13 +49,13 @@ pub fn Struct(comptime Key: type, comptime field_array: var) type {
         pub fn ptr(s: *@This(), comptime key: Key) *align(1) GetField(key).Value {
             const i = comptime index(key);
             const offset = comptime runtimeSize(fields[0..i]);
-            return &@bytesToSlice(GetField(key).Value, s.data[offset..])[0];
+            return &std.mem.bytesAsSlice(GetField(key).Value, s.data[offset..])[0];
         }
 
         pub fn ptrConst(s: *const @This(), comptime key: Key) *align(1) const GetField(key).Value {
             const i = comptime index(key);
             const offset = comptime runtimeSize(fields[0..i]);
-            return &@bytesToSlice(GetField(key).Value, s.data[offset..])[0];
+            return &std.mem.bytesAsSlice(GetField(key).Value, s.data[offset..])[0];
         }
 
         fn GetField(comptime key: Key) Field(Key) {

@@ -3,7 +3,7 @@ const debug = std.debug;
 const testing = std.testing;
 
 pub fn to(n: usize) []void {
-    return ([*]void)(undefined)[0..n];
+    return @as([*]void, undefined)[0..n];
 }
 
 test "loop.to" {

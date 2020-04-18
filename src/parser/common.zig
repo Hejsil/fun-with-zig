@@ -21,8 +21,8 @@ pub fn ParseResult(comptime Input: type, comptime Result: type) type {
 }
 
 fn Func(comptime Result: type) type {
-    return @typeOf(struct {
-        fn func(input: var) ?ParseResult(@typeOf(input), Result) {
+    return @TypeOf(struct {
+        fn func(input: var) ?ParseResult(@TypeOf(input), Result) {
             unreachable;
         }
     }.func);
@@ -32,12 +32,12 @@ pub fn eatIf(comptime Token: type, comptime predicate: fn (Token) bool) type {
     return struct {
         pub const Result = Token;
 
-        pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+        pub fn parse(input: var) ?ParseResult(@TypeOf(input), Result) {
             const curr = input.curr() orelse return null;
             if (!predicate(curr))
                 return null;
 
-            return ParseResult(@typeOf(input), Result){
+            return ParseResult(@TypeOf(input), Result){
                 .input = input.next(),
                 .result = curr,
             };
@@ -49,9 +49,9 @@ pub fn end() type {
     return struct {
         pub const Result = void;
 
-        pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+        pub fn parse(input: var) ?ParseResult(@TypeOf(input), Result) {
             if (input.curr() == null) {
-                return ParseResult(@typeOf(input), void){
+                return ParseResult(@TypeOf(input), void){
                     .input = input,
                     .result = {},
                 };
@@ -66,17 +66,17 @@ pub fn sequence(comptime parsers: []const type) type {
     return struct {
         pub const Result = SeqParserResult(parsers);
 
-        pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+        pub fn parse(input: var) ?ParseResult(@TypeOf(input), Result) {
             var res: Result = undefined;
             var next = input;
 
-            inline for (@typeOf(res).fields) |field, i| {
+            inline for (@TypeOf(res).fields) |field, i| {
                 const r = parsers[i].parse(next) orelse return null;
                 next = r.input;
                 res.ptr(i).* = r.result;
             }
 
-            return ParseResult(@typeOf(input), Result){
+            return ParseResult(@TypeOf(input), Result){
                 .input = next,
                 .result = res,
             };
@@ -96,10 +96,10 @@ pub fn options(comptime parsers: []const type) type {
     return struct {
         pub const Result = OptParserResult(parsers);
 
-        pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+        pub fn parse(input: var) ?ParseResult(@TypeOf(input), Result) {
             inline for (parsers) |Par| {
                 if (Par.parse(input)) |res| {
-                    return ParseResult(@typeOf(input), Result){
+                    return ParseResult(@TypeOf(input), Result){
                         .input = res.input,
                         .result = res.result,
                     };
@@ -130,10 +130,10 @@ pub fn then(
     return struct {
         pub const Result = Res;
 
-        pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+        pub fn parse(input: var) ?ParseResult(@TypeOf(input), Result) {
             const parsed = Parser.parse(input) orelse return null;
             const res = func(parsed.result);
-            return ParseResult(@typeOf(input), Result){
+            return ParseResult(@TypeOf(input), Result){
                 .input = parsed.input,
                 .result = res,
             };
@@ -150,8 +150,8 @@ pub fn toVoid(comptime T: type) fn (T) void {
 pub const nothing = struct {
     pub const Result = void;
 
-    pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
-        return ParseResult(@typeOf(input), Result){
+    pub fn parse(input: var) ?ParseResult(@TypeOf(input), Result) {
+        return ParseResult(@TypeOf(input), Result){
             .input = input,
             .result = {},
         };
@@ -162,11 +162,11 @@ fn refFunc() type {
     unreachable;
 }
 
-pub fn ref(comptime Res: type, comptime f: @typeOf(refFunc)) type {
+pub fn ref(comptime Res: type, comptime f: @TypeOf(refFunc)) type {
     return struct {
         pub const Result = Res;
 
-        pub fn parse(input: var) ?ParseResult(@typeOf(input), Result) {
+        pub fn parse(input: var) ?ParseResult(@TypeOf(input), Result) {
             return f().parse(input);
         }
     };
@@ -182,9 +182,9 @@ fn isPred(comptime c: u8) fn (u8) bool {
 
 fn testSuccess(comptime P: type, str: []const u8, result: var) void {
     const res = P.parse(string.Input.init(str)) orelse unreachable;
-    comptime testing.expectEqual(@sizeOf(P.Result), @sizeOf(@typeOf(result)));
+    comptime testing.expectEqual(@sizeOf(P.Result), @sizeOf(@TypeOf(result)));
     if (@sizeOf(P.Result) != 0)
-        testing.expectEqualSlices(u8, mem.toBytes(result), mem.toBytes(res.result));
+        testing.expectEqualSlices(u8, &mem.toBytes(result), &mem.toBytes(res.result));
 }
 
 fn testFail(comptime P: type, str: []const u8) void {
@@ -196,7 +196,7 @@ fn testFail(comptime P: type, str: []const u8) void {
 test "parser.eatIf" {
     const P = eatIf(u8, comptime isPred('a'));
 
-    testSuccess(P, "a", u8('a'));
+    testSuccess(P, "a", @as(u8, 'a'));
     testFail(P, "b");
 }
 
@@ -221,11 +221,11 @@ test "parser.options" {
     const A = eatIf(u8, comptime isPred('a'));
     const B = eatIf(u8, comptime isPred('b'));
     const C = eatIf(u8, comptime isPred('c'));
-    const P = options([_]type{ A, B, C });
+    const P = options(&[_]type{ A, B, C });
 
-    testSuccess(P, "a", u8('a'));
-    testSuccess(P, "b", u8('b'));
-    testSuccess(P, "c", u8('c'));
+    testSuccess(P, "a", @as(u8, 'a'));
+    testSuccess(P, "b", @as(u8, 'b'));
+    testSuccess(P, "c", @as(u8, 'c'));
     testFail(P, "d");
 }
 
@@ -233,19 +233,19 @@ test "parser.options" {
     const A = eatIf(u8, comptime isPred('a'));
     const B = eatIf(u8, comptime isPred('b'));
     const C = eatIf(u8, comptime isPred('c'));
-    const P = options([_]type{ A, B, C });
+    const P = options(&[_]type{ A, B, C });
 
-    testSuccess(P, "a", u8('a'));
-    testSuccess(P, "b", u8('b'));
-    testSuccess(P, "c", u8('c'));
+    testSuccess(P, "a", @as(u8, 'a'));
+    testSuccess(P, "b", @as(u8, 'b'));
+    testSuccess(P, "c", @as(u8, 'c'));
     testFail(P, "d");
 }
 
 test "parser.then" {
     const A = eatIf(u8, comptime isPred('a'));
     const B = eatIf(u8, comptime isPred('b'));
-    const S = sequence([_]type{ A, B });
-    const P = options([_]type{
+    const S = sequence(&[_]type{ A, B });
+    const P = options(&[_]type{
         then(S, void, comptime toVoid(S.Result)),
         then(A, void, comptime toVoid(A.Result)),
     });

@@ -61,5 +61,5 @@ test "functional.Example: functional.reverse" {
     var iarr = [_]i32{ 5, 3, 1, 2, 4 };
     sort.sort(i32, iarr[0..], comptime reverse(i32, bool, lt));
 
-    testing.expectEqualSlices(i32, [_]i32{ 5, 4, 3, 2, 1 }, iarr);
+    testing.expectEqualSlices(i32, &[_]i32{ 5, 4, 3, 2, 1 }, &iarr);
 }

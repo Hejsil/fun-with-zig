@@ -20,7 +20,7 @@ pub const Dynamic = struct {
     }
 
     // TODO: Change to pass-by-value
-    pub fn field(comptime dyn: *const Dynamic, comptime field_name: []const u8) (@typeOf(@field(dyn.Type{}, field_name))) {
+    pub fn field(comptime dyn: *const Dynamic, comptime field_name: []const u8) (@TypeOf(@field(dyn.Type{}, field_name))) {
         return @field(dyn.value(), field_name);
     }
 
@@ -44,19 +44,22 @@ pub const Dynamic = struct {
 
 test "Dynamic.value" {
     comptime {
-        const dyn_int = Dynamic.init(u8, &u8(0));
-        const dyn_float = Dynamic.init(f32, &f32(1.0));
-        const dyn_string = Dynamic.init([]const u8, &([]const u8)("Hello World!"));
+        var a: u8 = 0;
+        var b: f32 = 1.0;
+        var c: []const u8 = "Hello World!";
+        const dyn_int = Dynamic.init(u8, &a);
+        const dyn_float = Dynamic.init(f32, &b);
+        const dyn_string = Dynamic.init([]const u8, &c);
 
         // They are all the same static type, just like in dynamic typed languages
-        testing.expectEqual(@typeOf(dyn_int), @typeOf(dyn_float));
-        testing.expectEqual(@typeOf(dyn_int), @typeOf(dyn_string));
-        testing.expectEqual(@typeOf(dyn_float), @typeOf(dyn_string));
+        testing.expectEqual(@TypeOf(dyn_int), @TypeOf(dyn_float));
+        testing.expectEqual(@TypeOf(dyn_int), @TypeOf(dyn_string));
+        testing.expectEqual(@TypeOf(dyn_float), @TypeOf(dyn_string));
 
         // Their values, are not the same dynamic type though.
-        testing.expect(@typeOf(dyn_int.value()) != @typeOf(dyn_float.value()));
-        testing.expect(@typeOf(dyn_int.value()) != @typeOf(dyn_string.value()));
-        testing.expect(@typeOf(dyn_float.value()) != @typeOf(dyn_string.value()));
+        testing.expect(@TypeOf(dyn_int.value()) != @TypeOf(dyn_float.value()));
+        testing.expect(@TypeOf(dyn_int.value()) != @TypeOf(dyn_string.value()));
+        testing.expect(@TypeOf(dyn_float.value()) != @TypeOf(dyn_string.value()));
 
         testing.expectEqual(dyn_int.value(), 0);
         testing.expectEqual(dyn_float.value(), 1.0);

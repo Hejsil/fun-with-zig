@@ -66,7 +66,7 @@ pub fn Union(comptime Key: type, comptime field_array: var) type {
             if (u.key != i)
                 return null;
 
-            return &@bytesToSlice(GetField(key).Payload, u.payload[0..])[0];
+            return &std.mem.bytesAsSlice(GetField(key).Payload, u.payload[0..])[0];
         }
 
         pub fn ptrConst(u: *const @This(), comptime key: Key) ?*align(1) const GetField(key).Payload {
@@ -74,7 +74,7 @@ pub fn Union(comptime Key: type, comptime field_array: var) type {
             if (u.key != i)
                 return null;
 
-            return &@bytesToSlice(GetField(key).Payload, u.payload[0..])[0];
+            return &std.mem.bytesAsSlice(GetField(key).Payload, u.payload[0..])[0];
         }
 
         fn GetField(comptime key: Key) Field(Key) {

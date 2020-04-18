@@ -23,11 +23,11 @@ fn ByteToSliceResult(comptime Elem: type, comptime SliceOrArray: type) type {
     return []align(ptr.alignment) Elem;
 }
 
-pub fn bytesToSlice(comptime Element: type, bytes: var) error{SizeMismatch}!ByteToSliceResult(Element, @typeOf(bytes)) {
+pub fn bytesToSlice(comptime Element: type, bytes: var) error{SizeMismatch}!ByteToSliceResult(Element, @TypeOf(bytes)) {
     if (bytes.len % @sizeOf(Element) != 0)
         return error.SizeMismatch;
 
-    return @bytesToSlice(Element, bytes);
+    return std.mem.bytesAsSlice(Element, bytes);
 }
 
 test "generic.slice.bytesToSlice" {
@@ -42,16 +42,16 @@ test "generic.slice.bytesToSlice" {
 
         if (bytesToSlice(S, a[0..])) |_| unreachable else |_| {}
         const v = bytesToSlice(S, b[0..]) catch unreachable;
-        comptime testing.expectEqual([]align(1) const S, @typeOf(v));
-        testing.expectEqual(usize(1), v.len);
-        testing.expectEqual(u8(1), v[0].a);
-        testing.expectEqual(u8(2), v[0].b);
+        comptime testing.expectEqual([]align(1) const S, @TypeOf(v));
+        testing.expectEqual(@as(usize, 1), v.len);
+        testing.expectEqual(@as(u8, 1), v[0].a);
+        testing.expectEqual(@as(u8, 2), v[0].b);
 
         const v2 = bytesToSlice(S, &b) catch unreachable;
-        comptime testing.expectEqual([]align(1) const S, @typeOf(v2));
-        testing.expectEqual(usize(1), v2.len);
-        testing.expectEqual(u8(1), v2[0].a);
-        testing.expectEqual(u8(2), v2[0].b);
+        comptime testing.expectEqual([]align(1) const S, @TypeOf(v2));
+        testing.expectEqual(@as(usize, 1), v2.len);
+        testing.expectEqual(@as(u8, 1), v2[0].a);
+        testing.expectEqual(@as(u8, 2), v2[0].b);
     }
 
     {
@@ -60,22 +60,22 @@ test "generic.slice.bytesToSlice" {
 
         if (bytesToSlice(S, a[0..])) |_| unreachable else |_| {}
         const v = bytesToSlice(S, b[0..]) catch unreachable;
-        comptime testing.expectEqual([]align(1) S, @typeOf(v));
-        testing.expectEqual(usize(1), v.len);
-        testing.expectEqual(u8(1), v[0].a);
-        testing.expectEqual(u8(2), v[0].b);
+        comptime testing.expectEqual([]align(1) S, @TypeOf(v));
+        testing.expectEqual(@as(usize, 1), v.len);
+        testing.expectEqual(@as(u8, 1), v[0].a);
+        testing.expectEqual(@as(u8, 2), v[0].b);
 
         const v2 = bytesToSlice(S, &b) catch unreachable;
-        comptime testing.expectEqual([]align(1) S, @typeOf(v2));
-        testing.expectEqual(usize(1), v2.len);
-        testing.expectEqual(u8(1), v2[0].a);
-        testing.expectEqual(u8(2), v2[0].b);
+        comptime testing.expectEqual([]align(1) S, @TypeOf(v2));
+        testing.expectEqual(@as(usize, 1), v2.len);
+        testing.expectEqual(@as(u8, 1), v2[0].a);
+        testing.expectEqual(@as(u8, 2), v2[0].b);
     }
 }
 
-pub fn bytesToSliceTrim(comptime Element: type, bytes: var) ByteToSliceResult(Element, @typeOf(bytes)) {
-    const rem = bytes.len % @sizeOf(Element);
-    return @bytesToSlice(Element, bytes[0 .. bytes.len - rem]);
+pub fn bytesToSliceTrim(comptime Element: type, bytes: var) ByteToSliceResult(Element, @TypeOf(bytes)) {
+    var rem = bytes.len % @sizeOf(Element);
+    return std.mem.bytesAsSlice(Element, bytes[0 .. bytes.len - rem]);
 }
 
 test "generic.slice.bytesToSliceTrim" {
@@ -92,18 +92,18 @@ test "generic.slice.bytesToSliceTrim" {
         const v3 = bytesToSliceTrim(S, &a);
         const v4 = bytesToSliceTrim(S, &b);
 
-        comptime testing.expect([]align(1) const S == @typeOf(v1));
-        comptime testing.expect([]align(1) const S == @typeOf(v2));
-        comptime testing.expect([]const S == @typeOf(v3));
-        comptime testing.expect([]const S == @typeOf(v4));
-        testing.expectEqual(usize(0), v1.len);
-        testing.expectEqual(usize(1), v2.len);
-        testing.expectEqual(usize(0), v3.len);
-        testing.expectEqual(usize(1), v4.len);
-        testing.expectEqual(u8(1), v2[0].a);
-        testing.expectEqual(u8(2), v2[0].b);
-        testing.expectEqual(u8(1), v4[0].a);
-        testing.expectEqual(u8(2), v4[0].b);
+        comptime testing.expect([]align(1) const S == @TypeOf(v1));
+        comptime testing.expect([]align(1) const S == @TypeOf(v2));
+        comptime testing.expect([]const S == @TypeOf(v3));
+        comptime testing.expect([]const S == @TypeOf(v4));
+        testing.expectEqual(@as(usize, 0), v1.len);
+        testing.expectEqual(@as(usize, 1), v2.len);
+        testing.expectEqual(@as(usize, 0), v3.len);
+        testing.expectEqual(@as(usize, 1), v4.len);
+        testing.expectEqual(@as(u8, 1), v2[0].a);
+        testing.expectEqual(@as(u8, 2), v2[0].b);
+        testing.expectEqual(@as(u8, 1), v4[0].a);
+        testing.expectEqual(@as(u8, 2), v4[0].b);
     }
 
     {
@@ -114,18 +114,18 @@ test "generic.slice.bytesToSliceTrim" {
         const v3 = bytesToSliceTrim(S, &a);
         const v4 = bytesToSliceTrim(S, &b);
 
-        comptime testing.expectEqual([]S, @typeOf(v1));
-        comptime testing.expectEqual([]S, @typeOf(v2));
-        comptime testing.expectEqual([]S, @typeOf(v3));
-        comptime testing.expectEqual([]S, @typeOf(v4));
-        testing.expectEqual(usize(0), v1.len);
-        testing.expectEqual(usize(1), v2.len);
-        testing.expectEqual(usize(0), v3.len);
-        testing.expectEqual(usize(1), v4.len);
-        testing.expectEqual(usize(1), v2[0].a);
-        testing.expectEqual(usize(2), v2[0].b);
-        testing.expectEqual(usize(1), v4[0].a);
-        testing.expectEqual(usize(2), v4[0].b);
+        comptime testing.expectEqual([]S, @TypeOf(v1));
+        comptime testing.expectEqual([]S, @TypeOf(v2));
+        comptime testing.expectEqual([]S, @TypeOf(v3));
+        comptime testing.expectEqual([]S, @TypeOf(v4));
+        testing.expectEqual(@as(usize, 0), v1.len);
+        testing.expectEqual(@as(usize, 1), v2.len);
+        testing.expectEqual(@as(usize, 0), v3.len);
+        testing.expectEqual(@as(usize, 1), v4.len);
+        testing.expectEqual(@as(usize, 1), v2[0].a);
+        testing.expectEqual(@as(usize, 2), v2[0].b);
+        testing.expectEqual(@as(usize, 1), v4[0].a);
+        testing.expectEqual(@as(usize, 2), v4[0].b);
     }
 }
 
@@ -152,7 +152,7 @@ fn SliceResult(comptime SliceOrArray: type) type {
 /// Slices ::s from ::start to ::end.
 /// Returns errors instead of doing runtime asserts when ::start or ::end are out of bounds,
 /// or when ::end is less that ::start.
-pub fn slice(s: var, start: usize, end: usize) !SliceResult(@typeOf(s)) {
+pub fn slice(s: var, start: usize, end: usize) !SliceResult(@TypeOf(s)) {
     if (end < start)
         return error.EndLessThanStart;
     if (s.len < start or s.len < end)
@@ -169,11 +169,11 @@ test "generic.slice.slice" {
     const e = slice(a[0..], 2, 2) catch unreachable;
     const f = slice(&a, 1, 2) catch unreachable;
 
-    testing.expectEqualSlices(u8, [_]u8{1}, b);
-    testing.expectEqualSlices(u8, [_]u8{2}, c);
-    testing.expectEqualSlices(u8, [_]u8{ 1, 2 }, d);
-    testing.expectEqualSlices(u8, [_]u8{}, e);
-    testing.expectEqualSlices(u8, [_]u8{2}, f);
+    testing.expectEqualSlices(u8, &[_]u8{1}, b);
+    testing.expectEqualSlices(u8, &[_]u8{2}, c);
+    testing.expectEqualSlices(u8, &[_]u8{ 1, 2 }, d);
+    testing.expectEqualSlices(u8, &[_]u8{}, e);
+    testing.expectEqualSlices(u8, &[_]u8{2}, f);
 
     testing.expectError(error.OutOfBound, slice(a[0..], 0, 3));
     testing.expectError(error.OutOfBound, slice(a[0..], 3, 3));
@@ -184,18 +184,18 @@ test "generic.slice.slice" {
 
     const q11 = slice(q1[0..], 0, 2) catch unreachable;
     const q21 = slice(q2[0..], 0, 2) catch unreachable;
-    comptime testing.expectEqual([]const u8, @typeOf(q11));
-    comptime testing.expectEqual([]u8, @typeOf(q21));
+    comptime testing.expectEqual([]const u8, @TypeOf(q11));
+    comptime testing.expectEqual([]u8, @TypeOf(q21));
 
     const q12 = slice(&q1, 0, 2) catch unreachable;
     const q22 = slice(&q2, 0, 2) catch unreachable;
-    comptime testing.expectEqual([]const u8, @typeOf(q12));
-    comptime testing.expectEqual([]u8, @typeOf(q22));
+    comptime testing.expectEqual([]const u8, @TypeOf(q12));
+    comptime testing.expectEqual([]u8, @TypeOf(q22));
 }
 
 /// Returns a pointer to the item at ::index in ::s.
 /// Returns an error instead of doing a runtime assert when ::index is out of bounds.
-pub fn at(s: var, index: usize) !@typeOf(&s[0]) {
+pub fn at(s: var, index: usize) !@TypeOf(&s[0]) {
     if (s.len <= index)
         return error.OutOfBound;
 
@@ -208,9 +208,9 @@ test "generic.slice.at" {
     const c = at(a[0..], 1) catch unreachable;
     const d = at(a[0..], 1) catch unreachable;
 
-    testing.expectEqual(u8(1), b.*);
-    testing.expectEqual(u8(2), c.*);
-    testing.expectEqual(u8(2), d.*);
+    testing.expectEqual(@as(u8, 1), b.*);
+    testing.expectEqual(@as(u8, 2), c.*);
+    testing.expectEqual(@as(u8, 2), d.*);
     testing.expectError(error.OutOfBound, at(a[0..], 2));
 
     const q1 = [_]u8{ 1, 2 };
@@ -218,16 +218,16 @@ test "generic.slice.at" {
 
     const q11 = at(q1[0..], 0) catch unreachable;
     const q21 = at(q2[0..], 0) catch unreachable;
-    comptime testing.expectEqual(*const u8, @typeOf(q11));
-    comptime testing.expectEqual(*u8, @typeOf(q21));
+    comptime testing.expectEqual(*const u8, @TypeOf(q11));
+    comptime testing.expectEqual(*u8, @TypeOf(q21));
 
     const q31 = at(&q1, 0) catch unreachable;
     const q41 = at(&q2, 0) catch unreachable;
-    comptime testing.expectEqual(*const u8, @typeOf(q31));
-    comptime testing.expectEqual(*u8, @typeOf(q41));
+    comptime testing.expectEqual(*const u8, @TypeOf(q31));
+    comptime testing.expectEqual(*u8, @TypeOf(q41));
 }
 
-pub fn all(s: var, predicate: fn (@typeOf(s[0])) bool) bool {
+pub fn all(s: var, predicate: fn (@TypeOf(s[0])) bool) bool {
     for (s) |v| {
         if (!predicate(v)) return false;
     }
@@ -249,7 +249,7 @@ test "generic.slice.all" {
     }.l));
 }
 
-pub fn any(s: var, predicate: fn (@typeOf(s[0])) bool) bool {
+pub fn any(s: var, predicate: fn (@TypeOf(s[0])) bool) bool {
     for (s) |v| {
         if (predicate(v)) return true;
     }
@@ -271,7 +271,7 @@ test "generic.slice.any" {
     }.l));
 }
 
-pub fn populate(s: var, value: @typeOf(s[0])) void {
+pub fn populate(s: var, value: @TypeOf(s[0])) void {
     for (s) |*v| {
         v.* = value;
     }
@@ -280,21 +280,21 @@ pub fn populate(s: var, value: @typeOf(s[0])) void {
 test "generic.slice.populate" {
     var arr: [4]u8 = undefined;
     populate(arr[0..], 'a');
-    testing.expectEqualSlices(u8, "aaaa", arr);
+    testing.expectEqualSlices(u8, "aaaa", &arr);
 }
 
-pub fn transform(s: var, transformer: fn (@typeOf(s[0])) @typeOf(s[0])) void {
+pub fn transform(s: var, transformer: fn (@TypeOf(s[0])) @TypeOf(s[0])) void {
     for (s) |*v| {
         v.* = transformer(v.*);
     }
 }
 
 test "generic.slice.transform" {
-    var arr = "abcd";
+    var arr = "abcd".*;
     transform(arr[0..], struct {
         fn l(c: u8) u8 {
             return if ('a' <= c and c <= 'z') c - ('a' - 'A') else c;
         }
     }.l);
-    testing.expectEqualSlices(u8, "ABCD", arr);
+    testing.expectEqualSlices(u8, "ABCD", &arr);
 }

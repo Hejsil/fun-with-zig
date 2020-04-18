@@ -15,16 +15,16 @@ fn toInterval(comptime T: type) Interval {
     };
 }
 
-fn Result(comptime A: type, comptime B: type, comptime operation: @typeOf(Interval.add)) type {
+fn Result(comptime A: type, comptime B: type, comptime operation: @TypeOf(Interval.add)) type {
     const a = toInterval(A);
     const b = toInterval(B);
     const res = operation(a, b);
     return math.IntFittingRange(res.min, res.max);
 }
 
-pub fn add(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.add) {
-    const Res = Result(@typeOf(a), @typeOf(b), Interval.add);
-    return Res(a) + Res(b);
+pub fn add(a: var, b: var) Result(@TypeOf(a), @TypeOf(b), Interval.add) {
+    const Res = Result(@TypeOf(a), @TypeOf(b), Interval.add);
+    return @as(Res, a) + @as(Res, b);
 }
 
 fn testAdd() void {
@@ -52,9 +52,9 @@ test "math.safe.add" {
     testAdd();
 }
 
-pub fn sub(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.sub) {
-    const Res = Result(@typeOf(a), @typeOf(b), Interval.sub);
-    return Res(a) - Res(b);
+pub fn sub(a: var, b: var) Result(@TypeOf(a), @TypeOf(b), Interval.sub) {
+    const Res = Result(@TypeOf(a), @TypeOf(b), Interval.sub);
+    return @as(Res, a) - @as(Res, b);
 }
 
 fn testSub() void {
@@ -82,9 +82,9 @@ test "math.safe.sub" {
     testSub();
 }
 
-pub fn mul(a: var, b: var) Result(@typeOf(a), @typeOf(b), Interval.mul) {
-    const Res = Result(@typeOf(a), @typeOf(b), Interval.mul);
-    return Res(a) * Res(b);
+pub fn mul(a: var, b: var) Result(@TypeOf(a), @TypeOf(b), Interval.mul) {
+    const Res = Result(@TypeOf(a), @TypeOf(b), Interval.mul);
+    return @as(Res, a) * @as(Res, b);
 }
 
 fn testMul() void {

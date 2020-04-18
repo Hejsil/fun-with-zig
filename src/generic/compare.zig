@@ -35,7 +35,7 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
         },
 
         // TODO: mem.lessThan is wrong
-        .Array => |arr| return mem.lessThan(arr.child, a, b),
+        .Array => |arr| return mem.lessThan(arr.child, &a, &b),
         .Enum => |e| return @enumToInt(a) < @enumToInt(b),
         .ErrorSet => return @errorToInt(a) < @errorToInt(b),
 
@@ -47,7 +47,6 @@ pub fn lessThan(comptime T: type, a: T, b: T) bool {
         .NoReturn,
         .Fn,
         .BoundFn,
-        .ArgTuple,
         .Opaque,
         .AnyFrame,
         .Frame,
@@ -120,9 +119,9 @@ test "generic.compare.lessThan(?i64)" {
 //}
 
 test "generic.compare.lessThan([1]u8)" {
-    testing.expect(lessThan([1]u8, "1", "2"));
-    testing.expect(!lessThan([1]u8, "1", "1"));
-    testing.expect(!lessThan([1]u8, "1", "0"));
+    testing.expect(lessThan([1]u8, "1".*, "2".*));
+    testing.expect(!lessThan([1]u8, "1".*, "1".*));
+    testing.expect(!lessThan([1]u8, "1".*, "0".*));
 }
 
 test "generic.compare.lessThan(enum)" {
@@ -218,7 +217,6 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
         .Undefined,
         .NoReturn,
         .BoundFn,
-        .ArgTuple,
         .Opaque,
         .Frame,
         .Union,
@@ -232,7 +230,7 @@ pub fn equal(comptime T: type, a: T, b: T) bool {
 fn fieldsEql(comptime T: type, comptime field: []const u8, a: T, b: T) bool {
     const af = @field(a, field);
     const bf = @field(b, field);
-    return equal(@typeOf(af), af, bf);
+    return equal(@TypeOf(af), af, bf);
 }
 
 test "generic.compare.equal(i32)" {
@@ -311,12 +309,12 @@ test "generic.compare.equal(?i64)" {
 //}
 
 test "generic.compare.equal([1]u8)" {
-    testing.expect(equal([1]u8, "1", "1"));
-    testing.expect(!equal([1]u8, "1", "0"));
+    testing.expect(equal([1]u8, "1".*, "1".*));
+    testing.expect(!equal([1]u8, "1".*, "0".*));
 }
 
 test "generic.compare.equal(null)" {
-    comptime testing.expect(equal(@typeOf(null), null, null));
+    comptime testing.expect(equal(@TypeOf(null), null, null));
 }
 
 test "generic.compare.equal(void)" {
